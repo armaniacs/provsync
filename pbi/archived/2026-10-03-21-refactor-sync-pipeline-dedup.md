@@ -39,12 +39,12 @@ Scenario: 抽出前後で出力が一切変わらない
   Then  すべてのコマンド出力・終了コード・テスト結果が抽出前と全く同じである
 
 ## 受け入れ基準
-- [ ] 既存テスト（`internal/cli/cli_test.go` 全体）を 1 行も変更せずに全テストがパスする
-- [ ] `make check` がパスする
-- [ ] pull 側前処理系列の重複（3 箇所）が 1 箇所のヘルパーに集約されている
-- [ ] push 側前処理系列の重複（2 箇所）が 1 箇所のヘルパーに集約されている
-- [ ] 警告の出力先（stderr）・文言・順序が不変である
-- [ ] `pull` / `push` / `sync` / `init` のプレビュー出力が抽出前と byte-identical である
+- [x] 既存テスト（`internal/cli/cli_test.go` 全体）を 1 行も変更せずに全テストがパスする
+- [x] `make check` がパスする
+- [x] pull 側前処理系列の重複（3 箇所）が 1 箇所のヘルパーに集約されている
+- [x] push 側前処理系列の重複（2 箇所）が 1 箇所のヘルパーに集約されている
+- [x] 警告の出力先（stderr）・文言・順序が不変である
+- [x] `pull` / `push` / `sync` / `init` のプレビュー出力が抽出前と byte-identical である
 
 ## テスト戦略
 - 移動前に現行の出力（`pull` / `push` / `sync` / `init` のプレビューと `--write` 実行結果、stderr の警告）を記録して pin する
@@ -55,12 +55,12 @@ Scenario: 抽出前後で出力が一切変わらない
 3 SP
 
 ## Definition of Done
-- [ ] 既存テスト（`internal/cli/cli_test.go` 全体）を 1 行も変更せずに全テストがパスする
-- [ ] `make check` がパスする
-- [ ] pull 側前処理系列の重複（3 箇所）が 1 箇所のヘルパーに集約されている
-- [ ] push 側前処理系列の重複（2 箇所）が 1 箇所のヘルパーに集約されている
-- [ ] 警告の出力先（stderr）・文言・順序が不変である
-- [ ] `pull` / `push` / `sync` / `init` のプレビュー出力が抽出前と byte-identical である
+- [x] 既存テスト（`internal/cli/cli_test.go` 全体）を 1 行も変更せずに全テストがパスする
+- [x] `make check` がパスする
+- [x] pull 側前処理系列の重複（3 箇所）が 1 箇所のヘルパーに集約されている
+- [x] push 側前処理系列の重複（2 箇所）が 1 箇所のヘルパーに集約されている
+- [x] 警告の出力先（stderr）・文言・順序が不変である
+- [x] `pull` / `push` / `sync` / `init` のプレビュー出力が抽出前と byte-identical である
 
 ## 実装ガイド（この順に実施。先に [00-implementation-guide.md](00-implementation-guide.md) を読む）
 

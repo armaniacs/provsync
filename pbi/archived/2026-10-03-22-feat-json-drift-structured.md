@@ -34,14 +34,14 @@ Scenario: driftEntries が無い応答では従来の逆解析にフォールバ
   Then  従来の `providerFromDriftLine` による逆解析で候補を組み立てる
 
 ## 受け入れ基準
-- [ ] `status --json` に driftEntries が additive で追加される（既存の `drift` は削除しない）
-- [ ] 既存の drift 文字列・テキスト出力は byte-identical である
-- [ ] TUI は driftEntries を優先使用する
-- [ ] TUI の旧フォールバック（`providerFromDriftLine`）は後方互換のために残る
-- [ ] op 値の集合（`not-in-tool` / `not-in-central` / `drift`）が README に記載される
-- [ ] CHANGELOG `[Unreleased]` に追記する
-- [ ] `make check` がパスする
-- [ ] tui モジュールの `go build ./...` / `go test ./...` が tui/ 内でパスする
+- [x] `status --json` に driftEntries が additive で追加される（既存の `drift` は削除しない）
+- [x] 既存の drift 文字列・テキスト出力は byte-identical である
+- [x] TUI は driftEntries を優先使用する
+- [x] TUI の旧フォールバック（`providerFromDriftLine`）は後方互換のために残る
+- [x] op 値の集合（`not-in-tool` / `not-in-central` / `drift`）が README に記載される
+- [x] CHANGELOG `[Unreleased]` に追記する
+- [x] `make check` がパスする
+- [x] tui モジュールの `go build ./...` / `go test ./...` が tui/ 内でパスする
 
 ## テスト戦略
 - `internal/cli/cli_test.go` に driftEntries の新テストを追加する（既存の `TestStatusJSON` は変更しない）
@@ -52,14 +52,14 @@ Scenario: driftEntries が無い応答では従来の逆解析にフォールバ
 3 SP
 
 ## Definition of Done
-- [ ] `status --json` に driftEntries が additive で追加されている
-- [ ] 既存の drift 文字列・テキスト出力が byte-identical である
-- [ ] TUI が driftEntries を優先使用する
-- [ ] TUI の旧フォールバック（`providerFromDriftLine`）が後方互換のために残っている
-- [ ] op 値の集合が README に記載されている
-- [ ] CHANGELOG `[Unreleased]` に追記した
-- [ ] `make check` がパスする
-- [ ] tui モジュールの `go build ./...` / `go test ./...` が tui/ 内でパスする
+- [x] `status --json` に driftEntries が additive で追加されている
+- [x] 既存の drift 文字列・テキスト出力が byte-identical である
+- [x] TUI が driftEntries を優先使用する
+- [x] TUI の旧フォールバック（`providerFromDriftLine`）が後方互換のために残っている
+- [x] op 値の集合が README に記載されている
+- [x] CHANGELOG `[Unreleased]` に追記した
+- [x] `make check` がパスする
+- [x] tui モジュールの `go build ./...` / `go test ./...` が tui/ 内でパスする
 
 ## 実装ガイド（この順に実施。先に [00-implementation-guide.md](00-implementation-guide.md) を読む）
 

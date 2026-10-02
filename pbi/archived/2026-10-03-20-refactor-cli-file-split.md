@@ -68,13 +68,13 @@ Scenario: 新規貢献者が描画層を修正する
 3 SP
 
 ## Definition of Done
-- [ ] 全テストが変更なしでパスする
-- [ ] `make check` がパスする
-- [ ] `go vet` / staticcheck の新規 error が 0 件
-- [ ] 出力が byte-identical（`--version` / `--help` / `status` / `list` / `doctor`）
-- [ ] cli.go が 700 行未満程度になり、ディスパッチ・共通 option・パイプライン中心になっている
-- [ ] 新規ファイルが責務ごとに 1 つになっている
-- [ ] README のパッケージ構成説明を更新した
+- [x] 全テストが変更なしでパスする
+- [x] `make check` がパスする
+- [x] `go vet` / staticcheck の新規 error が 0 件
+- [x] 出力が byte-identical（`--version` / `--help` / `status` / `list` / `doctor`）
+- [x] cli.go が 700 行未満程度になり、ディスパッチ・共通 option・パイプライン中心になっている
+- [x] 新規ファイルが責務ごとに 1 つになっている
+- [x] README のパッケージ構成説明を更新した
 
 ## 実装ガイド（この順に実施。先に [00-implementation-guide.md](00-implementation-guide.md) を読む）
 

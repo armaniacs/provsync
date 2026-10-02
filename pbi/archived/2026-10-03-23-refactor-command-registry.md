@@ -75,12 +75,12 @@ Scenario: 未知コマンドの扱いが変わらない
 3 SP
 
 ## Definition of Done
-- [ ] 出力が byte-identical（全コマンドの `--help`、引数なし usage、`completion bash|zsh|fish`、`--version`）
-- [ ] コマンド一覧の定義が 1 箇所に集約されている
-- [ ] 全テストが変更なしでパスする
-- [ ] `make check` がパスする
-- [ ] 未知コマンド・使い方エラーの終了コードが不変（0/1/2）
-- [ ] README に変更不要（コマンド表は手動管理のまま）で済むことを確認した
+- [x] 出力が byte-identical（全コマンドの `--help`、引数なし usage、`completion bash|zsh|fish`、`--version`）
+- [x] コマンド一覧の定義が 1 箇所に集約されている
+- [x] 全テストが変更なしでパスする
+- [x] `make check` がパスする
+- [x] 未知コマンド・使い方エラーの終了コードが不変（0/1/2）
+- [x] README に変更不要（コマンド表は手動管理のまま）で済むことを確認した
 
 ## 実装ガイド（この順に実施。先に [00-implementation-guide.md](00-implementation-guide.md) を読む）
 
