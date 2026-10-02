@@ -13,6 +13,12 @@
 - `diff` の出力で、秘密情報らしいキー(`apiKey` / `token` など)の値を既定で `********` にマスク。`--show-secrets` で実値を表示(警告付き)。書き込まれるファイルの内容はマスクされない。秘密キーの判定は pull と共通の仕組み(`internal/secret`)に集約。
 - `init [tool]` コマンド。初回セットアップ用に `pull` と同じ Plan で中央設定を作る。既存の中央設定は上書きしない。ツール省略時は設定ファイルが存在するツールを検出し、候補が 1 つなら自動選択する。秘密が検出されたときは `apiKeyEnv` への移行手順を警告する。
 
+### Added (CLI UX)
+
+- サブコマンド別ヘルプ(`provsync <command> --help`)と `completion bash|zsh|fish` を追加。
+- 終了コードを体系化: `0` 成功 / `1` 実行時エラー / `2` 使い方の誤り。使い方の誤りは `UsageError` 型で判別する。
+- 通常出力は stdout、警告とフラグ解析エラーは stderr へ分離(`RunWith` で stdout / stderr を注入可能)。
+
 ### Added (CI)
 
 - CI(`.github/workflows/ci.yml`)を追加。push to main と PR で `make check` / `make test-race` / `make lint` / `make vuln` を macOS / Linux マトリクスで実行。

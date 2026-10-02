@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -669,6 +670,108 @@ func TestUnknownCommandErrors(t *testing.T) {
 	f := setup(t)
 	if _, err := run(t, f.root, "frobnicate"); err == nil {
 		t.Error("expected error for unknown command")
+	}
+}
+
+func TestUnknownCommandIsUsageError(t *testing.T) {
+	f := setup(t)
+	_, err := run(t, f.root, "frobnicate")
+	var ue *UsageError
+	if !errors.As(err, &ue) {
+		t.Errorf("unknown command must be a *UsageError, got %T: %v", err, err)
+	}
+}
+
+func TestBadArgsAreUsageError(t *testing.T) {
+	f := setup(t)
+	for _, args := range [][]string{{"pull"}, {"push"}, {"diff", "only-one"}, {"init", "a", "b"}} {
+		_, err := run(t, f.root, args...)
+		var ue *UsageError
+		if !errors.As(err, &ue) {
+			t.Errorf("args %v must be a *UsageError, got %T: %v", args, err, err)
+		}
+	}
+}
+
+func TestRuntimeErrorIsNotUsageError(t *testing.T) {
+	f := setup(t)
+	write(t, f.central, "{ not json")
+	_, err := run(t, f.root, "push", "opencode")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	var ue *UsageError
+	if errors.As(err, &ue) {
+		t.Errorf("runtime error must not be a *UsageError: %v", err)
+	}
+}
+
+func TestSubcommandHelp(t *testing.T) {
+	f := setup(t)
+	for _, cmd := range []string{"list", "status", "init", "pull", "push", "sync", "diff", "undo", "completion", "version"} {
+		out := mustRun(t, f.root, cmd, "--help")
+		if !strings.Contains(out, cmd) {
+			t.Errorf("%s --help output missing %q:\n%s", cmd, cmd, out)
+		}
+	}
+	if out := mustRun(t, f.root, "pull", "--help"); !strings.Contains(out, "--write") {
+		t.Errorf("pull --help must mention --write:\n%s", out)
+	}
+}
+
+func TestCompletionZsh(t *testing.T) {
+	f := setup(t)
+	out := mustRun(t, f.root, "completion", "zsh")
+	if !strings.Contains(out, "compdef") || !strings.Contains(out, "kilocode") {
+		t.Errorf("completion zsh output:\n%s", out)
+	}
+}
+
+func TestCompletionBash(t *testing.T) {
+	f := setup(t)
+	out := mustRun(t, f.root, "completion", "bash")
+	if !strings.Contains(out, "complete") || !strings.Contains(out, "opencode") {
+		t.Errorf("completion bash output:\n%s", out)
+	}
+}
+
+func TestCompletionFish(t *testing.T) {
+	f := setup(t)
+	out := mustRun(t, f.root, "completion", "fish")
+	if !strings.Contains(out, "complete -c provsync") {
+		t.Errorf("completion fish output:\n%s", out)
+	}
+}
+
+func TestCompletionUnknownShellErrors(t *testing.T) {
+	f := setup(t)
+	if _, err := run(t, f.root, "completion", "powershell"); err == nil {
+		t.Error("expected error for unknown shell")
+	}
+}
+
+func TestWarningsGoToErrOut(t *testing.T) {
+	f := setup(t)
+	write(t, f.kilo, `{
+  "provider": {
+    "llm-01": {
+      "name": "LLM 01",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": { "baseURL": "https://a.example/v1", "apiKey": "SECRET" },
+      "models": {}
+    }
+  }
+}`)
+
+	var out, errOut bytes.Buffer
+	if err := RunWith([]string{"--root", f.root, "pull", "kilocode", "--write"}, &out, &errOut); err != nil {
+		t.Fatalf("RunWith: %v", err)
+	}
+	if strings.Contains(out.String(), "警告") {
+		t.Errorf("warnings must not go to stdout:\n%s", out.String())
+	}
+	if !strings.Contains(errOut.String(), "警告") {
+		t.Errorf("warnings must go to stderr:\n%s", errOut.String())
 	}
 }
 

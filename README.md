@@ -161,6 +161,7 @@ $ provsync undo
 | `sync --from <a> --to <b>` | a を取り込み b へ反映する(`--from` 省略時は中央設定をそのまま使う) |
 | `diff <from> <to>` | from を to に適用した場合の差分(意味差分 + 統合 diff)を表示 |
 | `undo [id]` | 直前または指定操作を復元する(`--list` で履歴) |
+| `completion <shell>` | bash / zsh / fish 用の補完スクリプトを出力 |
 | `--version` / `version` | バージョンを表示 |
 
 | フラグ | 既定 | 説明 |
@@ -176,7 +177,8 @@ $ provsync undo
 | `--help` / `-h` | `false` | ヘルプを表示 |
 
 - フラグは位置引数の後にも置ける(`provsync push opencode --write` のように後置できる)。
-- 終了コード: 成功時は `0`(`status` / `list` / `diff` は差分があっても `0`)。エラー時は非 `0`。
+- サブコマンド別ヘルプは `provsync <command> --help` で表示できる。
+- 終了コード: `0` 成功 / `1` 実行時エラー / `2` 使い方の誤り(`status` / `list` / `diff` は差分があっても `0`)。エラーと警告は stderr、通常出力は stdout。
 
 ### 中央設定
 
@@ -407,6 +409,7 @@ $ provsync undo
 | `sync --from <a> --to <b>` | Pull from a and push to b (`--from` optional: uses the central config as-is) |
 | `diff <from> <to>` | Show what applying from to to would change (semantic + unified diff) |
 | `undo [id]` | Restore the last (or given) operation (`--list` for history) |
+| `completion <shell>` | Print a completion script for bash / zsh / fish |
 
 | Flag | Default | Description |
 |---|---|---|
@@ -421,7 +424,8 @@ $ provsync undo
 | `--help` / `-h` | `false` | Show help |
 
 - Flags may appear after positional arguments (e.g. `provsync push opencode --write`).
-- Exit codes: `0` on success (`status` / `list` / `diff` exit 0 even with drift); non-zero on errors.
+- Per-command help is available via `provsync <command> --help`.
+- Exit codes: `0` success / `1` runtime error / `2` usage error (`status` / `list` / `diff` exit 0 even with drift). Errors and warnings go to stderr; normal output to stdout.
 
 ### Central Config
 

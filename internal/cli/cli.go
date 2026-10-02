@@ -24,6 +24,7 @@ import (
 
 type options struct {
 	out         io.Writer
+	errOut      io.Writer
 	write       bool
 	noBackup    bool
 	rootFlag    string
@@ -53,9 +54,15 @@ func (s *stringList) Set(v string) error {
 
 // Run は provsync のエントリポイント。テスト可能なように writer を注入する。
 func Run(args []string, out io.Writer) error {
-	opts := &options{out: out}
+	return RunWith(args, out, out)
+}
+
+// RunWith は stdout / stderr を分けて注入できるエントリポイント。
+// 通常出力は out、警告とフラグ解析エラーは errOut へ出す。
+func RunWith(args []string, out, errOut io.Writer) error {
+	opts := &options{out: out, errOut: errOut}
 	fs := flag.NewFlagSet("provsync", flag.ContinueOnError)
-	fs.SetOutput(out)
+	fs.SetOutput(errOut)
 	registerFlags(fs, opts)
 	if err := fs.Parse(reorder(fs, args)); err != nil {
 		if err == flag.ErrHelp {
@@ -68,6 +75,10 @@ func Run(args []string, out io.Writer) error {
 		fmt.Fprintf(out, "provsync %s\n", version.String())
 		return nil
 	}
+	if opts.help && len(pos) > 0 && helpTexts[pos[0]] != "" {
+		fmt.Fprint(out, helpTexts[pos[0]])
+		return nil
+	}
 	if opts.help || len(pos) == 0 {
 		printUsage(opts)
 		return nil
@@ -77,13 +88,10 @@ func Run(args []string, out io.Writer) error {
 	switch cmd {
 	case "list":
 		return cmdList(opts)
-	case "init":
-		return cmdInit(opts, rest)
-	case "version":
-		fmt.Fprintf(opts.out, "provsync %s\n", version.String())
-		return nil
 	case "status":
 		return cmdStatus(opts, rest)
+	case "init":
+		return cmdInit(opts, rest)
 	case "pull":
 		return cmdPull(opts, rest)
 	case "push":
@@ -94,8 +102,13 @@ func Run(args []string, out io.Writer) error {
 		return cmdDiff(opts, rest)
 	case "undo":
 		return cmdUndo(opts, rest)
+	case "completion":
+		return cmdCompletion(opts, rest)
+	case "version":
+		fmt.Fprintf(opts.out, "provsync %s\n", version.String())
+		return nil
 	default:
-		return fmt.Errorf("未知のコマンド %q です(--help を参照)", cmd)
+		return usageErr("未知のコマンド %q です(--help を参照)", cmd)
 	}
 }
 
@@ -277,7 +290,7 @@ func cmdStatus(o *options, args []string) error {
 		}
 		fmt.Fprintf(o.out, "%-9s %s (%d providers)\n", name, path, len(providers))
 		for _, w := range warnings {
-			fmt.Fprintf(o.out, "  警告: %s\n", w)
+			fmt.Fprintf(o.errOut, "  警告: %s\n", w)
 		}
 		if central == nil {
 			continue
@@ -333,7 +346,7 @@ func driftLines(projected, tool map[string]model.Provider) []string {
 // 既存の中央設定は上書きしない。
 func cmdInit(o *options, args []string) error {
 	if len(args) > 1 {
-		return fmt.Errorf("使い方: provsync init [tool]")
+		return usageErr("使い方: provsync init [tool]")
 	}
 	root, err := o.root()
 	if err != nil {
@@ -382,7 +395,7 @@ func cmdInit(o *options, args []string) error {
 		return err
 	}
 	for _, w := range warnings {
-		fmt.Fprintf(o.out, "警告: %s\n", w)
+		fmt.Fprintf(o.errOut, "警告: %s\n", w)
 	}
 	pulled, err = syncer.FilterProviders(pulled, o.keys())
 	if err != nil {
@@ -402,7 +415,7 @@ func cmdInit(o *options, args []string) error {
 		return err
 	}
 	if len(warnings) > 0 {
-		fmt.Fprintln(o.out, "秘密は中央設定に保存されません。環境変数名を中央設定の apiKeyEnv に設定してください")
+		fmt.Fprintln(o.errOut, "秘密は中央設定に保存されません。環境変数名を中央設定の apiKeyEnv に設定してください")
 	}
 	if p.Changed() {
 		if !o.write {
@@ -436,7 +449,7 @@ func detectTools(root adapter.Root) []string {
 
 func cmdPull(o *options, args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("使い方: provsync pull <tool>")
+		return usageErr("使い方: provsync pull <tool>")
 	}
 	root, err := o.root()
 	if err != nil {
@@ -451,7 +464,7 @@ func cmdPull(o *options, args []string) error {
 		return err
 	}
 	for _, w := range warnings {
-		fmt.Fprintf(o.out, "警告: %s\n", w)
+		fmt.Fprintf(o.errOut, "警告: %s\n", w)
 	}
 	pulled, err = syncer.FilterProviders(pulled, o.keys())
 	if err != nil {
@@ -502,7 +515,7 @@ func buildCentralChange(root adapter.Root, tool string, pulled map[string]model.
 
 func cmdPush(o *options, args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("使い方: provsync push <tool>")
+		return usageErr("使い方: provsync push <tool>")
 	}
 	root, err := o.root()
 	if err != nil {
@@ -531,7 +544,7 @@ func cmdPush(o *options, args []string) error {
 
 func cmdSync(o *options) error {
 	if o.to == "" {
-		return fmt.Errorf("使い方: provsync sync --from <a> --to <b>(--from は省略可)")
+		return usageErr("使い方: provsync sync --from <a> --to <b>(--from は省略可)")
 	}
 	root, err := o.root()
 	if err != nil {
@@ -562,7 +575,7 @@ func buildSyncPlan(o *options, root adapter.Root, from, to string) (plan.Plan, e
 			return plan.Plan{}, err
 		}
 		for _, w := range warnings {
-			fmt.Fprintf(o.out, "警告: %s\n", w)
+			fmt.Fprintf(o.errOut, "警告: %s\n", w)
 		}
 		pulled, err = syncer.FilterProviders(pulled, o.keys())
 		if err != nil {
@@ -627,7 +640,7 @@ func buildToolChange(a adapter.Adapter, managed map[string]model.Provider) (plan
 
 func cmdDiff(o *options, args []string) error {
 	if len(args) != 2 {
-		return fmt.Errorf("使い方: provsync diff <from> <to>")
+		return usageErr("使い方: provsync diff <from> <to>")
 	}
 	root, err := o.root()
 	if err != nil {
@@ -648,7 +661,7 @@ func cmdDiff(o *options, args []string) error {
 		if !o.showSecrets {
 			d = secret.MaskLines(d)
 		} else {
-			fmt.Fprintln(o.out, "警告: --show-secrets により秘密の値をそのまま表示しています")
+			fmt.Fprintln(o.errOut, "警告: --show-secrets により秘密の値をそのまま表示しています")
 		}
 		fmt.Fprint(o.out, d)
 	}
@@ -699,7 +712,7 @@ func cmdUndo(o *options, args []string) error {
 	if ops, err := st.List(); err == nil && len(ops) > 0 {
 		newest := ops[0]
 		if newest.NoBackup && newest.ID != op.ID {
-			fmt.Fprintln(o.out, "警告: 直近の書き込みはバックアップなしで行われたため、この undo はそれより前の状態に戻します")
+			fmt.Fprintln(o.errOut, "警告: 直近の書き込みはバックアップなしで行われたため、この undo はそれより前の状態に戻します")
 		}
 	}
 	undoOp, err := st.Restore(op)
@@ -717,6 +730,185 @@ func cmdUndo(o *options, args []string) error {
 	}
 	return nil
 }
+
+// helpTexts はサブコマンド別のヘルプ。`provsync <cmd> --help` で出す。
+var helpTexts = map[string]string{
+	"list": `list - 対応ツールと設定パスを表示
+
+用途: 各ツールの設定ファイルと中央設定のパス、provider 数を表示する。
+
+使い方: provsync list
+
+例:
+  provsync list
+`,
+	"status": `status - ツールと中央設定の同期状態を表示
+
+用途: ツール設定と中央設定の provider 差分( drift )を表示する。
+
+使い方: provsync status [tool...]
+
+引数: tool を省略すると全対応ツールを表示する。
+
+関連フラグ:
+  --json    JSON で出力する
+
+例:
+  provsync status
+  provsync status kilocode
+`,
+	"init": `init - 初回セットアップ(中央設定を作る)
+
+用途: ツール設定から中央設定を作成する。初回専用で、既存の中央設定は上書きしない。
+
+使い方: provsync init [tool]
+
+引数: tool を省略すると、設定ファイルが存在するツールを検出する。
+      候補が複数ある場合は一覧を表示するので指定する。
+
+関連フラグ:
+  --write   中央設定を作成する(既定はプレビュー)
+
+例:
+  provsync init kilocode
+  provsync init kilocode --write
+`,
+	"pull": `pull - ツール設定を中央設定へ取り込む
+
+用途: ツール設定の provider エントリを中央設定へマージする。
+
+使い方: provsync pull <tool>
+
+引数: tool は kilocode(別名 kilo) / opencode。
+
+関連フラグ:
+  --write          中央設定へ書き込む(既定はプレビュー)
+  --provider <p>   対象 provider を限定(カンマ区切り)
+
+例:
+  provsync pull kilocode
+  provsync pull kilocode --write
+`,
+	"push": `push - 中央設定をツール設定へ反映する
+
+用途: 中央設定の provider エントリをツール設定へマージする。
+
+使い方: provsync push <tool>
+
+引数: tool は kilocode(別名 kilo) / opencode。
+
+関連フラグ:
+  --write          ツール設定へ書き込む(既定はプレビュー)
+  --provider <p>   対象 provider を限定(カンマ区切り)
+
+例:
+  provsync push opencode
+  provsync push opencode --write
+`,
+	"sync": `sync - 取り込みと反映を一度に行う
+
+用途: --from のツール設定を中央設定へ取り込み、--to のツール設定へ反映する。
+
+使い方: provsync sync --from <a> --to <b>
+
+引数: --from を省略すると中央設定をそのまま使う。
+
+関連フラグ:
+  --from <tool>   取り込み元ツール(省略可)
+  --to <tool>     反映先ツール(必須)
+  --write         ファイルへ書き込む(既定はプレビュー)
+
+例:
+  provsync sync --from kilocode --to opencode --write
+`,
+	"diff": `diff - 適用した場合の差分を表示
+
+用途: from を to に適用した場合の意味差分と統合 diff を表示する。
+
+使い方: provsync diff <from> <to>
+
+引数: from / to はツール名か central。
+
+関連フラグ:
+  --show-secrets   秘密の値をそのまま表示する(非推奨)
+
+例:
+  provsync diff kilocode opencode
+`,
+	"undo": `undo - 直前または指定操作を復元する
+
+用途: 書き込み操作をバックアップから復元する。--write は不要で直接適用する。
+
+使い方: provsync undo [id]
+
+引数: id を省略すると直前の書き込みを復元する。undo 自体を undo できる(redo)。
+
+関連フラグ:
+  --list   履歴を表示する
+
+例:
+  provsync undo
+  provsync undo --list
+  provsync undo 20261002T093045-8c2d
+`,
+	"completion": `completion - シェル補完スクリプトを出力
+
+用途: bash / zsh / fish 用の補完スクリプトを標準出力へ出す。
+
+使い方: provsync completion <shell>
+
+引数: shell は bash / zsh / fish。
+
+例:
+  # zsh
+  provsync completion zsh > "${fpath[1]}/_provsync"
+
+  # bash
+  source <(provsync completion bash)
+`,
+	"version": `version - バージョンを表示
+
+用途: バイナリのバージョンを 1 行で表示する。
+
+使い方: provsync version
+
+例:
+  provsync version
+  provsync --version
+`,
+}
+
+// cmdCompletion はシェル補完スクリプトを出力する。
+func cmdCompletion(o *options, args []string) error {
+	if len(args) != 1 {
+		return usageErr("使い方: provsync completion <bash|zsh|fish>")
+	}
+	shell := args[0]
+	tools := adapter.Names()
+	switch shell {
+	case "bash":
+		fmt.Fprintf(o.out, `_provsync() {
+  local cur="${COMP_WORDS[COMP_CWORD]}"
+  if [ "$COMP_CWORD" -eq 1 ]; then
+    COMPREPLY=( $(compgen -W "%s" -- "$cur") )
+  else
+    COMPREPLY=( $(compgen -W "%s --write --provider --no-backup --show-secrets --json --exit-code" -- "$cur") )
+  fi
+}
+complete -F _provsync provsync
+`, strings.Join(commands, " "), strings.Join(tools, " "))
+	case "zsh":
+		fmt.Fprintf(o.out, "#compdef provsync\n\n_provsync() {\n  _arguments '1: :(%s)' '*: :(%s)'\n}\ncompdef _provsync provsync\n", strings.Join(commands, " "), strings.Join(tools, " "))
+	case "fish":
+		fmt.Fprintf(o.out, "complete -c provsync -n '__fish_use_subcommand' -a '%s'\n", strings.Join(commands, " "))
+		fmt.Fprintf(o.out, "complete -c provsync -n '__fish_seen_subcommand_from pull push' -a '%s'\n", strings.Join(tools, " "))
+	default:
+		return usageErr("未知のシェル %q です(有効: bash / zsh / fish)", shell)
+	}
+	return nil
+}
+
+var commands = []string{"list", "status", "init", "pull", "push", "sync", "diff", "undo", "completion", "version"}
 
 // ---- 共通 ----
 
@@ -757,7 +949,7 @@ func (o *options) applyOrPreview(label string, p plan.Plan) error {
 	for _, c := range changed {
 		if err := fsutil.WriteFileAtomic(c.Path, c.After); err != nil {
 			if len(written) > 0 {
-				fmt.Fprintf(o.out, "警告: この操作で既に書き込み済みのファイル: %s\n", strings.Join(written, ", "))
+				fmt.Fprintf(o.errOut, "警告: この操作で既に書き込み済みのファイル: %s\n", strings.Join(written, ", "))
 				if !o.noBackup {
 					fmt.Fprintln(o.out, "ヒント: provsync undo でこの操作をまとめて復元できます")
 				}
