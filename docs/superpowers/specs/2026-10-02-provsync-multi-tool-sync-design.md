@@ -2,7 +2,6 @@
 
 日付: 2026-10-02
 状態: 実装前(このドキュメントの承認後に実装計画を作成する)
-対象ディレクトリ: `/Users/y-araki/Playground/provsync`
 
 置き換え: `docs/superpowers/specs/2026-10-01-kilo-to-opencode-provider-port-design.md`(単発移植 CLI)を置き換える。旧 CLI のフラグは削除する。
 
@@ -48,7 +47,8 @@ internal/cli/              各コマンドのフラグ解析とハンドラ
 internal/model/            カノニカル表現(Config / Provider)
 internal/adapter/          Adapter IF + レジストリ + kilocode/opencode 実装
 internal/store/            中央 config.json の load/save
-internal/syncer/           差分計算・managed マージ・JSONC 前処理(現行を拡張)
+internal/syncer/           provider 集合のマージ・絞り込み(純粋)
+internal/jsonc/            JSONC(行コメント・末尾カンマ)の前処理
 internal/plan/             変更計画(Plan)の生成。プレビュー/diff/書き込み/undo の単一情報源
 internal/diff/             統合 diff のレンダリング
 internal/backup/           タイムスタンプ付きバックアップ・マニフェスト・復元
@@ -110,16 +110,16 @@ type Provider struct {
 
 ```go
 type Root struct {
-    Home       string // $HOME 相当
     ConfigHome string // $XDG_CONFIG_HOME 相当
     StateHome  string // $XDG_STATE_HOME 相当
 }
 
 type Adapter interface {
     Name() string                                            // "kilocode" | "opencode"
-    Path(root Root) string                                   // ツール設定ファイルの絶対パス
-    Pull() (map[string]model.Provider, error)                // ツール設定 -> canonical
+    Path() string                                              // ツール設定ファイルの絶対パス(root は Get(name, root) で注入)
+    Pull() (map[string]model.Provider, []string, error)      // ツール設定 -> canonical(2つ目は警告)
     Push(managed map[string]model.Provider) ([]byte, error)  // canonical を既存文書へマージして新ファイル内容を返す
+    Project(managed map[string]model.Provider) map[string]model.Provider // managed をこのツールへの push が描画する形へ写す(意味差分の比較用)
 }
 ```
 
@@ -144,6 +144,11 @@ type Adapter interface {
 
 - 実際のフィールド形は実装時に実フィクスチャで検証し、差異があればアダプタ内で吸収する。
 - `apiKeyEnv` は情報として保持するが、opencode へは書き出さない(秘密を仲介しない方針の帰結)。
+- 秘密情報らしいキー(`apiKey` / `token` 等)は pull 時に値を取り込まず警告する。
+  push 時は、対象ツール設定ファイル内の既存の当該キーをそのまま保持する
+  (中央経由では運ばず、同一ファイル内で書き換えによって失われないようにする)。
+- 意味差分(push/diff のプレビュー、status の差分判定)は `Project` でツール可視の形へ写してから比較する。
+  ツールが描画しないフィールド(apiKeyEnv や他ツールの extras)を差分として誤表示しないため。
 
 ## CLI 仕様
 
@@ -178,7 +183,7 @@ type Adapter interface {
 - `undo` は復元操作自体を新しい操作として記録する(redo 可能)。
 - `undo` は復元が目的のため、`--write` を要求せず直接適用する(グローバル `--write` は無視する)。
 - `status` / `list` / `diff` は読み取り専用で、drift があっても終了コード 0(v1 では検査用の非 0 終了は提供しない)。
-- 変更が無い場合、プレビューは `no changes` を表示し、`--write` は書き込みをスキップする(冪等)。
+- 変更が無い場合、プレビューは `変更はありません` を表示し、`--write` は書き込みをスキップする(冪等)。
 
 ## 変更計画(Plan)と安全機構
 
@@ -286,7 +291,7 @@ type Operation struct {
 | `--provider` の名前が canonical に無い | 非 0 終了 |
 | pull で平文 `apiKey` を検出 | 警告を出して取り込まない(秘密は仲介しない)。続行 |
 | 書き込み失敗 | バックアップ記録済み。一時ファイル + rename のため元ファイルは無傷。非 0 終了 |
-| 変更なし | プレビューは `no changes`。`--write` は書き込まず正常終了 |
+| 変更なし | プレビューは `変更はありません`。`--write` は書き込まず正常終了 |
 | `undo` の履歴が無い / ID が無い | 非 0 終了 |
 
 ## パス解決
@@ -294,7 +299,7 @@ type Operation struct {
 - 中央設定: `$XDG_CONFIG_HOME/provsync/config.json`(既定 `~/.config/provsync/config.json`)。
 - 状態: `$XDG_STATE_HOME/provsync/`(既定 `~/.local/state/provsync/`)。
 - ツール設定: 各アダプタが `Root` から解決。
-- `--root <dir>` 指定時は `Home` / `ConfigHome` / `StateHome` をその配下に置き換える(テスト用)。
+- `--root <dir>` 指定時は `ConfigHome` / `StateHome` をその配下に置き換える(テスト用)。
 
 ## テスト方針(必須)
 
@@ -312,7 +317,7 @@ type Operation struct {
   - `list` / `status` / `pull` / `push` / `sync` / `diff` / `undo` の各コマンド。
   - プレビューがファイルを変更しないこと。`--write` が期待どおり書き込み、バックアップを作ること。
   - extras の往復で情報が失われないこと。
-  - 冪等性(同内容の再 push で `no changes`)。
+  - 冪等性(同内容の再 push で `変更はありません`)。
   - エラー系(未知ツール、欠落ファイル、不正 JSON、未知 provider)。
   - `undo` で `--write` 前の状態へバイト単位で復元されること。
 

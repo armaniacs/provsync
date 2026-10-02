@@ -1,20 +1,19 @@
 # kilo → opencode Provider Port Tool 設計
 
 日付: 2026-10-01
-対象ディレクトリ: `/Users/y-araki/Playground/SakuraTools/llm-sync`
 
 ## 目的
 
-`~/.config/kilo/kilo.jsonc` の `provider` から `vs_inoue` / `sakura` / `vs` の 3 エントリを取り出し、
+`~/.config/kilo/kilo.jsonc` の `provider` から `llm-01` / `llm-02` / `llm-03` の 3 エントリを取り出し、
 `~/.config/opencode/opencode.json` の `provider` へ移植する Go 製 CLI ツールを作る。
 
 ## スコープ
 
-- 単一の Go コマンド `llm-sync` を提供する。
+- 単一の Go コマンド `provsync` を提供する。
 - 既定動作は変更差分のプレビュー。`--write` 指定時のみ対象ファイルを更新する。
 - 移植対象は provider エントリの内容そのもの(`npm` / `name` / `options` / `models` および
   `reasoning` / `modalities` などの任意フィールドを含む)。
-- opencode 側で対象キー以外の provider(`vsakura` / `vpn-sakura` など)はそのまま保持する。
+- opencode 側で対象キー以外の provider(`llm-04` など)はそのまま保持する。
 
 ## 非目標(YAGNI)
 
@@ -26,13 +25,13 @@
 ## CLI 仕様
 
 ```
-llm-sync [flags]
+provsync [flags]
 
   --source     string   既定: $HOME/.config/kilo/kilo.jsonc
   --target     string   既定: $HOME/.config/opencode/opencode.json
   --write               既定: false。true のときだけファイルを更新
   --backup              既定: true。--write 時に .bak を作成
-  --providers  string   既定: vs_inoue,sakura,vs(カンマ区切り)
+  --providers  string   既定: llm-01,llm-02,llm-03(カンマ区切り)
 ```
 
 - 既定実行はプレビューのみ。ファイルは一切変更しない。
@@ -66,7 +65,7 @@ type Config = map[string]any
 ## コンポーネント構成
 
 ```
-llm-sync/
+provsync/
   go.mod
   main.go                       # CLI / フラグ解析 / 入出力
   internal/syncer/syncer.go     # 変換ロジック(純粋関数)
@@ -89,7 +88,7 @@ func StripJSONC(b []byte) []byte
 
 ## 差分プレビュー
 
-- 各対象 provider について `sakura: 置換 (models 8件)` のように要約表示する。
+- 各対象 provider について `llm-02: 置換 (models 8件)` のように要約表示する。
 - `--write` 時も同じサマリを表示する。
 - 変更が無い場合も正常終了(0)。
 
@@ -106,12 +105,12 @@ func StripJSONC(b []byte) []byte
 
 - JSONC 前処理: 行コメント `//`、末尾カンマの除去。
 - `Merge`: 対象 3 キーが上書きされる。
-- `Merge`: target の他プロバイダ(`vsakura` 等)が保持される。
+- `Merge`: target の他プロバイダ(`llm-04` 等)が保持される。
 - `Merge`: source に対象キーが無ければエラー。
 - ゴールデン: サンプル source/target を一時ディレクトリに置き、変換後 JSON を検証。
 
 ## 想定される注意点
 
-- `sakura` は既存 opencode.json に存在するため内容が置換される。`vs` は新規キーとして追加される。
-- `vsakura` は残るが `vs` と baseURL が重複する。これは上書き方針(同一キー名)の帰結であり、
-  既存 `vsakura` を削除・改名しない。
+- `llm-02` は既存 opencode.json に存在するため内容が置換される。`llm-03` は新規キーとして追加される。
+- `llm-04` は残るが `llm-03` と baseURL が重複する。これは上書き方針(同一キー名)の帰結であり、
+  既存 `llm-04` を削除・改名しない。

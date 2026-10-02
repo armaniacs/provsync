@@ -1,4 +1,4 @@
-package syncer
+package jsonc
 
 // StripJSONC removes // line comments and trailing commas from a JSONC
 // document so it can be parsed by encoding/json. Comment markers and commas

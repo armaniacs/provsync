@@ -1,78 +1,110 @@
 package syncer
 
-import "testing"
+import (
+	"testing"
 
-func TestMergeOverwritesAndKeepsOthers(t *testing.T) {
-	source := map[string]any{
-		"provider": map[string]any{
-			"vs": map[string]any{
-				"npm":    "@ai-sdk/openai-compatible",
-				"models": map[string]any{"new": map[string]any{"name": "new"}},
-			},
-			"sakura": map[string]any{
-				"models": map[string]any{"s": map[string]any{"name": "s"}},
-			},
-			"vs_inoue": map[string]any{
-				"models": map[string]any{"i": map[string]any{"name": "i"}},
-			},
-		},
-	}
-	target := map[string]any{
-		"provider": map[string]any{
-			"vsakura": map[string]any{"models": map[string]any{}},
-			"sakura":  map[string]any{"models": map[string]any{"stale": map[string]any{}}},
-		},
-	}
+	"github.com/armaniacs/provsync/internal/model"
+)
 
-	got, err := Merge(source, target, []string{"vs_inoue", "sakura", "vs"})
-	if err != nil {
-		t.Fatalf("Merge: %v", err)
+func TestMergeToolProvidersOverwritesAndKeepsOthers(t *testing.T) {
+	base := map[string]model.Provider{
+		"keep":   {Name: "keep"},
+		"shared": {Name: "old"},
 	}
-	providers := got["provider"].(map[string]any)
-
-	if _, ok := providers["vsakura"]; !ok {
-		t.Error("vsakura should be preserved")
+	incoming := map[string]model.Provider{
+		"shared": {Name: "new"},
+		"added":  {Name: "added"},
 	}
-	if _, ok := providers["vs_inoue"]; !ok {
-		t.Error("vs_inoue should be added")
+	got := MergeToolProviders(base, incoming, "kilocode")
+	if got["keep"].Name != "keep" {
+		t.Error("base-only provider lost")
 	}
-	vs := providers["vs"].(map[string]any)
-	if vs["npm"] != "@ai-sdk/openai-compatible" {
-		t.Errorf("vs.npm = %v", vs["npm"])
+	if got["added"].Name != "added" {
+		t.Error("incoming provider missing")
 	}
-	sakura := providers["sakura"].(map[string]any)
-	models := sakura["models"].(map[string]any)
-	if _, ok := models["stale"]; ok {
-		t.Error("sakura should be overwritten, stale model still present")
+	if got["shared"].Name != "new" {
+		t.Error("incoming should overwrite")
 	}
-	if _, ok := models["s"]; !ok {
-		t.Error("sakura model s missing")
+	if base["shared"].Name != "old" {
+		t.Error("MergeToolProviders must not mutate base")
 	}
 }
 
-func TestMergeMissingProviderErrors(t *testing.T) {
-	source := map[string]any{"provider": map[string]any{}}
-	target := map[string]any{"provider": map[string]any{}}
-	if _, err := Merge(source, target, []string{"vs"}); err == nil {
+func TestMergeToolProvidersPreservesOtherNamespaces(t *testing.T) {
+	base := map[string]model.Provider{
+		"p": {
+			Name: "old",
+			Extras: map[string]map[string]any{
+				"kilocode": {"reasoning": true},
+				"opencode": {"opencodeOnly": 1},
+			},
+		},
+	}
+	incoming := map[string]model.Provider{
+		"p": {
+			Name: "new",
+			Extras: map[string]map[string]any{
+				"opencode": {"fresh": 2},
+			},
+		},
+	}
+	got := MergeToolProviders(base, incoming, "opencode")
+	if got["p"].Name != "new" {
+		t.Errorf("name = %q, want new", got["p"].Name)
+	}
+	extras := got["p"].Extras
+	if extras["kilocode"] == nil || extras["kilocode"]["reasoning"] != true {
+		t.Errorf("kilocode namespace must be preserved: %v", extras)
+	}
+	if extras["opencode"]["fresh"] != 2 {
+		t.Errorf("opencode namespace must be replaced: %v", extras["opencode"])
+	}
+	if _, stale := extras["opencode"]["opencodeOnly"]; stale {
+		t.Errorf("opencode namespace must not keep stale keys: %v", extras["opencode"])
+	}
+}
+
+func TestMergeToolProvidersIncomingWithoutExtrasClearsNamespace(t *testing.T) {
+	base := map[string]model.Provider{
+		"p": {Extras: map[string]map[string]any{"kilocode": {"reasoning": true}}},
+	}
+	incoming := map[string]model.Provider{
+		"p": {Name: "p"}, // kilocode 側で extras が削除された
+	}
+	got := MergeToolProviders(base, incoming, "kilocode")
+	if got["p"].Extras != nil {
+		t.Errorf("namespace should be cleared: %v", got["p"].Extras)
+	}
+}
+
+func TestFilterProvidersEmptyReturnsAll(t *testing.T) {
+	all := map[string]model.Provider{"a": {}, "b": {}}
+	got, err := FilterProviders(all, nil)
+	if err != nil {
+		t.Fatalf("filter: %v", err)
+	}
+	if len(got) != 2 {
+		t.Errorf("len = %d, want 2", len(got))
+	}
+}
+
+func TestFilterProvidersSelects(t *testing.T) {
+	all := map[string]model.Provider{"a": {}, "b": {}, "c": {}}
+	got, err := FilterProviders(all, []string{"a", "c"})
+	if err != nil {
+		t.Fatalf("filter: %v", err)
+	}
+	if len(got) != 2 {
+		t.Errorf("len = %d, want 2", len(got))
+	}
+	if _, ok := got["b"]; ok {
+		t.Error("b should be filtered out")
+	}
+}
+
+func TestFilterProvidersMissingErrors(t *testing.T) {
+	all := map[string]model.Provider{"a": {}}
+	if _, err := FilterProviders(all, []string{"zzz"}); err == nil {
 		t.Error("expected error for missing provider")
-	}
-}
-
-func TestMergeCreatesProviderSectionWhenAbsent(t *testing.T) {
-	source := map[string]any{
-		"provider": map[string]any{
-			"vs": map[string]any{"models": map[string]any{}},
-		},
-	}
-	got, err := Merge(source, map[string]any{}, []string{"vs"})
-	if err != nil {
-		t.Fatalf("Merge: %v", err)
-	}
-	providers, ok := got["provider"].(map[string]any)
-	if !ok {
-		t.Fatal("provider section not created")
-	}
-	if _, ok := providers["vs"]; !ok {
-		t.Error("vs not added")
 	}
 }

@@ -1,89 +1,449 @@
-# llm-sync
+# provsync
 
-`~/.config/kilo/kilo.jsonc` の provider エントリを `~/.config/opencode/opencode.json` へ移植する CLI ツール。
+**複数の LLM ツールの provider 設定を、たった一つの中央設定に同期する**
+*Sync provider entries across your LLM tools into one central canonical config.*
 
-## 概要
+[日本語](#日本語) | [English](#english)
 
-- kilo 側の provider(`vs_inoue` / `sakura` / `vs` など)を opencode 側の `provider` に丸ごとコピーする。
-- 既定はプレビューのみ。`--write` を付けたときだけファイルを更新する。
-- 書き込み時は `opencode.json.bak` を作成し、一時ファイル経由のアトミック置換で更新する。
-- source は JSONC(行コメント・末尾カンマ)に対応。target の対象外 provider はそのまま保持する。
+## 日本語
 
-## 必要環境
+### 概要
 
-- Go 1.22 以上(標準ライブラリのみ使用、外部依存なし)
+provsync は、複数の LLM コーディングツールがそれぞれ独自の形式で持つ `provider` 設定を、中央のカノニカル設定を唯一の正(single source of truth)として同期する CLI ツール。`pull` でツールから中央へ取り込み、`push` で中央からツールへ反映する。Go 標準ライブラリのみで実装され、外部依存はない。
 
-## ビルド
+### 安全設計
 
-```bash
-go build -o llm-sync .
-```
+- 既定はプレビューのみ。`--write` を付けたときだけファイルが変わる。
+- 書き込みの直前に、影響する全ファイルをタイムスタンプ付きの 1 操作として自動バックアップ。
+- `undo` は復元前の現状も新しい操作として記録するため、undo 自体を undo できる(redo 可能)。
+- プレビュー・`diff`・適用・バックアップはすべて同一の変更計画(Plan)から生成される。「diff で見た内容」=「書かれる内容」=「undo で戻る内容」。
+- バイト単位で同一の書き込みはスキップされる(冪等)。変更が無ければ `変更はありません` と表示されるだけ。
 
-## 使い方
+### 対応ツール
 
-```bash
-# プレビュー(ファイルは変更しない)
-./llm-sync
-
-# 実際に書き込む(バックアップ付きアトミック更新)
-./llm-sync --write
-```
-
-### フラグ
-
-| フラグ | 既定値 | 説明 |
+| ツール | 設定ファイル | 形式 |
 |---|---|---|
-| `--source` | `$HOME/.config/kilo/kilo.jsonc` | 移植元の kilo 設定(JSONC) |
-| `--target` | `$HOME/.config/opencode/opencode.json` | 移植先の opencode 設定(JSON) |
-| `--write` | `false` | `true` のときだけ target を更新 |
-| `--backup` | `true` | `--write` 時に `.bak` を作成 |
-| `--providers` | `vs_inoue,sakura,vs` | 移植する provider キー(カンマ区切り) |
+| kilocode(別名 `kilo`) | `~/.config/kilo/kilo.jsonc` | JSONC(行コメント・末尾カンマ対応) |
+| opencode | `~/.config/opencode/opencode.json` | JSON |
 
-### 実行例
+- 中央設定: `~/.config/provsync/config.json`
+- 状態(バックアップと履歴): `~/.local/state/provsync/`
+- パスは `XDG_CONFIG_HOME` / `XDG_STATE_HOME` を尊重。
 
-```bash
-# 別のファイルを指定してプレビュー
-./llm-sync --source ~/tmp/kilo.jsonc --target ~/tmp/opencode.json
+### インストール
 
-# 特定の provider だけ移植
-./llm-sync --providers sakura --write
-```
-
-出力例:
-
-```
-vs_inoue: 置換 (models 3件)
-sakura: 置換 (models 10件)
-vs: 置換 (models 4件)
-(preview only; use --write to apply)
-```
-
-## 挙動の詳細
-
-- 対象 provider はキー名をそのまま使い、既存エントリを丸ごと上書きする。
-- target の `provider` にしか存在しないキーは保持される。
-- source に指定した provider が無い場合、ファイルが読めない場合、JSON が不正な場合はエラー終了(終了コード非 0)。
-- 出力 JSON は 2 スペースインデントで全体が再整形される(トップレベルキーはアルファベット順)。
-
-## テスト
+Go 1.25 以上。
 
 ```bash
-go test ./...
-gofmt -l .
-go vet ./...
+go install github.com/armaniacs/provsync@latest
 ```
 
-## 構成
+ソースからビルドする場合:
 
-```
-main.go                       CLI、ファイル I/O、バックアップ、アトミック書き込み
-main_test.go                  run() の統合テスト
-internal/syncer/syncer.go     provider マージ(純粋関数)
-internal/syncer/jsonc.go      JSONC → 純 JSON の前処理
-internal/syncer/*_test.go     単体テスト
+```bash
+git clone https://github.com/armaniacs/provsync.git
+cd provsync
+make build    # bin/provsync
 ```
 
-## 設計・計画ドキュメント
+### クイックスタート
 
-- 設計: `docs/superpowers/specs/2026-10-01-kilo-to-opencode-provider-port-design.md`
-- 実装計画: `docs/superpowers/plans/2026-10-01-kilo-to-opencode-provider-port.md`
+```console
+# kilocode の provider を中央設定へ取り込む(まずはプレビュー)
+$ provsync pull kilocode
+central: /home/you/.config/provsync/config.json
+  llm-01: 追加
+  llm-02: 追加
+(プレビューのみ; 適用するには --write)
+
+# --write で適用。書き込みの直前にバックアップが記録される
+$ provsync pull kilocode --write
+central: /home/you/.config/provsync/config.json
+  llm-01: 追加
+  llm-02: 追加
+バックアップ: 20261002T093012-3fa1
+書き込み: /home/you/.config/provsync/config.json
+
+# 中央設定を opencode へ反映する
+$ provsync push opencode --write
+opencode: /home/you/.config/opencode/opencode.json
+  llm-01: 追加
+  llm-02: 追加
+バックアップ: 20261002T093045-8c2d
+書き込み: /home/you/.config/opencode/opencode.json
+
+# 同じ状態への再書き込みは冪等
+$ provsync push opencode --write
+opencode: /home/you/.config/opencode/opencode.json
+  変更なし
+変更はありません
+```
+
+同期状態の確認:
+
+```console
+$ provsync status
+中央設定: /home/you/.config/provsync/config.json (2 providers)
+kilocode  /home/you/.config/kilo/kilo.jsonc (2 providers)
+  差分なし
+opencode  /home/you/.config/opencode/opencode.json (3 providers)
+  groq: 中央に無い
+```
+
+ツール側にだけ存在する provider(上の `groq`)は「中央に無い」と表示される。`push` が対象ツール設定内の管理対象外エントリを削除することはない。
+
+差分の確認と取り消し:
+
+```console
+$ provsync diff kilocode opencode
+central: /home/you/.config/provsync/config.json
+  変更なし
+  変更なし
+opencode: /home/you/.config/opencode/opencode.json
+  llm-01: 追加
+  llm-02: 追加
+--- a//home/you/.config/opencode/opencode.json
++++ b//home/you/.config/opencode/opencode.json
+@@ -1,15 +1,44 @@
+ {
+-  "theme": "dark",
+   "provider": {
+     "groq": {
++      "models": {
++        "llama-3.3-70b-versatile": {
++          "name": "Llama 3.3 70B Versatile"
++        }
++      },
+       "name": "Groq",
+       "npm": "@ai-sdk/groq",
+       "options": {
+         "apiKey": "gsk_live_xxxxxxxx"
+...
++  "theme": "dark"
+ }
+
+$ provsync undo
+復元しました: 20261002T093045-8c2d (push opencode)
+やり直し: provsync undo 20261002T100001-51b7
+  復元: /home/you/.config/opencode/opencode.json
+```
+
+`undo` は `--write` を要求せず直接適用する。
+
+### コマンドリファレンス
+
+| コマンド | 説明 |
+|---|---|
+| `list` | 対応ツールと設定パスを表示 |
+| `status [tool...]` | ツールと中央設定の同期状態を表示 |
+| `pull <tool>` | ツール設定を中央設定へ取り込む |
+| `push <tool>` | 中央設定をツール設定へ反映する |
+| `sync --from <a> --to <b>` | a を取り込み b へ反映する(`--from` 省略時は中央設定をそのまま使う) |
+| `diff <from> <to>` | from を to に適用した場合の差分(意味差分 + 統合 diff)を表示 |
+| `undo [id]` | 直前または指定操作を復元する(`--list` で履歴) |
+
+| フラグ | 既定 | 説明 |
+|---|---|---|
+| `--write` | `false` | 変更をファイルへ書き込む(既定はプレビュー) |
+| `--provider <p>` | 全 provider | 対象 provider を限定(カンマ区切り・繰り返し可) |
+| `--no-backup` | `false` | バックアップを記録しない(非推奨)。書き込みはマーカー操作として履歴に残る |
+| `--root <dir>` | `$HOME` | パス解決の基準ディレクトリを差し替える(テスト用) |
+| `--from` / `--to` | — | `sync` の取り込み元 / 反映先 |
+| `--list` | `false` | `undo` の履歴を表示 |
+
+- フラグは位置引数の後にも置ける(`provsync push opencode --write` のように後置できる)。
+- 終了コード: 成功時は `0`(`status` / `list` / `diff` は差分があっても `0`)。エラー時は非 `0`。
+
+### 中央設定
+
+既知フィールド(`name` / `npm` / `baseURL` / `apiKeyEnv` / `models`)は正規化して保持し、ツール固有の未知フィールドは `x.<tool>` に名前空間化して保存する。同じツールへ `push` するときに復元されるため、pull → push の往復で失われない。
+
+```json
+{
+  "providers": {
+    "llm-01": {
+      "apiKeyEnv": "LLM01_API_KEY",
+      "baseURL": "https://llm-01.example.com/v1",
+      "models": {
+        "model-a": {
+          "name": "Model A"
+        },
+        "model-b": {
+          "name": "Model B"
+        }
+      },
+      "name": "LLM 01",
+      "npm": "@ai-sdk/openai-compatible",
+      "x": {
+        "kilocode": {
+          "reasoning": true
+        }
+      }
+    }
+  },
+  "version": 1
+}
+```
+
+### バックアップと undo
+
+- 書き込み直前に、影響する全ファイルを 1 操作としてバックアップする。
+- 保存先は `~/.local/state/provsync/`:`index.json`(操作履歴)と `backups/<op-id>/`(SHA-256 検証付きのファイルスナップショット)。
+- 最新 20 操作を保持し、古い操作は自動削除される。
+
+```console
+$ provsync undo --list
+20261002T093045-8c2d  2026-10-02 09:30:45  push opencode
+    /home/you/.config/opencode/opencode.json
+20261002T093012-3fa1  2026-10-02 09:30:12  pull kilocode
+    /home/you/.config/provsync/config.json
+```
+
+- `provsync undo` は直前の書き込みを、`provsync undo <id>` は指定操作を復元する。`--write` を要求せず直接適用する。
+- undo は復元前の現状を新しい操作として記録し、やり直し用の ID を表示する(`やり直し: provsync undo <id>`)。
+- `--no-backup` での書き込みはマーカー操作として履歴に記録される。後続の `undo` では「直近の書き込みはバックアップなしで行われたため、この undo はそれより前の状態に戻します」と警告される。
+
+### 秘密情報の扱い
+
+- 中央設定が持つのは `apiKeyEnv`(環境変数名)のみ。実キーは仲介しない。
+- `pull` 時、秘密情報らしいフィールド(`apiKey` / `api_key` / `token` / `secret` / `password` / `accessToken` / `access_token`。`options` 内も含む)は警告のうえ取り込まない:
+
+```console
+警告: 秘密情報らしいフィールド "options.apiKey" を検出しました。秘密は仲介しないため取り込みません
+```
+
+- `push` 時、対象ツール設定に既に存在する秘密フィールドはそのまま保持される(削除も中央への持ち出しもしない)。
+- opencode には `apiKeyEnv` を書き出さない(秘密は `auth.json` で管理されるため)。
+
+### 再直列化に関する注意
+
+ツール設定は全体が再直列化される(2 スペースインデント・キー辞書順)。元のコメントや書式は失われ、内容が同じでも `diff` に書式差分が混ざることがある。
+
+### 開発
+
+```bash
+make check    # fmt-check → vet → test
+make build    # bin/provsync
+```
+
+パッケージ構成: `main.go`(ディスパッチ)、`internal/cli`(サブコマンド)、`internal/model`(カノニカル表現)、`internal/adapter`(kilocode / opencode 変換)、`internal/store`(中央設定)、`internal/syncer`(マージ)、`internal/jsonc`(JSONC 前処理)、`internal/plan`(変更計画と意味差分)、`internal/diff`(統合 diff)、`internal/backup`(バックアップと復元)、`internal/fsutil`(atomic write・JSON 整形)。
+
+- [CHANGELOG.md](CHANGELOG.md)
+- [設計ドキュメント](docs/superpowers/specs/2026-10-02-provsync-multi-tool-sync-design.md)
+
+## English
+
+### Overview
+
+provsync is a CLI that syncs the `provider` entries your LLM coding tools each keep in their own format, using a central canonical config as the single source of truth. `pull` imports from a tool into the central config; `push` reflects the central config back into a tool. Built on the Go standard library only, with no external dependencies.
+
+### Safety Design
+
+- Preview-only by default. Files change only with `--write`.
+- Every write is preceded by an automatic timestamped backup of all affected files as a single operation.
+- `undo` records the pre-restore state as a new operation, so undo itself can be undone (redoable).
+- Preview, `diff`, apply, and backup are all generated from the same Plan. What you see in the diff is exactly what gets written — and what undo restores.
+- Byte-identical writes are skipped (idempotent). If nothing changes, you just get `変更はありません` ("no changes").
+
+### Supported Tools
+
+| Tool | Config file | Format |
+|---|---|---|
+| kilocode (alias `kilo`) | `~/.config/kilo/kilo.jsonc` | JSONC (line comments, trailing commas) |
+| opencode | `~/.config/opencode/opencode.json` | JSON |
+
+- Central config: `~/.config/provsync/config.json`
+- State (backups and history): `~/.local/state/provsync/`
+- `XDG_CONFIG_HOME` / `XDG_STATE_HOME` are respected.
+
+### Installation
+
+Go 1.25 or later.
+
+```bash
+go install github.com/armaniacs/provsync@latest
+```
+
+Or build from source:
+
+```bash
+git clone https://github.com/armaniacs/provsync.git
+cd provsync
+make build    # bin/provsync
+```
+
+### Quick Start
+
+Note: CLI messages are in Japanese.
+
+```console
+# Import kilocode providers into the central config (preview first)
+$ provsync pull kilocode
+central: /home/you/.config/provsync/config.json
+  llm-01: 追加
+  llm-02: 追加
+(プレビューのみ; 適用するには --write)
+
+# Apply with --write; a backup is recorded just before writing
+$ provsync pull kilocode --write
+central: /home/you/.config/provsync/config.json
+  llm-01: 追加
+  llm-02: 追加
+バックアップ: 20261002T093012-3fa1
+書き込み: /home/you/.config/provsync/config.json
+
+# Reflect the central config into opencode
+$ provsync push opencode --write
+opencode: /home/you/.config/opencode/opencode.json
+  llm-01: 追加
+  llm-02: 追加
+バックアップ: 20261002T093045-8c2d
+書き込み: /home/you/.config/opencode/opencode.json
+
+# Re-writing the same state is idempotent
+$ provsync push opencode --write
+opencode: /home/you/.config/opencode/opencode.json
+  変更なし
+変更はありません
+```
+
+Check sync status:
+
+```console
+$ provsync status
+中央設定: /home/you/.config/provsync/config.json (2 providers)
+kilocode  /home/you/.config/kilo/kilo.jsonc (2 providers)
+  差分なし
+opencode  /home/you/.config/opencode/opencode.json (3 providers)
+  groq: 中央に無い
+```
+
+Providers that exist only in a tool (`groq` above) show as "not in central". `push` never deletes unmanaged entries in the target tool config.
+
+Inspect changes and undo:
+
+```console
+$ provsync diff kilocode opencode
+central: /home/you/.config/provsync/config.json
+  変更なし
+  変更なし
+opencode: /home/you/.config/opencode/opencode.json
+  llm-01: 追加
+  llm-02: 追加
+--- a//home/you/.config/opencode/opencode.json
++++ b//home/you/.config/opencode/opencode.json
+@@ -1,15 +1,44 @@
+ ...
+
+$ provsync undo
+復元しました: 20261002T093045-8c2d (push opencode)
+やり直し: provsync undo 20261002T100001-51b7
+  復元: /home/you/.config/opencode/opencode.json
+```
+
+`undo` applies directly; it does not require `--write`.
+
+### Command Reference
+
+| Command | Description |
+|---|---|
+| `list` | List supported tools and their config paths |
+| `status [tool...]` | Show sync status between tools and the central config |
+| `pull <tool>` | Import a tool config into the central config |
+| `push <tool>` | Reflect the central config into a tool config |
+| `sync --from <a> --to <b>` | Pull from a and push to b (`--from` optional: uses the central config as-is) |
+| `diff <from> <to>` | Show what applying from to to would change (semantic + unified diff) |
+| `undo [id]` | Restore the last (or given) operation (`--list` for history) |
+
+| Flag | Default | Description |
+|---|---|---|
+| `--write` | `false` | Write changes to files (preview by default) |
+| `--provider <p>` | all providers | Restrict to specific providers (comma-separated, repeatable) |
+| `--no-backup` | `false` | Skip backup recording (discouraged). The write is still recorded as a marker operation |
+| `--root <dir>` | `$HOME` | Override the base directory for path resolution (testing) |
+| `--from` / `--to` | — | Source / target tools for `sync` |
+| `--list` | `false` | Show `undo` history |
+
+- Flags may appear after positional arguments (e.g. `provsync push opencode --write`).
+- Exit codes: `0` on success (`status` / `list` / `diff` exit 0 even with drift); non-zero on errors.
+
+### Central Config
+
+Known fields (`name` / `npm` / `baseURL` / `apiKeyEnv` / `models`) are normalized, while tool-specific unknown fields are namespaced under `x.<tool>` and restored when pushing back to the same tool — nothing is lost across a pull/push round trip.
+
+```json
+{
+  "providers": {
+    "llm-01": {
+      "apiKeyEnv": "LLM01_API_KEY",
+      "baseURL": "https://llm-01.example.com/v1",
+      "models": {
+        "model-a": {
+          "name": "Model A"
+        },
+        "model-b": {
+          "name": "Model B"
+        }
+      },
+      "name": "LLM 01",
+      "npm": "@ai-sdk/openai-compatible",
+      "x": {
+        "kilocode": {
+          "reasoning": true
+        }
+      }
+    }
+  },
+  "version": 1
+}
+```
+
+### Backups and undo
+
+- Just before every write, all affected files are backed up as one operation.
+- Location: `~/.local/state/provsync/` — `index.json` (operation history) and `backups/<op-id>/` (SHA-256-verified file snapshots).
+- The last 20 operations are retained; older ones are pruned automatically.
+
+```console
+$ provsync undo --list
+20261002T093045-8c2d  2026-10-02 09:30:45  push opencode
+    /home/you/.config/opencode/opencode.json
+20261002T093012-3fa1  2026-10-02 09:30:12  pull kilocode
+    /home/you/.config/provsync/config.json
+```
+
+- `provsync undo` restores the last write; `provsync undo <id>` restores a specific operation. It applies directly, without `--write`.
+- undo records the pre-restore state as a new operation and prints an ID to redo with (`やり直し: provsync undo <id>`).
+- Writes made with `--no-backup` are recorded as marker operations. A subsequent `undo` warns that the latest write was made without a backup and that it restores the state before that write.
+
+### Secret Handling
+
+- The central config holds only `apiKeyEnv` (an environment variable name). Actual keys are never mediated.
+- On `pull`, secret-like fields (`apiKey` / `api_key` / `token` / `secret` / `password` / `accessToken` / `access_token`, including inside `options`) are dropped with a warning:
+
+```console
+警告: 秘密情報らしいフィールド "options.apiKey" を検出しました。秘密は仲介しないため取り込みません
+```
+
+- On `push`, secret fields that already exist in the target tool config are preserved as-is (never deleted, never leaked into the central config).
+- `apiKeyEnv` is never rendered for opencode (its keys live in `auth.json`).
+
+### Re-serialization Caveat
+
+Tool configs are fully re-serialized (2-space indent, alphabetically sorted keys). Original comments and formatting are lost, so diffs may include formatting churn.
+
+### Development
+
+```bash
+make check    # fmt-check → vet → test
+make build    # bin/provsync
+```
+
+Package layout: `main.go` (dispatch), `internal/cli` (subcommands), `internal/model` (canonical representation), `internal/adapter` (kilocode / opencode conversion), `internal/store` (central config), `internal/syncer` (merge), `internal/jsonc` (JSONC preprocessing), `internal/plan` (change plan and semantic diff), `internal/diff` (unified diff), `internal/backup` (backup and restore), `internal/fsutil` (atomic write, JSON formatting).
+
+- [CHANGELOG.md](CHANGELOG.md)
+- [Design document](docs/superpowers/specs/2026-10-02-provsync-multi-tool-sync-design.md)
+
+## License / ライセンス
+
+MIT — see [LICENSE](LICENSE).

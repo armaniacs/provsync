@@ -1,4 +1,4 @@
-package syncer
+package jsonc
 
 import (
 	"encoding/json"
