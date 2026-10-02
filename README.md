@@ -106,21 +106,21 @@ opencode: /home/you/.config/opencode/opencode.json
 --- a/home/you/.config/opencode/opencode.json
 +++ b/home/you/.config/opencode/opencode.json
 @@ -1,15 +1,44 @@
-  {
--  "theme": "dark",
+   {
+ -  "theme": "dark",
    "provider": {
      "groq": {
-+      "models": {
-+        "llama-3.3-70b-versatile": {
-+          "name": "Llama 3.3 70B Versatile"
-+        }
-+      },
+ +      "models": {
+ +        "llama-3.3-70b-versatile": {
+ +          "name": "Llama 3.3 70B Versatile"
+ +        }
+ +      },
        "name": "Groq",
        "npm": "@ai-sdk/groq",
        "options": {
-         "apiKey": "gsk_live_xxxxxxxx"
-...
-+  "theme": "dark"
+         "apiKey": "********"
+ ...
+ +  "theme": "dark"
  }
 
 $ provsync undo
@@ -149,6 +149,7 @@ $ provsync undo
 | `--write` | `false` | 変更をファイルへ書き込む(既定はプレビュー) |
 | `--provider <p>` | 全 provider | 対象 provider を限定(カンマ区切り・繰り返し可) |
 | `--no-backup` | `false` | バックアップを記録しない(非推奨)。書き込みはマーカー操作として履歴に残る |
+| `--show-secrets` | `false` | `diff` の出力で秘密の値をそのまま表示する(非推奨)。警告が表示される |
 | `--root <dir>` | `$HOME` | パス解決の基準ディレクトリを差し替える(テスト用) |
 | `--from` / `--to` | — | `sync` の取り込み元 / 反映先 |
 | `--list` | `false` | `undo` の履歴を表示 |
@@ -220,7 +221,9 @@ $ provsync undo --list
 
 - `push` 時、対象ツール設定に既に存在する秘密フィールドはそのまま保持される(削除も中央への持ち出しもしない)。
 - opencode には `apiKeyEnv` を書き出さない(秘密は `auth.json` で管理されるため)。
-- 注意: `diff` は対象ファイルの生内容を表示するため、ツール設定内の既存の秘密(上の `diff` 例の `apiKey` 行)もそのまま画面に現れる。`status` も `pull` と同じ秘密検出の警告を表示する。
+- `diff` の出力では、秘密情報らしいキー(`apiKey` / `token` など)の値を既定で `********` に伏せる。書き込まれるファイルの内容はマスクされない(表示のみ)。
+- 手元で実値を確認したい場合は `--show-secrets` を付ける。実値が表示され、先頭に警告が出る。
+- `status` / `list` はキー名の警告のみを表示し、値を出力しない。
 - 脆弱性の報告方法は [SECURITY.md](SECURITY.md) を参照。
 
 ### 再直列化に関する注意
@@ -369,6 +372,7 @@ $ provsync undo
 | `--write` | `false` | Write changes to files (preview by default) |
 | `--provider <p>` | all providers | Restrict to specific providers (comma-separated, repeatable) |
 | `--no-backup` | `false` | Skip backup recording (discouraged). The write is still recorded as a marker operation |
+| `--show-secrets` | `false` | Show raw secret values in `diff` output (discouraged). A warning is printed |
 | `--root <dir>` | `$HOME` | Override the base directory for path resolution (testing) |
 | `--from` / `--to` | — | Source / target tools for `sync` |
 | `--list` | `false` | Show `undo` history |
@@ -440,7 +444,9 @@ $ provsync undo --list
 
 - On `push`, secret fields that already exist in the target tool config are preserved as-is (never deleted, never leaked into the central config).
 - `apiKeyEnv` is never rendered for opencode (its keys live in `auth.json`).
-- Note: `diff` prints the raw target-file content, so existing secrets in a tool config (the `apiKey` line in the `diff` example above) appear on screen as-is. `status` shows the same secret-detection warnings as `pull`.
+- `diff` output masks values of secret-like keys (`apiKey` / `token`, etc.) as `********` by default. The written file content is never masked (display only).
+- To inspect actual values, pass `--show-secrets`. Values are shown with a warning at the top.
+- `status` / `list` show key-name warnings only; values are never printed.
 - See [SECURITY.md](SECURITY.md) for how to report a vulnerability.
 
 ### Re-serialization Caveat

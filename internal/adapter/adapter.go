@@ -7,11 +7,11 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 
 	"github.com/armaniacs/provsync/internal/fsutil"
 	"github.com/armaniacs/provsync/internal/jsonc"
 	"github.com/armaniacs/provsync/internal/model"
+	"github.com/armaniacs/provsync/internal/secret"
 )
 
 // Root はパス解決の基準ディレクトリ群。テストで差し替え可能。
@@ -109,12 +109,9 @@ func joinNames() string {
 }
 
 // secretLike は秘密情報らしいキー名かを判定する(大文字小文字は区別しない)。
+// 判定は出力層のマスクと共有するため、secret パッケージへ委譲する。
 func secretLike(key string) bool {
-	switch strings.ToLower(key) {
-	case "apikey", "api_key", "token", "secret", "password", "accesstoken", "access_token":
-		return true
-	}
-	return false
+	return secret.IsKey(key)
 }
 
 // decodeProvider はツールの provider エントリをカノニカル表現へ変換する。

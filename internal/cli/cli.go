@@ -16,22 +16,24 @@ import (
 	"github.com/armaniacs/provsync/internal/fsutil"
 	"github.com/armaniacs/provsync/internal/model"
 	"github.com/armaniacs/provsync/internal/plan"
+	"github.com/armaniacs/provsync/internal/secret"
 	"github.com/armaniacs/provsync/internal/store"
 	"github.com/armaniacs/provsync/internal/syncer"
 	"github.com/armaniacs/provsync/internal/version"
 )
 
 type options struct {
-	out       io.Writer
-	write     bool
-	noBackup  bool
-	rootFlag  string
-	providers stringList
-	from      string
-	to        string
-	list      bool
-	help      bool
-	version   bool
+	out         io.Writer
+	write       bool
+	noBackup    bool
+	rootFlag    string
+	providers   stringList
+	from        string
+	to          string
+	list        bool
+	help        bool
+	version     bool
+	showSecrets bool
 }
 
 // stringList は --provider の繰り返し指定(カンマ区切り併用可)を蓄積する。
@@ -104,6 +106,7 @@ func registerFlags(fs *flag.FlagSet, o *options) {
 	fs.StringVar(&o.to, "to", o.to, "sync の反映先ツール")
 	fs.BoolVar(&o.list, "list", o.list, "undo の履歴を表示")
 	fs.BoolVar(&o.version, "version", o.version, "バージョンを表示")
+	fs.BoolVar(&o.showSecrets, "show-secrets", o.showSecrets, "diff の出力で秘密の値をそのまま表示する(非推奨)")
 	fs.BoolVar(&o.help, "help", o.help, "ヘルプを表示")
 	fs.BoolVar(&o.help, "h", o.help, "ヘルプを表示")
 }
@@ -533,6 +536,11 @@ func cmdDiff(o *options, args []string) error {
 		if d == "" {
 			fmt.Fprintln(o.out, "  変更なし")
 			continue
+		}
+		if !o.showSecrets {
+			d = secret.MaskLines(d)
+		} else {
+			fmt.Fprintln(o.out, "警告: --show-secrets により秘密の値をそのまま表示しています")
 		}
 		fmt.Fprint(o.out, d)
 	}

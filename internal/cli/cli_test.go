@@ -170,6 +170,73 @@ func TestNoArgsAfterPullShowsCentralExists(t *testing.T) {
 	}
 }
 
+func TestDiffMasksSecrets(t *testing.T) {
+	f := setup(t)
+	write(t, f.opencode, `{
+  "$schema": "opencode.schema.json",
+  "provider": {
+    "llm-02": {
+      "name": "LLM 02 old",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": { "baseURL": "https://old.example/v1", "apiKey": "sk-test-SECRET-123" },
+      "models": {}
+    }
+  }
+}`)
+	out := mustRun(t, f.root, "diff", "kilocode", "opencode")
+	if strings.Contains(out, "sk-test-SECRET-123") {
+		t.Errorf("diff output must not contain the raw secret:\n%s", out)
+	}
+	if !strings.Contains(out, "********") {
+		t.Errorf("diff output must contain the mask:\n%s", out)
+	}
+}
+
+func TestDiffShowSecrets(t *testing.T) {
+	f := setup(t)
+	write(t, f.opencode, `{
+  "$schema": "opencode.schema.json",
+  "provider": {
+    "llm-02": {
+      "name": "LLM 02 old",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": { "baseURL": "https://old.example/v1", "apiKey": "sk-test-SECRET-123" },
+      "models": {}
+    }
+  }
+}`)
+	out := mustRun(t, f.root, "diff", "kilocode", "opencode", "--show-secrets")
+	if !strings.Contains(out, "sk-test-SECRET-123") {
+		t.Errorf("--show-secrets must show the raw secret:\n%s", out)
+	}
+	if !strings.Contains(out, "警告: --show-secrets") {
+		t.Errorf("--show-secrets must print a warning:\n%s", out)
+	}
+}
+
+func TestPushWritePreservesSecretValue(t *testing.T) {
+	f := setup(t)
+	write(t, f.kilo, `{
+  "provider": {
+    "llm-01": {
+      "name": "LLM 01",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": { "baseURL": "https://a.example/v1", "apiKey": "sk-KEEP-VALUE" },
+      "models": {}
+    }
+  }
+}`)
+	mustRun(t, f.root, "pull", "kilocode", "--write")
+	mustRun(t, f.root, "push", "kilocode", "--write")
+	got := read(t, f.kilo)
+	if !strings.Contains(got, "sk-KEEP-VALUE") {
+		t.Errorf("push must preserve the raw secret value in the file:\n%s", got)
+	}
+	if strings.Contains(got, "********") {
+		t.Errorf("written file must not contain the mask:\n%s", got)
+	}
+}
+
 func TestPreviewPullDoesNotWrite(t *testing.T) {
 	f := setup(t)
 	out := mustRun(t, f.root, "pull", "kilocode")
