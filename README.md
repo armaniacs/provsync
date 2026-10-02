@@ -305,6 +305,7 @@ $ provsync undo --list
 - `--no-backup` での書き込みはマーカー操作として履歴に記録される。後続の `undo` では「直近の書き込みはバックアップなしで行われたため、この undo はそれより前の状態に戻します」と警告される。
 - 新規作成される中央設定と状態ディレクトリは 0600 / 0700 で作られる。既存ファイルの権限は変更されない。`status` は権限が緩い場合に `chmod` を案内する。
 - dotfiles 管理のシンボリックリンクは維持される。書き込みはリンク先の実体に対して行われ、リンク自体が通常ファイルに置き換わることはない。リンク切れは書き込み前にエラーになる。`list` はリンク先を ` (symlink → 実体)` で表示する。
+- `--write` と `undo` の復元区間は状態ディレクトリの排他ロック(flock)で保護される。並行実行は後発が待機し、タイムアウト(10 秒)すると「別の provsync が実行中」で終了する。プレビュー・`diff`・`status` はロックを取らない。プロセスが異常終了した場合、OS がロックを解放するため自動回復する。
 
 ### 秘密情報の扱い
 
@@ -627,6 +628,7 @@ $ provsync undo --list
 - Writes made with `--no-backup` are recorded as marker operations. A subsequent `undo` warns that the latest write was made without a backup and that it restores the state before that write.
 - Newly created central configs and state directories are created with 0600 / 0700 permissions. Existing file permissions are never changed. `status` suggests `chmod` when permissions are loose.
 - Symlinks from dotfiles management are preserved. Writes go to the link target's real file; the link itself is never replaced by a regular file. Broken links error out before writing. `list` shows the link target as ` (symlink → target)`.
+- The `--write` and `undo` restore sections are protected by an exclusive lock (flock) on the state directory. Concurrent runs wait, then fail with "別の provsync が実行中" after a 10-second timeout. Preview, `diff`, and `status` take no lock. A crashed process recovers automatically because the OS releases the lock.
 
 ### Secret Handling
 

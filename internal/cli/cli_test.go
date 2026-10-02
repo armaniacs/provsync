@@ -713,6 +713,38 @@ func TestPullKeepsModelIDs(t *testing.T) {
 	}
 }
 
+func TestConcurrentWritesKeepIndexValid(t *testing.T) {
+	f := setup(t)
+	mustRun(t, f.root, "pull", "kilocode", "--write")
+
+	errs := make(chan error, 2)
+	for i := 0; i < 2; i++ {
+		go func() {
+			var buf bytes.Buffer
+			errs <- RunWith([]string{"--root", f.root, "push", "opencode", "--write"}, &buf, &buf)
+		}()
+	}
+	for i := 0; i < 2; i++ {
+		if err := <-errs; err != nil {
+			t.Errorf("concurrent write failed: %v", err)
+		}
+	}
+
+	idx := filepath.Join(f.root, ".local", "state", "provsync", "index.json")
+	var manifest struct {
+		Operations []struct {
+			ID string `json:"id"`
+		} `json:"operations"`
+	}
+	if err := json.Unmarshal([]byte(read(t, idx)), &manifest); err != nil {
+		t.Fatalf("index JSON is corrupted: %v", err)
+	}
+	// setup の pull 1 操作 + 並行 push 2 操作
+	if len(manifest.Operations) != 3 {
+		t.Errorf("operations = %d, want 3", len(manifest.Operations))
+	}
+}
+
 func TestPreviewPullDoesNotWrite(t *testing.T) {
 	f := setup(t)
 	out := mustRun(t, f.root, "pull", "kilocode")

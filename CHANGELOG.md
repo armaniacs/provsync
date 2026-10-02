@@ -53,6 +53,10 @@
 - `FuzzStripJSONC`(標準の `testing.F`)を追加。文字列リテラル内のコメント記号や末尾カンマを壊さないことをファズで検証。`make fuzz` で短時間実行できる。
 - 全アダプタの pull → push 往復の冪等性テストと、push 出力のゴールデンテスト(`-args -update` で更新)を追加。
 
+### Added (lock)
+
+- `--write` の書き込み区間と `undo` の復元区間に、状態ディレクトリの排他ロック(`syscall.Flock`)を導入。後発のプロセスは待機し、タイムアウト(10 秒)でエラー終了。プレビュー・`diff`・`status` はロックを取らない。PID ファイル方式は使わず、プロセス終了で OS が自動解放する。
+
 ### Added (CI)
 
 - CI(`.github/workflows/ci.yml`)を追加。push to main と PR で `make check` / `make test-race` / `make lint` / `make vuln` を macOS / Linux マトリクスで実行。

@@ -12,11 +12,13 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/armaniacs/provsync/internal/adapter"
 	"github.com/armaniacs/provsync/internal/backup"
 	"github.com/armaniacs/provsync/internal/diff"
 	"github.com/armaniacs/provsync/internal/fsutil"
+	"github.com/armaniacs/provsync/internal/lock"
 	"github.com/armaniacs/provsync/internal/model"
 	"github.com/armaniacs/provsync/internal/plan"
 	"github.com/armaniacs/provsync/internal/secret"
@@ -951,6 +953,12 @@ func cmdUndo(o *options, args []string) error {
 			fmt.Fprintln(o.errOut, "警告: 直近の書き込みはバックアップなしで行われたため、この undo はそれより前の状態に戻します")
 		}
 	}
+	// 復元(索引の読み → 更新 → 保存とファイル復元)の区間だけ排他する。
+	release, err := lock.Acquire(root.StateDir(), 10*time.Second)
+	if err != nil {
+		return err
+	}
+	defer release()
 	undoOp, err := st.Restore(op)
 	if err != nil {
 		return err
@@ -1199,6 +1207,12 @@ func (o *options) applyOrPreview(label string, p plan.Plan) error {
 			changed = append(changed, c)
 		}
 	}
+	// 書き込みとバックアップ記録の区間だけ排他する。読み取り専用の経路は待たせない。
+	release, err := lock.Acquire(root.StateDir(), 10*time.Second)
+	if err != nil {
+		return err
+	}
+	defer release()
 	if !o.noBackup {
 		paths := make([]string, 0, len(changed))
 		for _, c := range changed {
