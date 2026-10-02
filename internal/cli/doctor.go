@@ -23,7 +23,7 @@ type diagnosisCheck struct {
 
 // cmdDoctor は設定・環境を診断する。通信せず、ファイルも書かない。
 // NG が 1 件以上のときはエラー(終了コード 1)で終わる。警告のみなら成功。
-func cmdDoctor(o *options) error {
+func cmdDoctor(o *options, args []string) error {
 	root, err := o.root()
 	if err != nil {
 		return err

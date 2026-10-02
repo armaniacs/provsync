@@ -77,9 +77,11 @@ func RunWith(args []string, out, errOut io.Writer) error {
 		fmt.Fprintf(out, "provsync %s\n", version.String())
 		return nil
 	}
-	if opts.help && len(pos) > 0 && helpTexts[pos[0]] != "" {
-		fmt.Fprint(out, helpTexts[pos[0]])
-		return nil
+	if opts.help && len(pos) > 0 {
+		if c, ok := lookupCommand(pos[0]); ok {
+			fmt.Fprint(out, c.help)
+			return nil
+		}
 	}
 	if opts.help || len(pos) == 0 {
 		printUsage(opts)
@@ -87,35 +89,10 @@ func RunWith(args []string, out, errOut io.Writer) error {
 	}
 
 	cmd, rest := pos[0], pos[1:]
-	switch cmd {
-	case "list":
-		return cmdList(opts)
-	case "status":
-		return cmdStatus(opts, rest)
-	case "init":
-		return cmdInit(opts, rest)
-	case "pull":
-		return cmdPull(opts, rest)
-	case "push":
-		return cmdPush(opts, rest)
-	case "sync":
-		return cmdSync(opts)
-	case "diff":
-		return cmdDiff(opts, rest)
-	case "undo":
-		return cmdUndo(opts, rest)
-	case "completion":
-		return cmdCompletion(opts, rest)
-	case "doctor":
-		return cmdDoctor(opts)
-	case "check":
-		return cmdCheck(opts)
-	case "version":
-		fmt.Fprintf(opts.out, "provsync %s\n", version.String())
-		return nil
-	default:
-		return usageErr("未知のコマンド %q です(--help を参照)", cmd)
+	if c, ok := lookupCommand(cmd); ok {
+		return c.handler(opts, rest)
 	}
+	return usageErr("未知のコマンド %q です(--help を参照)", cmd)
 }
 
 func registerFlags(fs *flag.FlagSet, o *options) {

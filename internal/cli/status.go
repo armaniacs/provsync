@@ -14,7 +14,7 @@ import (
 
 // ---- list ----
 
-func cmdList(o *options) error {
+func cmdList(o *options, args []string) error {
 	root, err := o.root()
 	if err != nil {
 		return err

@@ -280,7 +280,7 @@ func (o *options) applyAliases(managed map[string]model.Provider, central *model
 
 // ---- sync ----
 
-func cmdSync(o *options) error {
+func cmdSync(o *options, args []string) error {
 	if o.to == "" {
 		return usageErr("使い方: provsync sync --from <a> --to <b>(--from は省略可)")
 	}
