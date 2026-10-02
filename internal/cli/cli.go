@@ -67,7 +67,7 @@ func Run(args []string, out io.Writer) error {
 		return nil
 	}
 	if opts.help || len(pos) == 0 {
-		usage(out)
+		printUsage(opts)
 		return nil
 	}
 
@@ -150,9 +150,11 @@ func (o *options) keys() []string {
 	return []string(o.providers)
 }
 
-func usage(out io.Writer) {
-	fmt.Fprintln(out, "provsync "+version.String())
-	fmt.Fprintln(out, `使い方: provsync <command> [flags]
+// printUsage は使い方と、読み書きする設定ファイルの場所を出す。
+// HOME が解決できない場合でも使い方本文は出し、設定ファイル節だけ省略する。
+func printUsage(o *options) {
+	fmt.Fprintln(o.out, "provsync "+version.String())
+	fmt.Fprintln(o.out, `使い方: provsync <command> [flags]
 
 コマンド:
   list                     対応ツールと設定パスを表示
@@ -168,6 +170,31 @@ func usage(out io.Writer) {
   --provider <p>   対象 provider を限定(カンマ区切り)
   --no-backup      バックアップを記録しない
   --root <dir>     パス解決の基準を差し替える(テスト用)`)
+
+	root, err := o.root()
+	if err != nil {
+		return
+	}
+	fmt.Fprintln(o.out, "\n設定ファイル:")
+	central := root.CentralConfigPath()
+	if _, err := os.Stat(central); err == nil {
+		fmt.Fprintf(o.out, "  中央設定: %s\n", central)
+	} else {
+		fmt.Fprintf(o.out, "  中央設定: %s (未作成)\n", central)
+		fmt.Fprintln(o.out, "    provsync pull <tool> --write で作成します")
+	}
+	for _, name := range adapter.Names() {
+		a, err := adapter.Get(name, root)
+		if err != nil {
+			continue
+		}
+		if _, err := os.Stat(a.Path()); err == nil {
+			fmt.Fprintf(o.out, "  %-9s %s\n", name, a.Path())
+		} else {
+			fmt.Fprintf(o.out, "  %-9s %s (未作成)\n", name, a.Path())
+		}
+	}
+	fmt.Fprintf(o.out, "  バックアップ: %s\n", root.StateDir())
 }
 
 // ---- list ----

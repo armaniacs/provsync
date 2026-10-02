@@ -141,6 +141,35 @@ func TestNoArgsShowsVersion(t *testing.T) {
 	}
 }
 
+func TestNoArgsShowsConfigPaths(t *testing.T) {
+	f := setup(t)
+	out := mustRun(t, f.root)
+	for _, want := range []string{f.central, f.kilo, f.opencode, "未作成", "バックアップ"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("no-args output missing %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestHelpFlagShowsConfigPaths(t *testing.T) {
+	f := setup(t)
+	out := mustRun(t, f.root, "--help")
+	for _, want := range []string{f.central, f.kilo, f.opencode, "未作成", "バックアップ"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("--help output missing %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestNoArgsAfterPullShowsCentralExists(t *testing.T) {
+	f := setup(t)
+	mustRun(t, f.root, "pull", "kilocode", "--write")
+	out := mustRun(t, f.root)
+	if strings.Contains(out, f.central+" (未作成)") {
+		t.Errorf("central config must not be marked 未作成 after pull:\n%s", out)
+	}
+}
+
 func TestPreviewPullDoesNotWrite(t *testing.T) {
 	f := setup(t)
 	out := mustRun(t, f.root, "pull", "kilocode")
