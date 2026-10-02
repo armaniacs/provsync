@@ -32,11 +32,11 @@ make fuzz     # StripJSONC の短時間ファズテスト
 
 ## 秘密の扱いの原則
 
-- 秘密の値(`apiKey` / `token` など)を出力・ログ・エラーメッセージ・テストの期待値に出さない(テスト用のダミー文字列 `sk-test-...` を除く)。
-- 秘密の判定は `internal/secret` に集約する。pull と出力層で共有し、二重に判定を持たない。
-- 中央設定は `apiKeyEnv`(環境変数名)のみを保持し、値は中継しない。
-- ファイル書き込みは `fsutil.WriteFileAtomic` を通す(一時ファイル + rename)。
-- 「何が変わるか」を `internal/cli` で別計算しない。`plan.Plan` を作って再利用する。
+秘密の値(`apiKey` / `token` など)を出力・ログ・エラーメッセージ・テストの期待値に書かない。テスト用のダミー文字列(`sk-test-...`)はこの限りでない。
+
+秘密の判定は `internal/secret` の 1 箇所に集約し、pull と出力層の両方がそこを参照する。判定を二重に持つと片方だけ更新漏れが起きるためだ。中央設定は `apiKeyEnv`(環境変数名)のみを保持し、値は中継しない。
+
+ファイルの書き込みは `fsutil.WriteFileAtomic` を通す(一時ファイル + rename)。「何が変わるか」を `internal/cli` で別計算せず、`plan.Plan` を作って再利用する。
 
 ## 新しいツールのアダプタを追加する手順
 
@@ -61,11 +61,6 @@ provsync の価値は対応ツールの広がりにある。新しいツール�
 - `internal/backup` — バックアップと復元
 - `internal/fsutil` — atomic write・JSON 整形
 
-## 関連ドキュメント
-
-- [設計ドキュメント](https://github.com/armaniacs/provsync/blob/main/docs/superpowers/specs/2026-10-02-provsync-multi-tool-sync-design.md)
-- [CONTRIBUTING.md](https://github.com/armaniacs/provsync/blob/main/CONTRIBUTING.md)(貢献者向け: アダプタ追加ガイド)
-
 ## ドキュメントサイトの更新
 
 このサイトは MkDocs Material で生成され、push to main で自動デプロイされる。
@@ -76,3 +71,8 @@ make docs          # site/ へビルド
 ```
 
 依存は `requirements.txt` に固定されている(`pip install -r requirements.txt`)。
+
+## 関連ドキュメント
+
+- [設計ドキュメント](https://github.com/armaniacs/provsync/blob/main/docs/superpowers/specs/2026-10-02-provsync-multi-tool-sync-design.md)
+- [CONTRIBUTING.md](https://github.com/armaniacs/provsync/blob/main/CONTRIBUTING.md)(貢献者向け: アダプタ追加ガイド)
