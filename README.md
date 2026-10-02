@@ -46,6 +46,24 @@ cd provsync
 make build    # bin/provsync
 ```
 
+### はじめに
+
+初めて使うときは `provsync init` で中央設定を作る。
+
+```console
+# 取り込み元のツールを指定(まずはプレビュー)
+$ provsync init kilocode
+
+# --write で中央設定を作成
+$ provsync init kilocode --write
+
+# 同期状態を確認して、他のツールへ反映する
+$ provsync status
+$ provsync push opencode --write
+```
+
+ツールを省略すると、設定ファイルが存在するツールを検出する。候補が複数ある場合は `provsync init <tool>` で指定する。中央設定が既にある場合は上書きしないため、日常の更新には `pull` を使う。
+
 ### クイックスタート
 
 ```console
@@ -137,6 +155,7 @@ $ provsync undo
 |---|---|
 | `list` | 対応ツールと設定パスを表示 |
 | `status [tool...]` | ツールと中央設定の同期状態を表示 |
+| `init [tool]` | 初回セットアップ(中央設定を作る)。既存の中央設定は上書きしない |
 | `pull <tool>` | ツール設定を中央設定へ取り込む |
 | `push <tool>` | 中央設定をツール設定へ反映する |
 | `sync --from <a> --to <b>` | a を取り込み b へ反映する(`--from` 省略時は中央設定をそのまま使う) |
@@ -283,6 +302,24 @@ cd provsync
 make build    # bin/provsync
 ```
 
+### Getting Started
+
+Run `provsync init` to create the central config the first time.
+
+```console
+# Specify the source tool (preview first)
+$ provsync init kilocode
+
+# Create the central config with --write
+$ provsync init kilocode --write
+
+# Check the sync status, then reflect into other tools
+$ provsync status
+$ provsync push opencode --write
+```
+
+With the tool omitted, provsync detects tools whose config files exist. With multiple candidates, specify the tool with `provsync init <tool>`. An existing central config is never overwritten; use `pull` for everyday updates.
+
 ### Quick Start
 
 Note: CLI messages are in Japanese.
@@ -361,6 +398,7 @@ $ provsync undo
 |---|---|
 | `list` | List supported tools and their config paths |
 | `status [tool...]` | Show sync status between tools and the central config |
+| `init [tool]` | First-time setup (creates the central config). Never overwrites an existing one |
 | `pull <tool>` | Import a tool config into the central config |
 | `push <tool>` | Reflect the central config into a tool config |
 | `sync --from <a> --to <b>` | Pull from a and push to b (`--from` optional: uses the central config as-is) |

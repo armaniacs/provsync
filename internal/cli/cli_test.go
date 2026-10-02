@@ -237,6 +237,111 @@ func TestPushWritePreservesSecretValue(t *testing.T) {
 	}
 }
 
+func TestInitWriteCreatesCentral(t *testing.T) {
+	f := setup(t)
+	out := mustRun(t, f.root, "init", "kilocode", "--write")
+	if _, err := os.Stat(f.central); err != nil {
+		t.Fatalf("init must create the central config: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "次の手順") {
+		t.Errorf("init must print next steps:\n%s", out)
+	}
+}
+
+func TestInitPreviewDoesNotWrite(t *testing.T) {
+	f := setup(t)
+	out := mustRun(t, f.root, "init", "kilocode")
+	if _, err := os.Stat(f.central); !os.IsNotExist(err) {
+		t.Error("init preview must not create the central config")
+	}
+	if !strings.Contains(out, "--write") {
+		t.Errorf("init preview must guide to --write:\n%s", out)
+	}
+}
+
+func TestInitDetectsSingleTool(t *testing.T) {
+	f := setup(t)
+	if err := os.Remove(f.opencode); err != nil {
+		t.Fatal(err)
+	}
+	out := mustRun(t, f.root, "init", "--write")
+	if _, err := os.Stat(f.central); err != nil {
+		t.Fatalf("init must create the central config: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "検出したツール: kilocode") {
+		t.Errorf("init must report the detected tool:\n%s", out)
+	}
+}
+
+func TestInitMultipleToolsListsCandidates(t *testing.T) {
+	f := setup(t)
+	out := mustRun(t, f.root, "init")
+	if _, err := os.Stat(f.central); !os.IsNotExist(err) {
+		t.Error("init with multiple candidates must not create the central config")
+	}
+	if !strings.Contains(out, "kilocode") || !strings.Contains(out, "opencode") {
+		t.Errorf("init must list detected tools:\n%s", out)
+	}
+	if !strings.Contains(out, "provsync init <tool>") {
+		t.Errorf("init must guide to specify the tool:\n%s", out)
+	}
+}
+
+func TestInitAlreadyInitializedErrors(t *testing.T) {
+	f := setup(t)
+	mustRun(t, f.root, "pull", "kilocode", "--write")
+	before := read(t, f.central)
+
+	_, err := run(t, f.root, "init", "kilocode", "--write")
+	if err == nil {
+		t.Error("init must error when already initialized")
+	}
+	if !strings.Contains(err.Error(), "pull") {
+		t.Errorf("init error must guide to pull:\n%v", err)
+	}
+	if read(t, f.central) != before {
+		t.Error("init must not modify the existing central config")
+	}
+}
+
+func TestInitNoToolsErrors(t *testing.T) {
+	f := setup(t)
+	if err := os.Remove(f.kilo); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(f.opencode); err != nil {
+		t.Fatal(err)
+	}
+	_, err := run(t, f.root, "init")
+	if err == nil {
+		t.Error("init must error when no tool config exists")
+	}
+	if !strings.Contains(err.Error(), f.kilo) || !strings.Contains(err.Error(), f.opencode) {
+		t.Errorf("init error must list searched paths:\n%v", err)
+	}
+}
+
+func TestInitSecretWarning(t *testing.T) {
+	f := setup(t)
+	write(t, f.kilo, `{
+  "provider": {
+    "llm-01": {
+      "name": "LLM 01",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": { "baseURL": "https://a.example/v1", "apiKey": "sk-test-1" },
+      "models": {}
+    }
+  }
+}`)
+	out := mustRun(t, f.root, "init", "kilocode", "--write")
+	if strings.Contains(read(t, f.central), "sk-test-1") {
+		t.Error("central config must not contain the secret")
+	}
+	if !strings.Contains(out, "apiKeyEnv") {
+		t.Errorf("init must warn about apiKeyEnv:\n%s", out)
+	}
+}
+
 func TestPreviewPullDoesNotWrite(t *testing.T) {
 	f := setup(t)
 	out := mustRun(t, f.root, "pull", "kilocode")

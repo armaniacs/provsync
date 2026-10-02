@@ -77,6 +77,8 @@ func Run(args []string, out io.Writer) error {
 	switch cmd {
 	case "list":
 		return cmdList(opts)
+	case "init":
+		return cmdInit(opts, rest)
 	case "version":
 		fmt.Fprintf(opts.out, "provsync %s\n", version.String())
 		return nil
@@ -162,6 +164,7 @@ func printUsage(o *options) {
 コマンド:
   list                     対応ツールと設定パスを表示
   status [tool...]         ツールと中央設定の同期状態を表示
+  init [tool]              初回セットアップ(中央設定を作る)
   pull <tool>              ツール設定を中央設定へ取り込む
   push <tool>              中央設定をツール設定へ反映する
   sync --from <a> --to <b> a を取り込み b へ反映する(--from 省略可)
@@ -184,7 +187,7 @@ func printUsage(o *options) {
 		fmt.Fprintf(o.out, "  中央設定: %s\n", central)
 	} else {
 		fmt.Fprintf(o.out, "  中央設定: %s (未作成)\n", central)
-		fmt.Fprintln(o.out, "    provsync pull <tool> --write で作成します")
+		fmt.Fprintln(o.out, "    provsync init <tool> --write で作成します")
 	}
 	for _, name := range adapter.Names() {
 		a, err := adapter.Get(name, root)
@@ -322,6 +325,111 @@ func driftLines(projected, tool map[string]model.Provider) []string {
 		lines = append(lines, "差分なし")
 	}
 	return lines
+}
+
+// ---- init ----
+
+// cmdInit は初回セットアップ用。pull と同じ Plan を再利用して中央設定を作る。
+// 既存の中央設定は上書きしない。
+func cmdInit(o *options, args []string) error {
+	if len(args) > 1 {
+		return fmt.Errorf("使い方: provsync init [tool]")
+	}
+	root, err := o.root()
+	if err != nil {
+		return err
+	}
+	central := root.CentralConfigPath()
+	if _, err := os.Stat(central); err == nil {
+		return fmt.Errorf("すでに初期化されています: %s\n日常の更新には provsync pull <tool> を使ってください", central)
+	}
+
+	tool := ""
+	if len(args) == 1 {
+		tool = args[0]
+	} else {
+		found := detectTools(root)
+		switch len(found) {
+		case 0:
+			var paths []string
+			for _, name := range adapter.Names() {
+				a, err := adapter.Get(name, root)
+				if err != nil {
+					return err
+				}
+				paths = append(paths, a.Path())
+			}
+			return fmt.Errorf("対応ツールの設定ファイルが見つかりません。探した場所:\n%s\nツールを先に設定してから再実行してください", strings.Join(paths, "\n"))
+		case 1:
+			tool = found[0]
+			fmt.Fprintf(o.out, "検出したツール: %s\n", tool)
+		default:
+			fmt.Fprintln(o.out, "複数のツール設定が見つかりました:")
+			for _, name := range found {
+				fmt.Fprintf(o.out, "  %s\n", name)
+			}
+			fmt.Fprintln(o.out, "provsync init <tool> でツールを指定してください")
+			return nil
+		}
+	}
+
+	a, err := adapter.Get(tool, root)
+	if err != nil {
+		return err
+	}
+	pulled, warnings, err := a.Pull()
+	if err != nil {
+		return err
+	}
+	for _, w := range warnings {
+		fmt.Fprintf(o.out, "警告: %s\n", w)
+	}
+	pulled, err = syncer.FilterProviders(pulled, o.keys())
+	if err != nil {
+		return err
+	}
+
+	change, _, err := buildCentralChange(root, a.Name(), pulled)
+	if err != nil {
+		return err
+	}
+	if len(pulled) == 0 {
+		fmt.Fprintln(o.out, "取り込める provider がありません")
+	}
+	p := plan.Plan{Changes: []plan.FileChange{change}}
+	err = o.applyOrPreview("init "+a.Name(), p)
+	if err != nil {
+		return err
+	}
+	if len(warnings) > 0 {
+		fmt.Fprintln(o.out, "秘密は中央設定に保存されません。環境変数名を中央設定の apiKeyEnv に設定してください")
+	}
+	if p.Changed() {
+		if !o.write {
+			fmt.Fprintf(o.out, "次に: provsync init %s --write で中央設定を作成します\n", a.Name())
+		} else {
+			fmt.Fprintln(o.out, "次の手順:")
+			fmt.Fprintln(o.out, "  1. provsync status              同期状態を確認する")
+			fmt.Fprintln(o.out, "  2. provsync push <他のツール>    他のツールへ反映する(まずプレビュー)")
+			fmt.Fprintln(o.out, "  3. 問題があれば provsync undo で元に戻せます")
+		}
+	}
+	return nil
+}
+
+// detectTools は設定ファイルが存在するツール名を返す。
+func detectTools(root adapter.Root) []string {
+	var found []string
+	for _, name := range adapter.Names() {
+		a, err := adapter.Get(name, root)
+		if err != nil {
+			continue
+		}
+		if _, err := os.Stat(a.Path()); err == nil {
+			found = append(found, name)
+		}
+	}
+	return found
 }
 
 // ---- pull ----
