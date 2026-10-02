@@ -8,7 +8,7 @@ LDFLAGS := -X github.com/armaniacs/provsync/internal/version.Version=$(VERSION)
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build test test-v test-race fmt fmt-check vet lint vuln check install clean
+.PHONY: help build test test-v test-race fuzz fmt fmt-check vet lint vuln check install clean
 
 ## help: このヘルプを表示
 help:
@@ -50,6 +50,10 @@ vuln:
 ## test-race: データ競合検出付きでテスト
 test-race:
 	$(GO) test $(GOFLAGS) -race -cover $(PKG)
+
+## fuzz: StripJSONC の短時間ファズテスト
+fuzz:
+	$(GO) test -fuzz=FuzzStripJSONC -fuzztime=20s ./internal/jsonc
 
 ## check: fmt-check + vet + test をまとめて実行(CI 向け)
 check: fmt-check vet test

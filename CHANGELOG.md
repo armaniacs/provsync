@@ -48,6 +48,11 @@
 
 - 中央設定の `aliases`(共通モデル名 → ツール名 → モデル ID)で、`push` 時にモデル名をツール向け ID へ自動変換。当該ツール向けの対応が未定義のエイリアスは警告して素通し、`--strict` でエラーにする。pull は ID を書き換えず、`aliases` は pull しても消えない。スキーマは追加のみで version は 1 のまま。
 
+### Added (tests)
+
+- `FuzzStripJSONC`(標準の `testing.F`)を追加。文字列リテラル内のコメント記号や末尾カンマを壊さないことをファズで検証。`make fuzz` で短時間実行できる。
+- 全アダプタの pull → push 往復の冪等性テストと、push 出力のゴールデンテスト(`-args -update` で更新)を追加。
+
 ### Added (CI)
 
 - CI(`.github/workflows/ci.yml`)を追加。push to main と PR で `make check` / `make test-race` / `make lint` / `make vuln` を macOS / Linux マトリクスで実行。

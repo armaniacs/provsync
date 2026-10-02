@@ -1,0 +1,20 @@
+{
+  "$schema": "x.schema.json",
+  "provider": {
+    "p1": {
+      "models": {
+        "m": {
+          "name": "m"
+        }
+      },
+      "name": "P1",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "apiKey": "sk-test-KEEP",
+        "baseURL": "https://a.example/v1"
+      },
+      "reasoning": true
+    }
+  },
+  "theme": "dark"
+}
