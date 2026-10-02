@@ -5,6 +5,8 @@
 
 [日本語](#日本語) | [English](#english)
 
+**ドキュメントサイト**: <https://armaniacs.github.io/provsync/>
+
 ## 日本語
 
 ### 概要
@@ -381,6 +383,7 @@ make build    # bin/provsync
 make lint     # staticcheck
 make vuln     # govulncheck
 make test-race  # データ競合検出付きテスト
+make docs-serve  # ドキュメントサイトのローカルプレビュー
 ```
 
 パッケージ構成: `main.go`(ディスパッチ)、`internal/cli`(サブコマンド。`cli.go`(ディスパッチと共通書き込み)、`sync.go`(同期系コマンドと前処理)、`status.go`(一覧・状態表示)、`history.go`(diff・undo)、`doctor.go`(診断)、`check.go`(API 疎通確認)、`help.go`(ヘルプと補完)、`render.go`(共通描画)、`errors.go`(使い方エラー)、`platform.go`(対応 OS))、`internal/model`(カノニカル表現)、`internal/adapter`(kilocode / opencode 変換)、`internal/store`(中央設定)、`internal/syncer`(マージ)、`internal/jsonc`(JSONC 前処理)、`internal/plan`(変更計画と意味差分)、`internal/diff`(統合 diff)、`internal/backup`(バックアップと復元)、`internal/fsutil`(atomic write・JSON 整形)。
@@ -390,6 +393,8 @@ make test-race  # データ競合検出付きテスト
 - [CONTRIBUTING.md](CONTRIBUTING.md)(貢献者向け: アダプタ追加ガイド)
 
 ## English
+
+**Docs site**: <https://armaniacs.github.io/provsync/>
 
 ### Overview
 
@@ -751,6 +756,7 @@ make build    # bin/provsync
 make lint     # staticcheck
 make vuln     # govulncheck
 make test-race  # race-detector tests
+make docs-serve  # local preview of the docs site
 ```
 
 Package layout: `main.go` (dispatch), `internal/cli` (subcommands; `cli.go` (dispatch and common write path), `sync.go` (sync commands and pipelines), `status.go` (list and status display), `history.go` (diff and undo), `doctor.go` (diagnosis), `check.go` (API reachability), `help.go` (help and completion), `render.go` (shared rendering), `errors.go` (usage errors), `platform.go` (supported OS)), `internal/model` (canonical representation), `internal/adapter` (kilocode / opencode conversion), `internal/store` (central config), `internal/syncer` (merge), `internal/jsonc` (JSONC preprocessing), `internal/plan` (change plan and semantic diff), `internal/diff` (unified diff), `internal/backup` (backup and restore), `internal/fsutil` (atomic write, JSON formatting).

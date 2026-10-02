@@ -7,6 +7,7 @@
 
 ### Added
 
+- ドキュメントサイト（MkDocs Material + mkdocs-static-i18n）を追加。push to main で GitHub Actions が自動デプロイする（`https://armaniacs.github.io/provsync/`）。日本語を既定とし、言語切替で英語版を提供する。収録: ホーム / 使い方 / CLI リファレンス / バックアップと undo / セキュリティ / 開発者向け / CHANGELOG。`make docs-serve` でローカルプレビュー、依存は `requirements.txt` に固定。
 - `provsync --version` / `provsync version` でバージョンを表示。版の決定順はビルド時の ldflags 注入値、`go install` のモジュール版、`dev` の順。`make build` は `git describe` の結果を ldflags で注入する。
 - 引数なし実行・`--help` の使い方の先頭にバージョンを表示。
 - 引数なし実行・`--help` に、中央設定・各ツール設定・バックアップ保存先のパスと存在有無(未作成)を表示。中央設定が未作成のときは作成手順を案内する。

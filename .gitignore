@@ -7,6 +7,10 @@
 # goreleaser output
 /dist/
 
+# mkdocs output and docs virtualenv
+/site/
+/.venv/
+
 # local tool config, not for the repository
 /.claude/
 /CLAUDE.md

@@ -1,0 +1,65 @@
+site_name: provsync
+site_description: LLM provider config sync tool
+site_url: https://armaniacs.github.io/provsync/
+repo_url: https://github.com/armaniacs/provsync
+repo_name: armaniacs/provsync
+edit_uri: edit/main/docs/
+
+# 内部設計ドキュメントはサイトに含めない
+exclude_docs: |
+  superpowers/
+
+theme:
+  name: material
+  language: ja
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: ダークモードへ切替
+    - scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: ライトモードへ切替
+  features:
+    - content.code.copy
+    - navigation.footer
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+
+plugins:
+  - search
+  - i18n:
+      docs_structure: suffix
+      languages:
+        - locale: ja
+          default: true
+          name: 日本語
+          build: true
+        - locale: en
+          name: English
+          build: true
+          nav_translations:
+            ホーム: Home
+            使い方: Usage
+            CLI リファレンス: CLI Reference
+            バックアップと undo: Backups and Undo
+            セキュリティ: Security
+            開発者向け: Development
+            CHANGELOG: CHANGELOG
+  - include-markdown
+
+nav:
+  - ホーム: index.md
+  - 使い方: usage.md
+  - CLI リファレンス: cli.md
+  - バックアップと undo: backup.md
+  - セキュリティ: security.md
+  - 開発者向け: development.md
+  - CHANGELOG: changelog.md

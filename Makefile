@@ -8,7 +8,7 @@ LDFLAGS := -X github.com/armaniacs/provsync/internal/version.Version=$(VERSION)
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build test test-v test-race fuzz fmt fmt-check vet lint vuln check install clean
+.PHONY: help build test test-v test-race fuzz fmt fmt-check vet lint vuln check install docs docs-serve clean
 
 ## help: このヘルプを表示
 help:
@@ -65,3 +65,19 @@ install:
 ## clean: ビルド成果物を削除
 clean:
 	rm -rf $(BIN_DIR)
+
+## docs: ドキュメントサイトを site/ へビルド
+docs: venv-check
+	$(VENV)/bin/mkdocs build --strict --site-dir site
+
+## docs-serve: ドキュメントサイトをローカルプレビュー
+docs-serve: venv-check
+	$(VENV)/bin/mkdocs serve
+
+## venv-check: ドキュメント用 venv の有無を確認
+VENV := .venv
+venv-check:
+	@test -x "$(VENV)/bin/mkdocs" || { \
+		echo "docs 用の仮想環境がありません。次を実行してください:"; \
+		echo "  python3 -m venv $(VENV) && $(VENV)/bin/pip install -r requirements.txt"; \
+		exit 1; }
