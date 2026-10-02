@@ -3,10 +3,12 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
@@ -116,6 +118,8 @@ func RunWith(args []string, out, errOut io.Writer) error {
 		return cmdCompletion(opts, rest)
 	case "doctor":
 		return cmdDoctor(opts)
+	case "check":
+		return cmdCheck(opts)
 	case "version":
 		fmt.Fprintf(opts.out, "provsync %s\n", version.String())
 		return nil
@@ -201,6 +205,7 @@ func printUsage(o *options) {
   diff <from> <to>         from を to に適用した場合の差分を表示
   undo [id]                直前または指定操作を復元する(--list で履歴)
   doctor                   環境を診断する(通信しない)
+  check                    各 provider の API 到達可否を確認する(明示実行のみ)
 
 共通フラグ:
   --write          変更を書き込む(既定はプレビュー)
@@ -1118,6 +1123,93 @@ func filePermLoose(path string) bool {
 	return err == nil && info.Mode().Perm()&0o077 != 0
 }
 
+// ---- check ----
+
+// checkTimeout は疎通確認 1 回あたりのタイムアウト。テストで上書きする。
+var checkTimeout = 5 * time.Second
+
+// cmdCheck は中央設定の各 provider の API 到達可否を確認する。
+// 通信するのはこのコマンドだけ。秘密の値は出力しない。
+func cmdCheck(o *options) error {
+	root, err := o.root()
+	if err != nil {
+		return err
+	}
+	cfg, err := store.Load(root.CentralConfigPath())
+	if err != nil {
+		return fmt.Errorf("中央設定がありません。先に pull / init を実行してください: %w", err)
+	}
+	keys := make([]string, 0, len(cfg.Providers))
+	for k := range cfg.Providers {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	filtered, err := syncer.FilterProviders(cfg.Providers, o.keys())
+	if err != nil {
+		return err
+	}
+	if o.keys() != nil {
+		keys = make([]string, 0, len(filtered))
+		for k := range filtered {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+	}
+
+	for _, k := range keys {
+		p := cfg.Providers[k]
+		switch {
+		case p.APIKeyEnv == "":
+			fmt.Fprintf(o.out, "[スキップ] %s: apiKeyEnv が未設定\n", k)
+			continue
+		}
+		if _, ok := os.LookupEnv(p.APIKeyEnv); !ok {
+			// 変数の値は読んでも出力しない。
+			fmt.Fprintf(o.out, "[スキップ] %s: 環境変数 %s が未設定\n", k, p.APIKeyEnv)
+			continue
+		}
+		if p.BaseURL == "" {
+			fmt.Fprintf(o.out, "[スキップ] %s: baseURL が未設定\n", k)
+			continue
+		}
+		checkProvider(o, k, p)
+	}
+	return nil
+}
+
+// checkProvider は 1 provider に GET <BaseURL>/models を送り結果を分類して出す。
+func checkProvider(o *options, key string, p model.Provider) {
+	ctx, cancel := context.WithTimeout(context.Background(), checkTimeout)
+	defer cancel()
+
+	url := strings.TrimSuffix(p.BaseURL, "/") + "/models"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		fmt.Fprintf(o.out, "[応答異常] %s: リクエストを構築できません\n", key)
+		return
+	}
+	token := os.Getenv(p.APIKeyEnv)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	start := time.Now()
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		// エラー文字列には URL やヘッダが入らないよう、分類済みの短い文言にする。
+		fmt.Fprintf(o.out, "[到達不可] %s\n", key)
+		return
+	}
+	defer resp.Body.Close()
+	ms := time.Since(start).Milliseconds()
+	switch {
+	case resp.StatusCode >= 200 && resp.StatusCode < 300:
+		fmt.Fprintf(o.out, "[OK] %s (%dms)\n", key, ms)
+	case resp.StatusCode == 401 || resp.StatusCode == 403:
+		fmt.Fprintf(o.out, "[認証失敗] %s\n", key)
+	default:
+		fmt.Fprintf(o.out, "[応答異常] %s: HTTP %d\n", key, resp.StatusCode)
+	}
+}
+
 // helpTexts はサブコマンド別のヘルプ。`provsync <cmd> --help` で出す。
 var helpTexts = map[string]string{
 	"list": `list - 対応ツールと設定パスを表示
@@ -1250,6 +1342,21 @@ var helpTexts = map[string]string{
 例:
   provsync doctor
 `,
+	"check": `check - API の疎通確認
+
+用途: 中央設定の各 provider について API への到達可否を確認する。
+
+使い方: provsync check
+
+通信するのはこのコマンドだけ。他のコマンドから呼ばない。
+タイムアウトは 1 provider あたり 5 秒。秘密の値は出力しない。
+
+関連フラグ:
+  --provider <p>   対象 provider を限定(カンマ区切り)
+
+例:
+  provsync check
+`,
 	"completion": `completion - シェル補完スクリプトを出力
 
 用途: bash / zsh / fish 用の補完スクリプトを標準出力へ出す。
@@ -1307,7 +1414,7 @@ complete -F _provsync provsync
 	return nil
 }
 
-var commands = []string{"list", "status", "init", "pull", "push", "sync", "diff", "undo", "doctor", "completion", "version"}
+var commands = []string{"list", "status", "init", "pull", "push", "sync", "diff", "undo", "doctor", "check", "completion", "version"}
 
 // ---- 共通 ----
 

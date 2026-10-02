@@ -4,10 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 const kiloFixture = `{
@@ -811,6 +815,89 @@ func TestDoctorDoesNotPrintSecretValues(t *testing.T) {
 	if !strings.Contains(out, "apiKey") {
 		t.Errorf("doctor must mention the secret-like key name:\n%s", out)
 	}
+}
+
+func TestCheckOK(t *testing.T) {
+	f, hits := setupCheck(t, http.StatusOK, 0)
+	t.Setenv("CHECK_TEST_TOKEN", "tok-123")
+	out := mustRun(t, f.root, "check")
+	if !strings.Contains(out, "[OK] llm-01") {
+		t.Errorf("check must report OK:\n%s", out)
+	}
+	if hits.Load() != 1 {
+		t.Errorf("requests = %d, want 1", hits.Load())
+	}
+}
+
+func TestCheckAuthFailure(t *testing.T) {
+	f, _ := setupCheck(t, http.StatusUnauthorized, 0)
+	t.Setenv("CHECK_TEST_TOKEN", "tok-wrong")
+	out := mustRun(t, f.root, "check")
+	if !strings.Contains(out, "[認証失敗] llm-01") {
+		t.Errorf("check must report auth failure:\n%s", out)
+	}
+}
+
+func TestCheckTimeout(t *testing.T) {
+	f, _ := setupCheck(t, http.StatusOK, 500*time.Millisecond)
+	t.Setenv("CHECK_TEST_TOKEN", "tok-123")
+	saved := checkTimeout
+	checkTimeout = 50 * time.Millisecond
+	t.Cleanup(func() { checkTimeout = saved })
+
+	out := mustRun(t, f.root, "check")
+	if !strings.Contains(out, "[到達不可] llm-01") {
+		t.Errorf("check must report unreachable on timeout:\n%s", out)
+	}
+}
+
+func TestCheckSkipsUnsetEnvVar(t *testing.T) {
+	f, hits := setupCheck(t, http.StatusOK, 0)
+	// 環境変数を設定しない
+	out := mustRun(t, f.root, "check")
+	if !strings.Contains(out, "[スキップ] llm-01") {
+		t.Errorf("check must skip providers with an unset env var:\n%s", out)
+	}
+	if hits.Load() != 0 {
+		t.Errorf("no request must be made for skipped providers, got %d", hits.Load())
+	}
+}
+
+func TestCheckDoesNotPrintToken(t *testing.T) {
+	f, _ := setupCheck(t, http.StatusOK, 0)
+	t.Setenv("CHECK_TEST_TOKEN", "tok-SUPER-SECRET")
+	out := mustRun(t, f.root, "check")
+	if strings.Contains(out, "tok-SUPER-SECRET") {
+		t.Errorf("check output must not contain the token value:\n%s", out)
+	}
+}
+
+// setupCheck は check コマンド用に httptest サーバを BaseURL にした中央設定を作る。
+func setupCheck(t *testing.T, status int, delay time.Duration) (fixture, *atomic.Int64) {
+	t.Helper()
+	var hits atomic.Int64
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits.Add(1)
+		if delay > 0 {
+			time.Sleep(delay)
+		}
+		w.WriteHeader(status)
+	}))
+	t.Cleanup(srv.Close)
+
+	f := setup(t)
+	write(t, f.central, `{
+  "providers": {
+    "llm-01": {
+      "name": "LLM 01",
+      "npm": "@ai-sdk/openai-compatible",
+      "baseURL": "`+srv.URL+`",
+      "apiKeyEnv": "CHECK_TEST_TOKEN"
+    }
+  },
+  "version": 1
+}`)
+	return f, &hits
 }
 
 func TestPreviewPullDoesNotWrite(t *testing.T) {

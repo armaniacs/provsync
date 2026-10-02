@@ -173,6 +173,7 @@ $ provsync undo
 | `diff <from> <to>` | from を to に適用した場合の差分(意味差分 + 統合 diff)を表示 |
 | `undo [id]` | 直前または指定操作を復元する(`--list` で履歴、`--prune --keep <n>` で掃除) |
 | `doctor` | 環境を診断する(存在・構文・`apiKeyEnv`・権限。通信しない) |
+| `check` | 各 provider の API 到達可否を確認する(通信するのはこのコマンドだけ) |
 | `completion <shell>` | bash / zsh / fish 用の補完スクリプトを出力 |
 | `--version` / `version` | バージョンを表示 |
 
@@ -285,6 +286,14 @@ $ provsync undo
 - `aliases` にないモデル名は変換せず素通しする。
 - 当該ツール向けの ID が未定義のエイリアスは警告して素通しする。`--strict` を付けるとエラーで終了し、何も書かない。
 - 組み込みの対応表はない。対応表の正はユーザー定義の `aliases` で、pull しても消えない。
+
+### API の疎通確認(check)
+
+`provsync check` は中央設定の各 provider について、`baseURL` の `/models` へ認証付きの GET を送り到達可否を表示する。
+
+- 通信するのは `check` だけ。他のコマンドは同期対象のファイル以外に一切アクセスしない。
+- キーの値は環境変数から読むが、出力・ログには現れない。401/403 は `[認証失敗]`、タイムアウトや接続失敗は `[到達不可]` として分類表示する。
+- `apiKeyEnv`・環境変数・`baseURL` が未設定の provider は通信せず `[スキップ]` と表示する。
 
 ### バックアップと undo
 
@@ -499,6 +508,7 @@ $ provsync undo
 | `diff <from> <to>` | Show what applying from to to would change (semantic + unified diff) |
 | `undo [id]` | Restore the last (or given) operation (`--list` for history, `--prune --keep <n>` to clean up) |
 | `doctor` | Diagnose the environment (existence, syntax, `apiKeyEnv`, permissions; no network) |
+| `check` | Check API reachability per provider (the only command that talks to the network) |
 | `completion <shell>` | Print a completion script for bash / zsh / fish |
 
 | Flag | Default | Description |
@@ -610,6 +620,14 @@ Known fields (`name` / `npm` / `baseURL` / `apiKeyEnv` / `models`) are normalize
 - Model names not in `aliases` pass through unchanged.
 - An alias without a mapping for the target tool passes through with a warning. `--strict` errors out and writes nothing.
 - There is no built-in mapping table. The user-defined `aliases` are the source of truth and survive `pull`.
+
+### API reachability (check)
+
+`provsync check` sends an authenticated GET to `<baseURL>/models` for each provider in the central config and prints reachability.
+
+- `check` is the only command that talks to the network. Other commands never access anything beyond the synced files.
+- Key values are read from environment variables but never appear in output or logs. 401/403 shows as `[認証失敗]` (auth failure); timeouts and connection failures show as `[到達不可]` (unreachable).
+- Providers with an unset `apiKeyEnv`, environment variable, or `baseURL` are skipped without any request (`[スキップ]`).
 
 ### Backups and undo
 

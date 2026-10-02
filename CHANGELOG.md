@@ -66,6 +66,10 @@
 - CONTRIBUTING.md(貢献者向け)を追加。開発手順・コミット規約・秘密の扱いの原則・新しいツールのアダプタ追加ガイドを記載。
 - 全アダプタに適用する共通の契約テスト(`TestAdapterContract`)を追加。往復冪等、ファイル内の秘密キー保持、未知フィールド保持、秘密がカノニカル形へ漏れないことを検証する。
 
+### Added (check)
+
+- `provsync check` コマンド。中央設定の各 provider について `baseURL` の `/models` へ認証付き GET を送り到達可否を分類表示する(`[OK]` / `[認証失敗]` / `[応答異常]` / `[到達不可]` / `[スキップ]`)。タイムアウト 5 秒。通信するのはこのコマンドだけで、キーの値は出力しない。
+
 ### Added (CI)
 
 - CI(`.github/workflows/ci.yml`)を追加。push to main と PR で `make check` / `make test-race` / `make lint` / `make vuln` を macOS / Linux マトリクスで実行。
