@@ -25,6 +25,11 @@
 - `provsync undo --prune --keep <n>` で履歴を掃除。新しい n 件を残して削除し、削除件数を表示する。
 - 新規作成されるファイルは 0600、新規ディレクトリは 0700 で作る(既存ファイルの権限は引き継ぐ)。`status` は中央設定・状態ディレクトリの権限が緩い場合に `chmod` を案内する。
 
+### Added (release)
+
+- リリース自動化(`.goreleaser.yaml` と `.github/workflows/release.yml`)。タグ push で darwin / linux(amd64・arm64)の tar.gz アーカイブと checksums を GitHub Release に添付する。CHANGELOG に該当バージョンの節が無い場合は失敗する。
+- README のインストール手順にバイナリ入手の方法を追記。対応環境に macOS / Linux(Windows は非対応)を明記。
+
 ### Added (CI)
 
 - CI(`.github/workflows/ci.yml`)を追加。push to main と PR で `make check` / `make test-race` / `make lint` / `make vuln` を macOS / Linux マトリクスで実行。

@@ -21,6 +21,8 @@ provsync は、複数の LLM コーディングツールがそれぞれ独自の
 
 ### 対応ツール
 
+macOS / Linux 対応。Windows は非対応。
+
 | ツール | 設定ファイル | 形式 |
 |---|---|---|
 | kilocode(別名 `kilo`) | `~/.config/kilo/kilo.jsonc` | JSONC(行コメント・末尾カンマ対応) |
@@ -32,10 +34,19 @@ provsync は、複数の LLM コーディングツールがそれぞれ独自の
 
 ### インストール
 
-Go 1.25.14 以上。
+Go 1.25.14 以上。macOS / Linux 対応(Windows は非対応)。
 
 ```bash
 go install github.com/armaniacs/provsync@latest
+```
+
+Go を使わない場合は、Releases からビルド済みバイナリを入手する。
+
+```bash
+# macOS (Apple Silicon) の例
+curl -sLO https://github.com/armaniacs/provsync/releases/latest/download/provsync_<ver>_darwin_arm64.tar.gz
+tar xzf provsync_*_darwin_arm64.tar.gz
+sudo mv provsync /usr/local/bin/
 ```
 
 ソースからビルドする場合:
@@ -285,6 +296,8 @@ provsync is a CLI that syncs the `provider` entries your LLM coding tools each k
 
 ### Supported Tools
 
+macOS / Linux only. Windows is unsupported.
+
 | Tool | Config file | Format |
 |---|---|---|
 | kilocode (alias `kilo`) | `~/.config/kilo/kilo.jsonc` | JSONC (line comments, trailing commas) |
@@ -296,10 +309,19 @@ provsync is a CLI that syncs the `provider` entries your LLM coding tools each k
 
 ### Installation
 
-Go 1.25.14 or later.
+Go 1.25.14 or later. macOS / Linux only (Windows is unsupported).
 
 ```bash
 go install github.com/armaniacs/provsync@latest
+```
+
+Without the Go toolchain, download a prebuilt binary from Releases.
+
+```bash
+# Example for macOS (Apple Silicon)
+curl -sLO https://github.com/armaniacs/provsync/releases/latest/download/provsync_<ver>_darwin_arm64.tar.gz
+tar xzf provsync_*_darwin_arm64.tar.gz
+sudo mv provsync /usr/local/bin/
 ```
 
 Or build from source:
