@@ -6,8 +6,9 @@ const Version = 1
 
 // Config は中央設定ファイルの内容。
 type Config struct {
-	Version   int                 `json:"version"`
-	Providers map[string]Provider `json:"providers"`
+	Version   int                          `json:"version"`
+	Providers map[string]Provider          `json:"providers"`
+	Aliases   map[string]map[string]string `json:"aliases,omitempty"`
 }
 
 // NewConfig は空のカノニカル設定を返す。

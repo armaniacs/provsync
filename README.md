@@ -260,6 +260,31 @@ $ provsync undo
 
 `version` は中央設定の形式バージョン(将来のマイグレーション用)。現行は `1`。
 
+### モデルエイリアス
+
+中央設定の `aliases` に、共通モデル名 → ツール名 → モデル ID の対応を書くと、`push` のときに各ツールが要求する ID 形式へ自動変換する。
+
+```json
+{
+  "aliases": {
+    "sonnet": {
+      "kilocode": "claude-sonnet-4-5",
+      "opencode": "anthropic/claude-sonnet-4-5"
+    }
+  },
+  "providers": {
+    "llm-01": {
+      "models": { "sonnet": { "name": "Sonnet" } }
+    }
+  }
+}
+```
+
+- 変換は push の描画前にだけ行う。`pull` は ID を書き換えない(往復で情報を失わない)。
+- `aliases` にないモデル名は変換せず素通しする。
+- 当該ツール向けの ID が未定義のエイリアスは警告して素通しする。`--strict` を付けるとエラーで終了し、何も書かない。
+- 組み込みの対応表はない。対応表の正はユーザー定義の `aliases` で、pull しても消えない。
+
 ### バックアップと undo
 
 - 書き込み直前に、影響する全ファイルを 1 操作としてバックアップする。
@@ -556,6 +581,31 @@ Known fields (`name` / `npm` / `baseURL` / `apiKeyEnv` / `models`) are normalize
 ```
 
 `version` is the central config format version (reserved for future migrations; currently `1`).
+
+### Model aliases
+
+`aliases` in the central config maps a common model name to per-tool model IDs; `push` converts each tool's required ID format automatically.
+
+```json
+{
+  "aliases": {
+    "sonnet": {
+      "kilocode": "claude-sonnet-4-5",
+      "opencode": "anthropic/claude-sonnet-4-5"
+    }
+  },
+  "providers": {
+    "llm-01": {
+      "models": { "sonnet": { "name": "Sonnet" } }
+    }
+  }
+}
+```
+
+- Conversion happens only before push rendering. `pull` never rewrites IDs (no information loss across round trips).
+- Model names not in `aliases` pass through unchanged.
+- An alias without a mapping for the target tool passes through with a warning. `--strict` errors out and writes nothing.
+- There is no built-in mapping table. The user-defined `aliases` are the source of truth and survive `pull`.
 
 ### Backups and undo
 

@@ -44,6 +44,10 @@
 - `list` / `status` / `diff` に `--json` を追加(`schemaVersion: 1` 含む)。`--json` 時は標準出力が JSON のみになり、警告は stderr へ。
 - `status` に `--exit-code` を追加。差分があるとき終了コード 3 で終了する(`ExitError` 型で判別)。
 
+### Added (aliases)
+
+- 中央設定の `aliases`(共通モデル名 → ツール名 → モデル ID)で、`push` 時にモデル名をツール向け ID へ自動変換。当該ツール向けの対応が未定義のエイリアスは警告して素通し、`--strict` でエラーにする。pull は ID を書き換えず、`aliases` は pull しても消えない。スキーマは追加のみで version は 1 のまま。
+
 ### Added (CI)
 
 - CI(`.github/workflows/ci.yml`)を追加。push to main と PR で `make check` / `make test-race` / `make lint` / `make vuln` を macOS / Linux マトリクスで実行。

@@ -592,6 +592,127 @@ func TestDiffJSONMasksSecrets(t *testing.T) {
 	}
 }
 
+const aliasCentral = `{
+  "aliases": {
+    "sonnet": {
+      "kilocode": "claude-sonnet-4-5",
+      "opencode": "anthropic/claude-sonnet-4-5"
+    }
+  },
+  "providers": {
+    "llm-01": {
+      "name": "LLM 01",
+      "npm": "@ai-sdk/openai-compatible",
+      "baseURL": "https://a.example/v1",
+      "models": {
+        "sonnet": { "name": "Sonnet" }
+      }
+    }
+  },
+  "version": 1
+}`
+
+func TestPushResolvesAliases(t *testing.T) {
+	f := setup(t)
+	write(t, f.central, aliasCentral)
+
+	mustRun(t, f.root, "push", "opencode", "--write")
+	got := read(t, f.opencode)
+	if !strings.Contains(got, "anthropic/claude-sonnet-4-5") {
+		t.Errorf("push must write the opencode ID for the alias:\n%s", got)
+	}
+	if strings.Contains(got, `"sonnet": {`) {
+		t.Errorf("the alias key must be replaced in the tool config:\n%s", got)
+	}
+
+	mustRun(t, f.root, "push", "kilocode", "--write")
+	gotKilo := read(t, f.kilo)
+	if !strings.Contains(gotKilo, "claude-sonnet-4-5") || strings.Contains(gotKilo, "anthropic/claude-sonnet-4-5") {
+		t.Errorf("kilocode must use its own ID:\n%s", gotKilo)
+	}
+}
+
+func TestPushUndefinedAliasWarnsAndPassesThrough(t *testing.T) {
+	f := setup(t)
+	write(t, f.central, `{
+  "aliases": {
+    "sonnet": { "kilocode": "claude-sonnet-4-5" }
+  },
+  "providers": {
+    "llm-01": {
+      "name": "LLM 01",
+      "npm": "@ai-sdk/openai-compatible",
+      "baseURL": "https://a.example/v1",
+      "models": { "sonnet": { "name": "Sonnet" } }
+    }
+  },
+  "version": 1
+}`)
+
+	out := mustRun(t, f.root, "push", "opencode", "--write")
+	if !strings.Contains(out, "警告") {
+		t.Errorf("undefined alias must warn:\n%s", out)
+	}
+	if !strings.Contains(read(t, f.opencode), `"sonnet"`) {
+		t.Error("undefined alias must pass the key through as-is")
+	}
+}
+
+func TestPushStrictErrorsOnUndefinedAlias(t *testing.T) {
+	f := setup(t)
+	write(t, f.central, `{
+  "aliases": {
+    "sonnet": { "kilocode": "claude-sonnet-4-5" }
+  },
+  "providers": {
+    "llm-01": {
+      "name": "LLM 01",
+      "npm": "@ai-sdk/openai-compatible",
+      "baseURL": "https://a.example/v1",
+      "models": { "sonnet": { "name": "Sonnet" } }
+    }
+  },
+  "version": 1
+}`)
+
+	_, err := run(t, f.root, "push", "opencode", "--strict", "--write")
+	if err == nil {
+		t.Error("--strict must error on undefined aliases")
+	}
+	if strings.Contains(read(t, f.opencode), "sonnet") {
+		t.Error("--strict must not write anything")
+	}
+}
+
+func TestPullPreservesAliases(t *testing.T) {
+	f := setup(t)
+	write(t, f.central, aliasCentral)
+
+	mustRun(t, f.root, "pull", "kilocode", "--write")
+	if !strings.Contains(read(t, f.central), `"aliases"`) {
+		t.Error("pull must preserve the aliases section")
+	}
+}
+
+func TestPullKeepsModelIDs(t *testing.T) {
+	f := setup(t)
+	write(t, f.kilo, `{
+  "provider": {
+    "llm-01": {
+      "name": "LLM 01",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": { "baseURL": "https://a.example/v1" },
+      "models": { "anthropic/claude-sonnet-4-5": { "name": "Sonnet" } }
+    }
+  }
+}`)
+
+	mustRun(t, f.root, "pull", "kilocode", "--write")
+	if !strings.Contains(read(t, f.central), "anthropic/claude-sonnet-4-5") {
+		t.Error("pull must store the model ID as-is")
+	}
+}
+
 func TestPreviewPullDoesNotWrite(t *testing.T) {
 	f := setup(t)
 	out := mustRun(t, f.root, "pull", "kilocode")

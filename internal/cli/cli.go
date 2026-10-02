@@ -42,6 +42,7 @@ type options struct {
 	showSecrets bool
 	jsonOut     bool
 	exitCode    bool
+	strict      bool
 }
 
 // stringList は --provider の繰り返し指定(カンマ区切り併用可)を蓄積する。
@@ -131,6 +132,7 @@ func registerFlags(fs *flag.FlagSet, o *options) {
 	fs.IntVar(&o.keep, "keep", o.keep, "残す履歴数(--prune 用)")
 	fs.BoolVar(&o.jsonOut, "json", o.jsonOut, "JSON で出力する(list / status / diff)")
 	fs.BoolVar(&o.exitCode, "exit-code", o.exitCode, "差分があるとき終了コード 3 で終了する(status)")
+	fs.BoolVar(&o.strict, "strict", o.strict, "エイリアス未定義のモデル名があるときエラーにする(push)")
 	fs.BoolVar(&o.version, "version", o.version, "バージョンを表示")
 	fs.BoolVar(&o.showSecrets, "show-secrets", o.showSecrets, "diff の出力で秘密の値をそのまま表示する(非推奨)")
 	fs.BoolVar(&o.help, "help", o.help, "ヘルプを表示")
@@ -643,7 +645,8 @@ func buildCentralChange(root adapter.Root, tool string, pulled map[string]model.
 	if version == 0 {
 		version = model.Version
 	}
-	cfg := &model.Config{Version: version, Providers: merged}
+	// aliases はユーザー定義の正。pull のたびに消えないよう引き継ぐ。
+	cfg := &model.Config{Version: version, Providers: merged, Aliases: base.Aliases}
 	after, err := store.Marshal(cfg)
 	if err != nil {
 		return plan.FileChange{}, nil, err
@@ -680,11 +683,29 @@ func cmdPush(o *options, args []string) error {
 	if err != nil {
 		return err
 	}
+	managed, err = o.applyAliases(managed, central, a)
+	if err != nil {
+		return err
+	}
 	change, err := buildToolChange(a, managed)
 	if err != nil {
 		return err
 	}
 	return o.applyOrPreview("push "+a.Name(), plan.Plan{Changes: []plan.FileChange{change}})
+}
+
+// applyAliases は push の描画前に managed のモデル名をツール向け ID に変換する。
+// pull には適用しない(ID を書き換えないため)。未定義のエイリアスは警告して
+// 素通しし、--strict 指定時はエラーにする。
+func (o *options) applyAliases(managed map[string]model.Provider, central *model.Config, a adapter.Adapter) (map[string]model.Provider, error) {
+	resolved, warns := syncer.ResolveAliases(managed, central.Aliases, a.Name())
+	for _, w := range warns {
+		fmt.Fprintf(o.errOut, "警告: %s\n", w)
+	}
+	if o.strict && len(warns) > 0 {
+		return nil, fmt.Errorf("エイリアス未定義のモデル名があります (--strict): %d 件", len(warns))
+	}
+	return resolved, nil
 }
 
 // ---- sync ----
@@ -747,6 +768,10 @@ func buildSyncPlan(o *options, root adapter.Root, from, to string) (plan.Plan, e
 		return plan.Plan{}, err
 	}
 	managed, err := syncer.FilterProviders(central.Providers, o.keys())
+	if err != nil {
+		return plan.Plan{}, err
+	}
+	managed, err = o.applyAliases(managed, central, toA)
 	if err != nil {
 		return plan.Plan{}, err
 	}
