@@ -221,6 +221,7 @@ $ provsync undo --list
 - `push` 時、対象ツール設定に既に存在する秘密フィールドはそのまま保持される(削除も中央への持ち出しもしない)。
 - opencode には `apiKeyEnv` を書き出さない(秘密は `auth.json` で管理されるため)。
 - 注意: `diff` は対象ファイルの生内容を表示するため、ツール設定内の既存の秘密(上の `diff` 例の `apiKey` 行)もそのまま画面に現れる。`status` も `pull` と同じ秘密検出の警告を表示する。
+- 脆弱性の報告方法は [SECURITY.md](SECURITY.md) を参照。
 
 ### 再直列化に関する注意
 
@@ -440,6 +441,7 @@ $ provsync undo --list
 - On `push`, secret fields that already exist in the target tool config are preserved as-is (never deleted, never leaked into the central config).
 - `apiKeyEnv` is never rendered for opencode (its keys live in `auth.json`).
 - Note: `diff` prints the raw target-file content, so existing secrets in a tool config (the `apiKey` line in the `diff` example above) appear on screen as-is. `status` shows the same secret-detection warnings as `pull`.
+- See [SECURITY.md](SECURITY.md) for how to report a vulnerability.
 
 ### Re-serialization Caveat
 
