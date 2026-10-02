@@ -10,3 +10,8 @@ func (e *UsageError) Error() string { return e.Msg }
 func usageErr(format string, a ...any) error {
 	return &UsageError{Msg: fmt.Sprintf(format, a...)}
 }
+
+// ExitError は特定の終了コードで終了させるためのエラー。メッセージは出さない。
+type ExitError struct{ Code int }
+
+func (e *ExitError) Error() string { return fmt.Sprintf("exit %d", e.Code) }

@@ -185,12 +185,47 @@ $ provsync undo
 | `--from` / `--to` | — | `sync` の取り込み元 / 反映先 |
 | `--list` | `false` | `undo` の履歴を表示 |
 | `--prune` / `--keep <n>` | `false` / `20` | `undo` の履歴を掃除する / 残す件数 |
+| `--json` | `false` | `list` / `status` / `diff` を JSON で出力する |
+| `--exit-code` | `false` | `status` で差分があるとき終了コード 3 で終了する |
 | `--version` | `false` | バージョンを表示 |
 | `--help` / `-h` | `false` | ヘルプを表示 |
 
 - フラグは位置引数の後にも置ける(`provsync push opencode --write` のように後置できる)。
 - サブコマンド別ヘルプは `provsync <command> --help` で表示できる。
-- 終了コード: `0` 成功 / `1` 実行時エラー / `2` 使い方の誤り(`status` / `list` / `diff` は差分があっても `0`)。エラーと警告は stderr、通常出力は stdout。
+- 終了コード: `0` 成功 / `1` 実行時エラー / `2` 使い方の誤り / `3` 差分あり(`status --exit-code` のみ)。
+
+| 終了コード | 意味 |
+|---|---|
+| `0` | 成功(差分なし) |
+| `1` | 実行時エラー(設定の読み込み失敗など) |
+| `2` | 使い方の誤り(未知のコマンド、引数の数違いなど) |
+| `3` | 差分あり(`status --exit-code` のみ) |
+
+### 機械可読出力(--json)
+
+`list` / `status` / `diff` に `--json` を付けると、標準出力は JSON のみになる(警告は stderr へ)。スキーマは `schemaVersion: 1`。
+
+```json
+{
+  "schemaVersion": 1,
+  "central": { "path": "~/.config/provsync/config.json", "exists": true, "providers": 2 },
+  "tools": [
+    {
+      "name": "kilocode",
+      "path": "~/.config/kilo/kilo.jsonc",
+      "exists": true,
+      "providers": 2,
+      "warnings": ["秘密情報らしいフィールド ..."],
+      "drift": ["llm-01: ツールに無い"]
+    }
+  ]
+}
+```
+
+- `status --json`: 上の形。`drift` が空 = 差分なし。
+- `list --json`: `warnings` / `drift` を除いた形。
+- `diff --json`: `{"schemaVersion": 1, "changes": [{"tool", "path", "semantic": [...], "diff": "マスク済み unified diff"}]}`。
+- `status --exit-code`: 差分があるとき終了コード `3`、同期済みなら `0`。
 
 ### 中央設定
 
@@ -447,12 +482,47 @@ $ provsync undo
 | `--from` / `--to` | — | Source / target tools for `sync` |
 | `--list` | `false` | Show `undo` history |
 | `--prune` / `--keep <n>` | `false` / `20` | Clean up `undo` history / ops to keep |
+| `--json` | `false` | Output `list` / `status` / `diff` as JSON |
+| `--exit-code` | `false` | Exit with code 3 when `status` detects drift |
 | `--version` | `false` | Show the version |
 | `--help` / `-h` | `false` | Show help |
 
 - Flags may appear after positional arguments (e.g. `provsync push opencode --write`).
 - Per-command help is available via `provsync <command> --help`.
-- Exit codes: `0` success / `1` runtime error / `2` usage error (`status` / `list` / `diff` exit 0 even with drift). Errors and warnings go to stderr; normal output to stdout.
+- Exit codes: `0` success / `1` runtime error / `2` usage error / `3` drift (`status --exit-code` only). Errors and warnings go to stderr; normal output to stdout.
+
+| Exit code | Meaning |
+|---|---|
+| `0` | Success (no drift) |
+| `1` | Runtime error (config load failure, etc.) |
+| `2` | Usage error (unknown command, wrong argument count, etc.) |
+| `3` | Drift detected (`status --exit-code` only) |
+
+### Machine-readable output (--json)
+
+`list` / `status` / `diff` accept `--json`; stdout then carries JSON only (warnings go to stderr). The schema carries `schemaVersion: 1`.
+
+```json
+{
+  "schemaVersion": 1,
+  "central": { "path": "~/.config/provsync/config.json", "exists": true, "providers": 2 },
+  "tools": [
+    {
+      "name": "kilocode",
+      "path": "~/.config/kilo/kilo.jsonc",
+      "exists": true,
+      "providers": 2,
+      "warnings": ["secret-like field ..."],
+      "drift": ["llm-01: ツールに無い"]
+    }
+  ]
+}
+```
+
+- `status --json`: the shape above; empty `drift` = no drift.
+- `list --json`: the same shape without `warnings` / `drift`.
+- `diff --json`: `{"schemaVersion": 1, "changes": [{"tool", "path", "semantic": [...], "diff": "masked unified diff"}]}`.
+- `status --exit-code`: exit code `3` when drift exists, `0` when synced.
 
 ### Central Config
 

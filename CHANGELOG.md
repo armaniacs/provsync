@@ -39,6 +39,11 @@
 - Windows は非対応であることを起動時に明示(`cli.Supported`。Windows では終了コード 1)。
 - `adapter.NewRoot` の XDG 解決(`XDG_CONFIG_HOME` / `XDG_STATE_HOME`)の回帰テストを追加。
 
+### Added (JSON)
+
+- `list` / `status` / `diff` に `--json` を追加(`schemaVersion: 1` 含む)。`--json` 時は標準出力が JSON のみになり、警告は stderr へ。
+- `status` に `--exit-code` を追加。差分があるとき終了コード 3 で終了する(`ExitError` 型で判別)。
+
 ### Added (CI)
 
 - CI(`.github/workflows/ci.yml`)を追加。push to main と PR で `make check` / `make test-race` / `make lint` / `make vuln` を macOS / Linux マトリクスで実行。

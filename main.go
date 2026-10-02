@@ -15,6 +15,10 @@ func main() {
 		os.Exit(1)
 	}
 	if err := cli.RunWith(os.Args[1:], os.Stdout, os.Stderr); err != nil {
+		var ee *cli.ExitError
+		if errors.As(err, &ee) {
+			os.Exit(ee.Code)
+		}
 		fmt.Fprintln(os.Stderr, "provsync:", err)
 		var ue *cli.UsageError
 		if errors.As(err, &ue) {

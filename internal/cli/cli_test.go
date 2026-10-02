@@ -491,6 +491,107 @@ func TestPushBrokenSymlinkErrors(t *testing.T) {
 	}
 }
 
+func TestStatusJSON(t *testing.T) {
+	f := setup(t)
+	mustRun(t, f.root, "pull", "kilocode", "--write")
+	out := mustRun(t, f.root, "status", "--json")
+
+	var rep struct {
+		SchemaVersion int `json:"schemaVersion"`
+		Central       struct {
+			Path      string `json:"path"`
+			Exists    bool   `json:"exists"`
+			Providers int    `json:"providers"`
+		} `json:"central"`
+		Tools []struct {
+			Name  string   `json:"name"`
+			Drift []string `json:"drift"`
+		} `json:"tools"`
+	}
+	if err := json.Unmarshal([]byte(out), &rep); err != nil {
+		t.Fatalf("status --json is not valid JSON: %v\n%s", err, out)
+	}
+	if rep.SchemaVersion != 1 {
+		t.Errorf("schemaVersion = %d, want 1", rep.SchemaVersion)
+	}
+	if !rep.Central.Exists || rep.Central.Providers != 2 {
+		t.Errorf("central = %+v", rep.Central)
+	}
+	if len(rep.Tools) != 2 {
+		t.Fatalf("tools = %d, want 2", len(rep.Tools))
+	}
+}
+
+func TestStatusExitCodeNoDrift(t *testing.T) {
+	f := setup(t)
+	mustRun(t, f.root, "pull", "kilocode", "--write")
+	mustRun(t, f.root, "push", "kilocode", "--write")
+	if _, err := run(t, f.root, "status", "kilocode", "--exit-code"); err != nil {
+		t.Errorf("synced tool must exit 0 with --exit-code: %v", err)
+	}
+}
+
+func TestStatusExitCodeWithDrift(t *testing.T) {
+	f := setup(t)
+	mustRun(t, f.root, "pull", "kilocode", "--write")
+	_, err := run(t, f.root, "status", "opencode", "--exit-code")
+	var ee *ExitError
+	if !errors.As(err, &ee) || ee.Code != 3 {
+		t.Errorf("drift must exit with ExitError{3}, got %T: %v", err, err)
+	}
+}
+
+func TestListJSON(t *testing.T) {
+	f := setup(t)
+	out := mustRun(t, f.root, "list", "--json")
+	var rep struct {
+		SchemaVersion int `json:"schemaVersion"`
+		Tools         []struct {
+			Name   string `json:"name"`
+			Exists bool   `json:"exists"`
+		} `json:"tools"`
+	}
+	if err := json.Unmarshal([]byte(out), &rep); err != nil {
+		t.Fatalf("list --json is not valid JSON: %v\n%s", err, out)
+	}
+	if rep.SchemaVersion != 1 {
+		t.Errorf("schemaVersion = %d, want 1", rep.SchemaVersion)
+	}
+	if len(rep.Tools) != 2 || !rep.Tools[0].Exists {
+		t.Errorf("tools = %+v", rep.Tools)
+	}
+}
+
+func TestDiffJSONMasksSecrets(t *testing.T) {
+	f := setup(t)
+	write(t, f.opencode, `{
+  "$schema": "opencode.schema.json",
+  "provider": {
+    "llm-02": {
+      "name": "LLM 02 old",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": { "baseURL": "https://old.example/v1", "apiKey": "sk-test-SECRET-999" },
+      "models": {}
+    }
+  }
+}`)
+	out := mustRun(t, f.root, "diff", "kilocode", "opencode", "--json")
+	if strings.Contains(out, "sk-test-SECRET-999") {
+		t.Errorf("diff --json must mask secrets:\n%s", out)
+	}
+	var rep struct {
+		SchemaVersion int `json:"schemaVersion"`
+		Changes       []struct {
+			Tool string `json:"tool"`
+			Path string `json:"path"`
+			Diff string `json:"diff"`
+		} `json:"changes"`
+	}
+	if err := json.Unmarshal([]byte(out), &rep); err != nil {
+		t.Fatalf("diff --json is not valid JSON: %v\n%s", err, out)
+	}
+}
+
 func TestPreviewPullDoesNotWrite(t *testing.T) {
 	f := setup(t)
 	out := mustRun(t, f.root, "pull", "kilocode")
