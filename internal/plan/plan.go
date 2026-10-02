@@ -88,11 +88,21 @@ func ChangedFields(a, b model.Provider) []string {
 	if a.APIKeyEnv != b.APIKeyEnv {
 		fields = append(fields, "apiKeyEnv")
 	}
-	if !reflect.DeepEqual(a.Models, b.Models) {
+	if !modelsEqual(a.Models, b.Models) {
 		fields = append(fields, "models")
 	}
 	if !reflect.DeepEqual(a.Extras, b.Extras) {
 		fields = append(fields, "x")
 	}
 	return fields
+}
+
+// modelsEqual は models の等価性を判定する。nil と空 map は等価として扱う。
+// 中央設定への保存で空の models は省略されるため、省略後(nil)と
+// 空オブジェクト({})をそのまま比較すると、ファイルが変わらない偽差分が発生する。
+func modelsEqual(a, b map[string]any) bool {
+	if len(a) == 0 && len(b) == 0 {
+		return true
+	}
+	return reflect.DeepEqual(a, b)
 }

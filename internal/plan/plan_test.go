@@ -71,3 +71,15 @@ func TestChangedFieldsDetectsExtras(t *testing.T) {
 		t.Error("ChangedFields should detect extras difference")
 	}
 }
+
+func TestChangedFieldsTreatsNilAndEmptyModelsAsEqual(t *testing.T) {
+	a := model.Provider{Name: "n", Models: nil}
+	b := model.Provider{Name: "n", Models: map[string]any{}}
+	if got := ChangedFields(a, b); len(got) != 0 {
+		t.Errorf("nil and empty models should be equal, got %v", got)
+	}
+	c := model.Provider{Name: "n", Models: map[string]any{"m": 1}}
+	if got := ChangedFields(a, c); len(got) != 1 || got[0] != "models" {
+		t.Errorf("non-empty models should differ, got %v", got)
+	}
+}

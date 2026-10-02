@@ -121,10 +121,19 @@ func hunkRanges(ops []op, context int) [][2]int {
 	return ranges
 }
 
+// labelPath は git 風の a/ b/ 接頭辞をパスへ付ける。
+// 絶対パスではスラッシュが重ならないように連結する。
+func labelPath(prefix, path string) string {
+	if strings.HasPrefix(path, "/") {
+		return prefix + path
+	}
+	return prefix + "/" + path
+}
+
 func render(path string, ops []op, ranges [][2]int) string {
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "--- a/%s\n", path)
-	fmt.Fprintf(&sb, "+++ b/%s\n", path)
+	fmt.Fprintf(&sb, "--- %s\n", labelPath("a", path))
+	fmt.Fprintf(&sb, "+++ %s\n", labelPath("b", path))
 
 	aLine, bLine := 1, 1
 	idx := 0

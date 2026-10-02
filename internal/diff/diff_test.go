@@ -50,6 +50,16 @@ func TestUnifiedExact(t *testing.T) {
 	}
 }
 
+func TestUnifiedAbsolutePathHeader(t *testing.T) {
+	got := Unified("/home/you/config.json", []byte("a\n"), []byte("b\n"), 3)
+	if !strings.Contains(got, "--- a/home/you/config.json\n") {
+		t.Errorf("absolute path header should not duplicate slash:\n%s", got)
+	}
+	if strings.Contains(got, "a//") {
+		t.Errorf("duplicated slash in header:\n%s", got)
+	}
+}
+
 func TestUnifiedMultiHunk(t *testing.T) {
 	var before, after strings.Builder
 	for i := 1; i <= 30; i++ {
