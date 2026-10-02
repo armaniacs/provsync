@@ -3,6 +3,13 @@
 このプロジェクトの主な変更点を記録する。
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/) に、バージョニングは [Semantic Versioning](https://semver.org/lang/ja/) に従う。
 
+## [Unreleased]
+
+### Added
+
+- `provsync --version` / `provsync version` でバージョンを表示。版の決定順はビルド時の ldflags 注入値、`go install` のモジュール版、`dev` の順。`make build` は `git describe` の結果を ldflags で注入する。
+- 引数なし実行・`--help` の使い方の先頭にバージョンを表示。
+
 ## [0.2.1] - 2026-10-02
 
 軽微な修正とドキュメント整備。

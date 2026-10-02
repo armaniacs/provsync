@@ -114,6 +114,33 @@ func TestList(t *testing.T) {
 	}
 }
 
+func TestVersionFlag(t *testing.T) {
+	f := setup(t)
+	out := mustRun(t, f.root, "--version")
+	if !strings.HasPrefix(out, "provsync ") {
+		t.Errorf("--version output must start with %q:\n%s", "provsync ", out)
+	}
+	if strings.Count(out, "\n") != 1 {
+		t.Errorf("--version must be a single line:\n%s", out)
+	}
+}
+
+func TestVersionSubcommand(t *testing.T) {
+	f := setup(t)
+	out := mustRun(t, f.root, "version")
+	if !strings.HasPrefix(out, "provsync ") {
+		t.Errorf("version output must start with %q:\n%s", "provsync ", out)
+	}
+}
+
+func TestNoArgsShowsVersion(t *testing.T) {
+	f := setup(t)
+	out := mustRun(t, f.root)
+	if !strings.Contains(out, "provsync ") {
+		t.Errorf("no-args output must show the version:\n%s", out)
+	}
+}
+
 func TestPreviewPullDoesNotWrite(t *testing.T) {
 	f := setup(t)
 	out := mustRun(t, f.root, "pull", "kilocode")

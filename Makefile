@@ -3,6 +3,8 @@ BIN_DIR := bin
 PKG := ./...
 GO ?= go
 GOFLAGS ?=
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
+LDFLAGS := -X github.com/armaniacs/provsync/internal/version.Version=$(VERSION)
 
 .DEFAULT_GOAL := help
 
@@ -14,7 +16,7 @@ help:
 
 ## build: バイナリを $(BIN_DIR)/$(BINARY) にビルド
 build:
-	$(GO) build $(GOFLAGS) -o $(BIN_DIR)/$(BINARY) .
+	$(GO) build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/$(BINARY) .
 
 ## test: テストを実行
 test:
@@ -42,7 +44,7 @@ check: fmt-check vet test
 
 ## install: go install でインストール
 install:
-	$(GO) install $(GOFLAGS) .
+	$(GO) install $(GOFLAGS) -ldflags "$(LDFLAGS)" .
 
 ## clean: ビルド成果物を削除
 clean:

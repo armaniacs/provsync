@@ -18,6 +18,7 @@ import (
 	"github.com/armaniacs/provsync/internal/plan"
 	"github.com/armaniacs/provsync/internal/store"
 	"github.com/armaniacs/provsync/internal/syncer"
+	"github.com/armaniacs/provsync/internal/version"
 )
 
 type options struct {
@@ -30,6 +31,7 @@ type options struct {
 	to        string
 	list      bool
 	help      bool
+	version   bool
 }
 
 // stringList は --provider の繰り返し指定(カンマ区切り併用可)を蓄積する。
@@ -60,6 +62,10 @@ func Run(args []string, out io.Writer) error {
 		return err
 	}
 	pos := fs.Args()
+	if opts.version {
+		fmt.Fprintf(out, "provsync %s\n", version.String())
+		return nil
+	}
 	if opts.help || len(pos) == 0 {
 		usage(out)
 		return nil
@@ -69,6 +75,9 @@ func Run(args []string, out io.Writer) error {
 	switch cmd {
 	case "list":
 		return cmdList(opts)
+	case "version":
+		fmt.Fprintf(opts.out, "provsync %s\n", version.String())
+		return nil
 	case "status":
 		return cmdStatus(opts, rest)
 	case "pull":
@@ -94,6 +103,7 @@ func registerFlags(fs *flag.FlagSet, o *options) {
 	fs.StringVar(&o.from, "from", o.from, "sync の取り込み元ツール")
 	fs.StringVar(&o.to, "to", o.to, "sync の反映先ツール")
 	fs.BoolVar(&o.list, "list", o.list, "undo の履歴を表示")
+	fs.BoolVar(&o.version, "version", o.version, "バージョンを表示")
 	fs.BoolVar(&o.help, "help", o.help, "ヘルプを表示")
 	fs.BoolVar(&o.help, "h", o.help, "ヘルプを表示")
 }
@@ -141,6 +151,7 @@ func (o *options) keys() []string {
 }
 
 func usage(out io.Writer) {
+	fmt.Fprintln(out, "provsync "+version.String())
 	fmt.Fprintln(out, `使い方: provsync <command> [flags]
 
 コマンド:
