@@ -8,7 +8,7 @@ LDFLAGS := -X github.com/armaniacs/provsync/internal/version.Version=$(VERSION)
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build test test-v fmt fmt-check vet check install clean
+.PHONY: help build test test-v test-race fmt fmt-check vet lint vuln check install clean
 
 ## help: このヘルプを表示
 help:
@@ -38,6 +38,18 @@ fmt-check:
 ## vet: go vet を実行
 vet:
 	$(GO) vet $(GOFLAGS) $(PKG)
+
+## lint: staticcheck を実行
+lint:
+	$(GO) run honnef.co/go/tools/cmd/staticcheck@latest $(PKG)
+
+## vuln: govulncheck を実行
+vuln:
+	$(GO) run golang.org/x/vuln/cmd/govulncheck@latest $(PKG)
+
+## test-race: データ競合検出付きでテスト
+test-race:
+	$(GO) test $(GOFLAGS) -race -cover $(PKG)
 
 ## check: fmt-check + vet + test をまとめて実行(CI 向け)
 check: fmt-check vet test

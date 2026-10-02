@@ -254,6 +254,9 @@ $ provsync undo --list
 ```bash
 make check    # fmt-check → vet → test
 make build    # bin/provsync
+make lint     # staticcheck
+make vuln     # govulncheck
+make test-race  # データ競合検出付きテスト
 ```
 
 パッケージ構成: `main.go`(ディスパッチ)、`internal/cli`(サブコマンド)、`internal/model`(カノニカル表現)、`internal/adapter`(kilocode / opencode 変換)、`internal/store`(中央設定)、`internal/syncer`(マージ)、`internal/jsonc`(JSONC 前処理)、`internal/plan`(変更計画と意味差分)、`internal/diff`(統合 diff)、`internal/backup`(バックアップと復元)、`internal/fsutil`(atomic write・JSON 整形)。
@@ -496,6 +499,9 @@ Tool configs are fully re-serialized (2-space indent, alphabetically sorted keys
 ```bash
 make check    # fmt-check → vet → test
 make build    # bin/provsync
+make lint     # staticcheck
+make vuln     # govulncheck
+make test-race  # race-detector tests
 ```
 
 Package layout: `main.go` (dispatch), `internal/cli` (subcommands), `internal/model` (canonical representation), `internal/adapter` (kilocode / opencode conversion), `internal/store` (central config), `internal/syncer` (merge), `internal/jsonc` (JSONC preprocessing), `internal/plan` (change plan and semantic diff), `internal/diff` (unified diff), `internal/backup` (backup and restore), `internal/fsutil` (atomic write, JSON formatting).

@@ -13,6 +13,11 @@
 - `diff` の出力で、秘密情報らしいキー(`apiKey` / `token` など)の値を既定で `********` にマスク。`--show-secrets` で実値を表示(警告付き)。書き込まれるファイルの内容はマスクされない。秘密キーの判定は pull と共通の仕組み(`internal/secret`)に集約。
 - `init [tool]` コマンド。初回セットアップ用に `pull` と同じ Plan で中央設定を作る。既存の中央設定は上書きしない。ツール省略時は設定ファイルが存在するツールを検出し、候補が 1 つなら自動選択する。秘密が検出されたときは `apiKeyEnv` への移行手順を警告する。
 
+### Added (CI)
+
+- CI(`.github/workflows/ci.yml`)を追加。push to main と PR で `make check` / `make test-race` / `make lint` / `make vuln` を macOS / Linux マトリクスで実行。
+- Makefile に `lint`(staticcheck)/ `vuln`(govulncheck)/ `test-race` を追加。lint ツールは `go run pkg@version` で取得し、`go.mod` に依存を追加しない。
+
 ### Docs
 
 - README: `diff` 出力例を実挙動(秘密マスク)に合わせて更新。`--show-secrets` フラグを追加。

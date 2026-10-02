@@ -8,10 +8,13 @@ the central config lives at `~/.config/provsync/config.json`.
 
 - `make check` — fmt-check → vet → test; run this before finishing. Order matters (fmt-check fails fast on unformatted code).
 - `make test` / `make test-v` — `go test ./...`
+- `make test-race` — `go test -race -cover ./...`
+- `make lint` — staticcheck (downloaded via `go run`, does not touch go.mod)
+- `make vuln` — govulncheck (downloaded via `go run`, does not touch go.mod)
 - `make build` — outputs to `bin/provsync` (gitignored)
 - `make fmt` — `gofmt -w .`
 
-No CI workflows and no external dependencies: standard library only. Do not add a module dependency without reason.
+CI runs `make check`, `make test-race`, `make lint`, and `make vuln` on push to main and on PRs (`.github/workflows/ci.yml`, macOS / Linux matrix). Keep local and CI commands identical via make. No module dependencies in `go.mod`: standard library only; linters are pulled at runtime with `go run pkg@version`. Do not add a module dependency without reason.
 
 ## Gotchas
 
