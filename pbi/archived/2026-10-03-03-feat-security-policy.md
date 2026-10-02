@@ -40,7 +40,7 @@ Scenario: 秘密に関する対象範囲が明確
 
 ## Definition of Done
 - [x] SECURITY.md が main にある
-- [ ] GitHub の非公開報告が有効化されている（外部設定・ユーザー作業）
+- [x] GitHub の非公開報告が有効化されている（外部設定・ユーザー作業）
 - [x] README から SECURITY.md へリンクしている
 
 ## 実装ガイド（この順に実施。先に [00-implementation-guide.md](00-implementation-guide.md) を読む）
