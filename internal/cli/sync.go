@@ -17,6 +17,43 @@ import (
 
 // ---- init ----
 
+// pullResult は pullFromTool の結果。cmdPull / cmdInit / sync --from の
+// from 経路で共有する。
+type pullResult struct {
+	Tool     string
+	Change   plan.FileChange
+	Central  *model.Config
+	Pulled   map[string]model.Provider
+	Warnings []string
+}
+
+// pullFromTool は「ツール設定を読み、provider を絞り込み、中央設定の変更計画を
+// 作る」pull 側の前処理を集約する。cmdPull / cmdInit / sync --from の 3 経路で
+// 共有する。新しい pull 前処理ステップはここに 1 箇所追加する。
+// 警告は stderr へ出す（出力先・文言・順序は従来どおり）。
+func (o *options) pullFromTool(root adapter.Root, toolName string) (pullResult, error) {
+	a, err := adapter.Get(toolName, root)
+	if err != nil {
+		return pullResult{}, err
+	}
+	pulled, warnings, err := a.Pull()
+	if err != nil {
+		return pullResult{}, err
+	}
+	for _, w := range warnings {
+		fmt.Fprintf(o.errOut, "警告: %s\n", w)
+	}
+	pulled, err = syncer.FilterProviders(pulled, o.keys())
+	if err != nil {
+		return pullResult{}, err
+	}
+	change, cfg, err := buildCentralChange(root, a.Name(), pulled)
+	if err != nil {
+		return pullResult{}, err
+	}
+	return pullResult{Tool: a.Name(), Change: change, Central: cfg, Pulled: pulled, Warnings: warnings}, nil
+}
+
 // cmdInit は初回セットアップ用。pull と同じ Plan を再利用して中央設定を作る。
 // 既存の中央設定は上書きしない。
 func cmdInit(o *options, args []string) error {
@@ -61,40 +98,24 @@ func cmdInit(o *options, args []string) error {
 		}
 	}
 
-	a, err := adapter.Get(tool, root)
+	res, err := o.pullFromTool(root, tool)
 	if err != nil {
 		return err
 	}
-	pulled, warnings, err := a.Pull()
-	if err != nil {
-		return err
-	}
-	for _, w := range warnings {
-		fmt.Fprintf(o.errOut, "警告: %s\n", w)
-	}
-	pulled, err = syncer.FilterProviders(pulled, o.keys())
-	if err != nil {
-		return err
-	}
-
-	change, _, err := buildCentralChange(root, a.Name(), pulled)
-	if err != nil {
-		return err
-	}
-	if len(pulled) == 0 {
+	if len(res.Pulled) == 0 {
 		fmt.Fprintln(o.out, "取り込める provider がありません")
 	}
-	p := plan.Plan{Changes: []plan.FileChange{change}}
-	err = o.applyOrPreview("init "+a.Name(), p)
+	p := plan.Plan{Changes: []plan.FileChange{res.Change}}
+	err = o.applyOrPreview("init "+res.Tool, p)
 	if err != nil {
 		return err
 	}
-	if len(warnings) > 0 {
+	if len(res.Warnings) > 0 {
 		fmt.Fprintln(o.errOut, "秘密は中央設定に保存されません。環境変数名を中央設定の apiKeyEnv に設定してください")
 	}
 	if p.Changed() {
 		if !o.write {
-			fmt.Fprintf(o.out, "次に: provsync init %s --write で中央設定を作成します\n", a.Name())
+			fmt.Fprintf(o.out, "次に: provsync init %s --write で中央設定を作成します\n", res.Tool)
 		} else {
 			fmt.Fprintln(o.out, "次の手順:")
 			fmt.Fprintln(o.out, "  1. provsync status              同期状態を確認する")
@@ -130,27 +151,11 @@ func cmdPull(o *options, args []string) error {
 	if err != nil {
 		return err
 	}
-	a, err := adapter.Get(args[0], root)
+	res, err := o.pullFromTool(root, args[0])
 	if err != nil {
 		return err
 	}
-	pulled, warnings, err := a.Pull()
-	if err != nil {
-		return err
-	}
-	for _, w := range warnings {
-		fmt.Fprintf(o.errOut, "警告: %s\n", w)
-	}
-	pulled, err = syncer.FilterProviders(pulled, o.keys())
-	if err != nil {
-		return err
-	}
-
-	change, _, err := buildCentralChange(root, a.Name(), pulled)
-	if err != nil {
-		return err
-	}
-	return o.applyOrPreview("pull "+a.Name(), plan.Plan{Changes: []plan.FileChange{change}})
+	return o.applyOrPreview("pull "+res.Tool, plan.Plan{Changes: []plan.FileChange{res.Change}})
 }
 
 // buildCentralChange は tool から取り込んだ pulled を中央設定へマージした
@@ -189,6 +194,22 @@ func buildCentralChange(root adapter.Root, tool string, pulled map[string]model.
 
 // ---- push ----
 
+// toolChangeForPush は「中央設定を絞り込み、routes / aliases を適用し、ツール設定の
+// 変更計画を作る」push 側の前処理を集約する。cmdPush と sync --to の 2 経路で共有する。
+// 新しい push 前処理ステップはここに 1 箇所追加する。
+func (o *options) toolChangeForPush(central *model.Config, a adapter.Adapter) (plan.FileChange, error) {
+	managed, err := syncer.FilterProviders(central.Providers, o.keys())
+	if err != nil {
+		return plan.FileChange{}, err
+	}
+	managed = o.applyRoutes(managed, central)
+	managed, err = o.applyAliases(managed, central, a)
+	if err != nil {
+		return plan.FileChange{}, err
+	}
+	return buildToolChange(a, managed)
+}
+
 func cmdPush(o *options, args []string) error {
 	if len(args) != 1 {
 		return usageErr("使い方: provsync push <tool>")
@@ -205,16 +226,7 @@ func cmdPush(o *options, args []string) error {
 	if err != nil {
 		return err
 	}
-	managed, err := syncer.FilterProviders(central.Providers, o.keys())
-	if err != nil {
-		return err
-	}
-	managed = o.applyRoutes(managed, central)
-	managed, err = o.applyAliases(managed, central, a)
-	if err != nil {
-		return err
-	}
-	change, err := buildToolChange(a, managed)
+	change, err := o.toolChangeForPush(central, a)
 	if err != nil {
 		return err
 	}
@@ -292,27 +304,12 @@ func buildSyncPlan(o *options, root adapter.Root, from, to string) (plan.Plan, e
 
 	var central *model.Config
 	if from != "" {
-		fromA, err := adapter.Get(from, root)
+		res, err := o.pullFromTool(root, from)
 		if err != nil {
 			return plan.Plan{}, err
 		}
-		pulled, warnings, err := fromA.Pull()
-		if err != nil {
-			return plan.Plan{}, err
-		}
-		for _, w := range warnings {
-			fmt.Fprintf(o.errOut, "警告: %s\n", w)
-		}
-		pulled, err = syncer.FilterProviders(pulled, o.keys())
-		if err != nil {
-			return plan.Plan{}, err
-		}
-		change, cfg, err := buildCentralChange(root, fromA.Name(), pulled)
-		if err != nil {
-			return plan.Plan{}, err
-		}
-		central = cfg
-		changes = append(changes, change)
+		central = res.Central
+		changes = append(changes, res.Change)
 	} else {
 		cfg, err := store.Load(root.CentralConfigPath())
 		if err != nil {
@@ -325,16 +322,7 @@ func buildSyncPlan(o *options, root adapter.Root, from, to string) (plan.Plan, e
 	if err != nil {
 		return plan.Plan{}, err
 	}
-	managed, err := syncer.FilterProviders(central.Providers, o.keys())
-	if err != nil {
-		return plan.Plan{}, err
-	}
-	managed = o.applyRoutes(managed, central)
-	managed, err = o.applyAliases(managed, central, toA)
-	if err != nil {
-		return plan.Plan{}, err
-	}
-	change, err := buildToolChange(toA, managed)
+	change, err := o.toolChangeForPush(central, toA)
 	if err != nil {
 		return plan.Plan{}, err
 	}

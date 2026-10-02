@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/armaniacs/provsync/internal/backup"
 	"github.com/armaniacs/provsync/internal/diff"
 	"github.com/armaniacs/provsync/internal/lock"
 	"github.com/armaniacs/provsync/internal/plan"
@@ -80,12 +79,10 @@ func cmdUndo(o *options, args []string) error {
 	if err != nil {
 		return err
 	}
-	st := backup.New(root.StateDir())
-	max, err := keepFromEnv()
+	st, err := newBackupStore(root)
 	if err != nil {
 		return err
 	}
-	st.SetMax(max)
 
 	if o.prune {
 		removed, err := st.Prune(o.keep)

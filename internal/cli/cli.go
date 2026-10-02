@@ -195,6 +195,18 @@ func keepFromEnv() (int, error) {
 	return n, nil
 }
 
+// newBackupStore は保持数の環境変数を反映したバックアップ Store を返す。
+// applyOrPreview と cmdUndo の 2 経路で共有する。
+func newBackupStore(root adapter.Root) (*backup.Store, error) {
+	st := backup.New(root.StateDir())
+	max, err := keepFromEnv()
+	if err != nil {
+		return nil, err
+	}
+	st.SetMax(max)
+	return st, nil
+}
+
 func (o *options) applyOrPreview(label string, p plan.Plan) error {
 	root, err := o.root()
 	if err != nil {
@@ -226,12 +238,10 @@ func (o *options) applyOrPreview(label string, p plan.Plan) error {
 		for _, c := range changed {
 			paths = append(paths, c.Path)
 		}
-		st := backup.New(root.StateDir())
-		max, err := keepFromEnv()
+		st, err := newBackupStore(root)
 		if err != nil {
 			return err
 		}
-		st.SetMax(max)
 		op, err := st.Record(label, paths)
 		if err != nil {
 			return fmt.Errorf("バックアップに失敗しました: %w", err)
