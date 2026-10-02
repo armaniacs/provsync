@@ -316,6 +316,21 @@ $ provsync undo
 - キーの値は環境変数から読むが、出力・ログには現れない。401/403 は `[認証失敗]`、タイムアウトや接続失敗は `[到達不可]` として分類表示する。
 - `apiKeyEnv`・環境変数・`baseURL` が未設定の provider は通信せず `[スキップ]` と表示する。
 
+### TUI ダッシュボード(任意)
+
+`provsync-tui` はターミナル上で provider と同期先ツールの対応をチェックボックスで選び、確認画面の承認後に適用する。コアの `go.mod` に依存を持ち込まないため、`tui/` に独立したモジュールとして隔離されており、導入は任意。
+
+```bash
+cd tui
+go build -o provsync-tui .
+./provsync-tui
+```
+
+- TUI は `provsync` バイナリを子プロセスとして呼ぶ(`provsync status --json` で状態取得、`provsync push <tool> --provider <p> --write` で適用)。変更内容を自前で計算しない。
+- 確認画面で承認するまで、ファイルは一切変わらない。
+- 標準入力が端末でないときは「対話が必要です」でエラー終了する。
+- `PROVSYNC_BIN` 環境変数で provsync バイナリのパスを指定できる(既定は PATH の `provsync`)。
+
 ### バックアップと undo
 
 - 書き込み直前に、影響する全ファイルを 1 操作としてバックアップする。
@@ -670,6 +685,21 @@ Known fields (`name` / `npm` / `baseURL` / `apiKeyEnv` / `models`) are normalize
 - `check` is the only command that talks to the network. Other commands never access anything beyond the synced files.
 - Key values are read from environment variables but never appear in output or logs. 401/403 shows as `[認証失敗]` (auth failure); timeouts and connection failures show as `[到達不可]` (unreachable).
 - Providers with an unset `apiKeyEnv`, environment variable, or `baseURL` are skipped without any request (`[スキップ]`).
+
+### TUI dashboard (optional)
+
+`provsync-tui` is a terminal dashboard for selecting provider/tool pairs with checkboxes and applying them after confirmation. The core `go.mod` carries no external dependencies; the TUI is isolated as a separate module under `tui/` and is opt-in.
+
+```bash
+cd tui
+go build -o provsync-tui .
+./provsync-tui
+```
+
+- The TUI calls the `provsync` binary as a child process (`provsync status --json` to build the view, `provsync push <tool> --provider <p> --write` to apply). It never computes changes itself.
+- Nothing is written until you approve on the confirmation screen.
+- With a non-terminal stdin it errors out with "対話が必要です" (interaction required).
+- `PROVSYNC_BIN` overrides the provsync binary path (default: `provsync` from PATH).
 
 ### Backups and undo
 

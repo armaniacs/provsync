@@ -74,6 +74,10 @@
 
 - 中央設定の `routes`(エイリアス名 → provider キーの優先順)で、`push` 時に使える経路(apiKeyEnv 設定済みまたは不要)を選び、選ばれなかった経路の provider を描画対象から除く。判定は環境変数の有無のみで通信しない。どの経路も使えないときは警告して変更しない。`routes` は pull しても消えない。スキーマは追加のみで version は 1 のまま。
 
+### Added (tui)
+
+- `provsync-tui`(任意)。ターミナル上で provider と同期先ツールをチェックボックスで選び、確認画面の承認後に適用する TUI。`tui/` に独立した Go モジュールとして隔離し、コアの `go.mod` に外部依存を追加しない。TUI は `provsync` バイナリを子プロセスとして呼び、変更内容を自前で計算しない。非対話端末ではエラー終了する。依存の隔離方式の決定記録は `docs/superpowers/specs/2026-10-03-tui-isolation-decision.md`。
+
 ### Added (CI)
 
 - CI(`.github/workflows/ci.yml`)を追加。push to main と PR で `make check` / `make test-race` / `make lint` / `make vuln` を macOS / Linux マトリクスで実行。
