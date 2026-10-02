@@ -4,6 +4,9 @@
 /tui/provsync-tui
 /tui/tui
 
+# goreleaser output
+/dist/
+
 # local tool config, not for the repository
 /.claude/
 /CLAUDE.md
