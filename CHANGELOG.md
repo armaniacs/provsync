@@ -34,6 +34,11 @@
 
 - 書き込み先がシンボリックリンクの場合、リンク自体が通常ファイルに置き換わる問題。リンクを維持したままリンク先の実体を atomic に更新する。リンク切れは明確なエラーにする。`list` はリンク先を表示する。
 
+### Added (platform)
+
+- Windows は非対応であることを起動時に明示(`cli.Supported`。Windows では終了コード 1)。
+- `adapter.NewRoot` の XDG 解決(`XDG_CONFIG_HOME` / `XDG_STATE_HOME`)の回帰テストを追加。
+
 ### Added (CI)
 
 - CI(`.github/workflows/ci.yml`)を追加。push to main と PR で `make check` / `make test-race` / `make lint` / `make vuln` を macOS / Linux マトリクスで実行。

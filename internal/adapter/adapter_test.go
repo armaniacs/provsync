@@ -20,6 +20,40 @@ func writeFile(t *testing.T, path, content string) {
 	}
 }
 
+func TestNewRoot(t *testing.T) {
+	home := t.TempDir()
+
+	t.Run("defaults when unset", func(t *testing.T) {
+		t.Setenv("XDG_CONFIG_HOME", "")
+		t.Setenv("XDG_STATE_HOME", "")
+		r := NewRoot(home)
+		if r.ConfigHome != filepath.Join(home, ".config") {
+			t.Errorf("ConfigHome = %q, want %q", r.ConfigHome, filepath.Join(home, ".config"))
+		}
+		if r.StateHome != filepath.Join(home, ".local", "state") {
+			t.Errorf("StateHome = %q, want %q", r.StateHome, filepath.Join(home, ".local", "state"))
+		}
+	})
+
+	t.Run("respects XDG_CONFIG_HOME", func(t *testing.T) {
+		t.Setenv("XDG_CONFIG_HOME", "/custom")
+		t.Setenv("XDG_STATE_HOME", "")
+		r := NewRoot(home)
+		if got := r.CentralConfigPath(); got != filepath.Join("/custom", "provsync", "config.json") {
+			t.Errorf("CentralConfigPath() = %q, want /custom/provsync/config.json", got)
+		}
+	})
+
+	t.Run("respects XDG_STATE_HOME", func(t *testing.T) {
+		t.Setenv("XDG_CONFIG_HOME", "")
+		t.Setenv("XDG_STATE_HOME", "/s")
+		r := NewRoot(home)
+		if got := r.StateDir(); got != filepath.Join("/s", "provsync") {
+			t.Errorf("StateDir() = %q, want /s/provsync", got)
+		}
+	})
+}
+
 func TestKilocodePullDecodesExtrasAndWarns(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "kilo.jsonc")
