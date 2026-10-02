@@ -1,5 +1,7 @@
 # kilo → opencode Provider Port Implementation Plan
 
+> **この計画は完了し、0.1.0 としてリリース済みです。** チェックボックスは未更新の履歴記録です。現行の設計は [2026-10-02-provsync-multi-tool-sync-design.md](../specs/2026-10-02-provsync-multi-tool-sync-design.md) を参照してください。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** `~/.config/kilo/kilo.jsonc` の provider エントリ `llm-01` / `llm-02` / `llm-03` を `~/.config/opencode/opencode.json` へ移植する Go 製 CLI `provsync` を作る。既定はプレビュー、`--write` でバックアップ付きアトミック書き込み。

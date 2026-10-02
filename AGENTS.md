@@ -15,7 +15,7 @@ No CI workflows and no external dependencies: standard library only. Do not add 
 
 ## Gotchas
 
-- Default is **preview only**; files change only with `--write`. There is no one-shot flag mode anymore — the old `--source/--target/--providers/--write` CLI was replaced by subcommands (`list`/`status`/`pull`/`push`/`sync`/`diff`/`undo`).
+- Default is **preview only**; files change only with `--write`. There is no one-shot flag mode anymore — the old `--source/--target/--providers/--backup` CLI was replaced by subcommands (`list`/`status`/`pull`/`push`/`sync`/`diff`/`undo`).
 - All writes are backed up as timestamped operations under `~/.local/state/provsync/` (unless `--no-backup`), then applied via temp file + `os.Rename` (atomic). Preserve this.
 - `undo` restores the last (or a given) operation, records the pre-restore state as a new operation (redoable), ignores `--write`, and never writes without a recorded backup path.
 - `Plan` (`internal/plan`) is the single source of truth for preview, `diff`, apply, and backup. Do not compute "what changes" separately in `cli`; build a Plan and reuse it.

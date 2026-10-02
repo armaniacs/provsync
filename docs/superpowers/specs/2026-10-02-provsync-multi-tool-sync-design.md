@@ -1,7 +1,7 @@
 # provsync マルチツール provider 同期ツール 設計
 
 日付: 2026-10-02
-状態: 実装前(このドキュメントの承認後に実装計画を作成する)
+状態: 実装済み(0.2.0 としてリリース。本文は実装に合わせて as-built として維持する)
 
 置き換え: `docs/superpowers/specs/2026-10-01-kilo-to-opencode-provider-port-design.md`(単発移植 CLI)を置き換える。旧 CLI のフラグは削除する。
 
@@ -52,7 +52,7 @@ internal/jsonc/            JSONC(行コメント・末尾カンマ)の前処理
 internal/plan/             変更計画(Plan)の生成。プレビュー/diff/書き込み/undo の単一情報源
 internal/diff/             統合 diff のレンダリング
 internal/backup/           タイムスタンプ付きバックアップ・マニフェスト・復元
-internal/fsutil/           atomic write / copy(現行 main.go から抽出)
+internal/fsutil/           atomic write・ソート済み JSON 整形
 ```
 
 ### 責務と境界
@@ -84,7 +84,7 @@ type Provider struct {
 ```
 
 - 既知フィールドは `name` / `npm` / `baseURL` / `apiKeyEnv` / `models`。
-- `models` は AI SDK 由来の共有形状として深く型化せず透過させる。
+- `models` は AI SDK 由来の共有形状として深く型化せず透過させる。空の `models` は中央設定への保存時に省略され、比較では nil と空オブジェクトを等価として扱う(偽差分を防ぐ)。
 - 未知フィールドは `Extras[<tool>]` に保存し、同じツールへ push するときにそのまま戻す。
 - `version` は将来のマイグレーション用。v1 は `1`。
 
@@ -142,7 +142,7 @@ type Adapter interface {
 | `models` | `provider.<k>.models` | `provider.<k>.models` |
 | その他 | `Extras["kilocode"]` | `Extras["opencode"]` |
 
-- 実際のフィールド形は実装時に実フィクスチャで検証し、差異があればアダプタ内で吸収する。
+- 実際のフィールド形は実フィクスチャで検証済み。ツール間の差異はアダプタ内で吸収する。
 - `apiKeyEnv` は情報として保持するが、opencode へは書き出さない(秘密を仲介しない方針の帰結)。
 - 秘密情報らしいキー(`apiKey` / `token` 等)は pull 時に値を取り込まず警告する。
   push 時は、対象ツール設定ファイル内の既存の当該キーをそのまま保持する
@@ -181,7 +181,8 @@ type Adapter interface {
 - `sync` の `--from` は省略可。省略時は中央設定の現状を `--to` へ反映する。
 - `diff <from> <to>` は `sync --from <from> --to <to>` の Plan を表示するだけで書き込まない。中央設定の変更も含めて表示する。
 - `undo` は復元操作自体を新しい操作として記録する(redo 可能)。
-- `undo` は復元が目的のため、`--write` を要求せず直接適用する(グローバル `--write` は無視する)。
+- `undo` は復元が目的のため、`--write` を要求せず直接適用する(グローバル `--write` は無視する)。やり直し用の操作 ID を表示する。
+- `--no-backup` での書き込みは `Files` 無しのマーカー操作として履歴に記録される。後続の `undo` は、直近の書き込みがバックアップなしで行われた旨を警告してから、それより前の操作を復元する。
 - `status` / `list` / `diff` は読み取り専用で、drift があっても終了コード 0(v1 では検査用の非 0 終了は提供しない)。
 - 変更が無い場合、プレビューは `変更はありません` を表示し、`--write` は書き込みをスキップする(冪等)。
 
@@ -229,6 +230,7 @@ type Operation struct {
     Command   string     // "push opencode" 等
     Files     []FileRef  // {Path, BackupPath, SHA256, Mode}
     Undone    bool
+    NoBackup  bool       // --no-backup での書き込みを示すマーカー(Files は空で、undo の対象外)
 }
 ```
 
@@ -243,6 +245,8 @@ type Operation struct {
 - `undo --list`: 操作履歴(ID / 日時 / コマンド / 対象ファイル / undone)を表示する。
 - 復元は各ファイルをバックアップから atomic に書き戻し、権限も復元する。
 - 復元前の現状を新しい操作として記録し、元操作を `Undone=true` にする。これにより undo 自体を undo できる。
+- redo 用の記録は復元より先にマニフェストへ反映する。復元の途中で失敗しても redo は常に `index.json` から到達可能。
+- `--no-backup` のマーカー操作は bare `undo` の対象外(スキップされる)。ただし最新の操作がマーカーのときは、それより前の操作に戻る旨を警告する。
 
 ## データフロー
 
@@ -259,6 +263,7 @@ type Operation struct {
 1. アダプタがツール設定を読み、canonical へ変換。
 2. 中央設定の該当 provider をマージ(managed = 取得した provider、`--provider` で限定可)。
    ツール側に存在しない provider は中央から削除しない(安全側。削除は将来の明示コマンドで扱う)。
+   マージは該当ツールの名前空間(`Extras[tool]`)のみを上書きし、他ツールの名前空間と `version` は保持する。
 3. Plan(対象: 中央設定)を生成。
 4. プレビュー表示、または `--write`。
 

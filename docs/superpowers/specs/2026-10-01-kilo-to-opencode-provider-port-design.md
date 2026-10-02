@@ -1,5 +1,7 @@
 # kilo → opencode Provider Port Tool 設計
 
+> **この文書は置き換えられました。** 現行の設計は [2026-10-02-provsync-multi-tool-sync-design.md](2026-10-02-provsync-multi-tool-sync-design.md) を参照してください。ここには履歴として残しています。
+
 日付: 2026-10-01
 
 ## 目的

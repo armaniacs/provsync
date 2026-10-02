@@ -32,7 +32,7 @@ provsync は、複数の LLM コーディングツールがそれぞれ独自の
 
 ### インストール
 
-Go 1.25 以上。
+Go 1.25.14 以上。
 
 ```bash
 go install github.com/armaniacs/provsync@latest
@@ -87,6 +87,7 @@ $ provsync status
 kilocode  /home/you/.config/kilo/kilo.jsonc (2 providers)
   差分なし
 opencode  /home/you/.config/opencode/opencode.json (3 providers)
+  警告: 秘密情報らしいフィールド "options.apiKey" を検出しました。秘密は仲介しないため取り込みません
   groq: 中央に無い
 ```
 
@@ -102,10 +103,10 @@ central: /home/you/.config/provsync/config.json
 opencode: /home/you/.config/opencode/opencode.json
   llm-01: 追加
   llm-02: 追加
---- a//home/you/.config/opencode/opencode.json
-+++ b//home/you/.config/opencode/opencode.json
+--- a/home/you/.config/opencode/opencode.json
++++ b/home/you/.config/opencode/opencode.json
 @@ -1,15 +1,44 @@
- {
+  {
 -  "theme": "dark",
    "provider": {
      "groq": {
@@ -150,6 +151,7 @@ $ provsync undo
 | `--root <dir>` | `$HOME` | パス解決の基準ディレクトリを差し替える(テスト用) |
 | `--from` / `--to` | — | `sync` の取り込み元 / 反映先 |
 | `--list` | `false` | `undo` の履歴を表示 |
+| `--help` / `-h` | `false` | ヘルプを表示 |
 
 - フラグは位置引数の後にも置ける(`provsync push opencode --write` のように後置できる)。
 - 終了コード: 成功時は `0`(`status` / `list` / `diff` は差分があっても `0`)。エラー時は非 `0`。
@@ -185,6 +187,8 @@ $ provsync undo
 }
 ```
 
+`version` は中央設定の形式バージョン(将来のマイグレーション用)。現行は `1`。
+
 ### バックアップと undo
 
 - 書き込み直前に、影響する全ファイルを 1 操作としてバックアップする。
@@ -214,6 +218,7 @@ $ provsync undo --list
 
 - `push` 時、対象ツール設定に既に存在する秘密フィールドはそのまま保持される(削除も中央への持ち出しもしない)。
 - opencode には `apiKeyEnv` を書き出さない(秘密は `auth.json` で管理されるため)。
+- 注意: `diff` は対象ファイルの生内容を表示するため、ツール設定内の既存の秘密(上の `diff` 例の `apiKey` 行)もそのまま画面に現れる。`status` も `pull` と同じ秘密検出の警告を表示する。
 
 ### 再直列化に関する注意
 
@@ -258,7 +263,7 @@ provsync is a CLI that syncs the `provider` entries your LLM coding tools each k
 
 ### Installation
 
-Go 1.25 or later.
+Go 1.25.14 or later.
 
 ```bash
 go install github.com/armaniacs/provsync@latest
@@ -315,6 +320,7 @@ $ provsync status
 kilocode  /home/you/.config/kilo/kilo.jsonc (2 providers)
   差分なし
 opencode  /home/you/.config/opencode/opencode.json (3 providers)
+  警告: 秘密情報らしいフィールド "options.apiKey" を検出しました。秘密は仲介しないため取り込みません
   groq: 中央に無い
 ```
 
@@ -330,10 +336,10 @@ central: /home/you/.config/provsync/config.json
 opencode: /home/you/.config/opencode/opencode.json
   llm-01: 追加
   llm-02: 追加
---- a//home/you/.config/opencode/opencode.json
-+++ b//home/you/.config/opencode/opencode.json
+--- a/home/you/.config/opencode/opencode.json
++++ b/home/you/.config/opencode/opencode.json
 @@ -1,15 +1,44 @@
- ...
+  ...
 
 $ provsync undo
 復元しました: 20261002T093045-8c2d (push opencode)
@@ -363,6 +369,7 @@ $ provsync undo
 | `--root <dir>` | `$HOME` | Override the base directory for path resolution (testing) |
 | `--from` / `--to` | — | Source / target tools for `sync` |
 | `--list` | `false` | Show `undo` history |
+| `--help` / `-h` | `false` | Show help |
 
 - Flags may appear after positional arguments (e.g. `provsync push opencode --write`).
 - Exit codes: `0` on success (`status` / `list` / `diff` exit 0 even with drift); non-zero on errors.
@@ -398,6 +405,8 @@ Known fields (`name` / `npm` / `baseURL` / `apiKeyEnv` / `models`) are normalize
 }
 ```
 
+`version` is the central config format version (reserved for future migrations; currently `1`).
+
 ### Backups and undo
 
 - Just before every write, all affected files are backed up as one operation.
@@ -427,6 +436,7 @@ $ provsync undo --list
 
 - On `push`, secret fields that already exist in the target tool config are preserved as-is (never deleted, never leaked into the central config).
 - `apiKeyEnv` is never rendered for opencode (its keys live in `auth.json`).
+- Note: `diff` prints the raw target-file content, so existing secrets in a tool config (the `apiKey` line in the `diff` example above) appear on screen as-is. `status` shows the same secret-detection warnings as `pull`.
 
 ### Re-serialization Caveat
 
