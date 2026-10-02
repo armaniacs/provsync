@@ -172,6 +172,7 @@ $ provsync undo
 | `sync --from <a> --to <b>` | a を取り込み b へ反映する(`--from` 省略時は中央設定をそのまま使う) |
 | `diff <from> <to>` | from を to に適用した場合の差分(意味差分 + 統合 diff)を表示 |
 | `undo [id]` | 直前または指定操作を復元する(`--list` で履歴、`--prune --keep <n>` で掃除) |
+| `doctor` | 環境を診断する(存在・構文・`apiKeyEnv`・権限。通信しない) |
 | `completion <shell>` | bash / zsh / fish 用の補完スクリプトを出力 |
 | `--version` / `version` | バージョンを表示 |
 
@@ -496,6 +497,7 @@ $ provsync undo
 | `sync --from <a> --to <b>` | Pull from a and push to b (`--from` optional: uses the central config as-is) |
 | `diff <from> <to>` | Show what applying from to to would change (semantic + unified diff) |
 | `undo [id]` | Restore the last (or given) operation (`--list` for history, `--prune --keep <n>` to clean up) |
+| `doctor` | Diagnose the environment (existence, syntax, `apiKeyEnv`, permissions; no network) |
 | `completion <shell>` | Print a completion script for bash / zsh / fish |
 
 | Flag | Default | Description |

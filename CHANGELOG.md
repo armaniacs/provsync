@@ -57,6 +57,10 @@
 
 - `--write` の書き込み区間と `undo` の復元区間に、状態ディレクトリの排他ロック(`syscall.Flock`)を導入。後発のプロセスは待機し、タイムアウト(10 秒)でエラー終了。プレビュー・`diff`・`status` はロックを取らない。PID ファイル方式は使わず、プロセス終了で OS が自動解放する。
 
+### Added (doctor)
+
+- `provsync doctor` コマンド。パス解決・中央設定と各ツール設定の存在と構文・`apiKeyEnv` の環境変数の設定有無・ファイル権限を一覧で診断する。通信せずファイルも書かない。NG があるときは終了コード 1。秘密の値は出力しない。
+
 ### Added (CI)
 
 - CI(`.github/workflows/ci.yml`)を追加。push to main と PR で `make check` / `make test-race` / `make lint` / `make vuln` を macOS / Linux マトリクスで実行。

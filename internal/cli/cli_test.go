@@ -745,6 +745,74 @@ func TestConcurrentWritesKeepIndexValid(t *testing.T) {
 	}
 }
 
+func TestDoctorAllOK(t *testing.T) {
+	f := setup(t)
+	mustRun(t, f.root, "pull", "kilocode", "--write")
+	out := mustRun(t, f.root, "doctor")
+	if !strings.Contains(out, "[OK]") {
+		t.Errorf("doctor must show OK items:\n%s", out)
+	}
+}
+
+func TestDoctorReportsSyntaxError(t *testing.T) {
+	f := setup(t)
+	mustRun(t, f.root, "pull", "kilocode", "--write")
+	write(t, f.kilo, "{ \"provider\": ")
+	_, err := run(t, f.root, "doctor")
+	if err == nil {
+		t.Error("doctor must error when a syntax problem is found")
+	}
+	if !strings.Contains(err.Error(), "診断で問題が見つかりました") {
+		t.Errorf("doctor error must summarize: %v", err)
+	}
+}
+
+func TestDoctorWarnsMissingEnvVar(t *testing.T) {
+	f := setup(t)
+	write(t, f.central, `{
+  "providers": {
+    "llm-01": {
+      "name": "LLM 01",
+      "npm": "@ai-sdk/openai-compatible",
+      "baseURL": "https://a.example/v1",
+      "apiKeyEnv": "PROVSYNC_TEST_MISSING_KEY"
+    }
+  },
+  "version": 1
+}`)
+	t.Setenv("PROVSYNC_TEST_MISSING_KEY", "")
+	os.Unsetenv("PROVSYNC_TEST_MISSING_KEY")
+
+	out := mustRun(t, f.root, "doctor")
+	if !strings.Contains(out, "PROVSYNC_TEST_MISSING_KEY") {
+		t.Errorf("doctor must name the unset env var:\n%s", out)
+	}
+	if !strings.Contains(out, "[警告]") {
+		t.Errorf("doctor must warn for the unset env var:\n%s", out)
+	}
+}
+
+func TestDoctorDoesNotPrintSecretValues(t *testing.T) {
+	f := setup(t)
+	write(t, f.kilo, `{
+  "provider": {
+    "llm-01": {
+      "name": "LLM 01",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": { "baseURL": "https://a.example/v1", "apiKey": "sk-VERY-SECRET-VALUE" },
+      "models": {}
+    }
+  }
+}`)
+	out := mustRun(t, f.root, "doctor")
+	if strings.Contains(out, "sk-VERY-SECRET-VALUE") {
+		t.Errorf("doctor output must not contain the secret value:\n%s", out)
+	}
+	if !strings.Contains(out, "apiKey") {
+		t.Errorf("doctor must mention the secret-like key name:\n%s", out)
+	}
+}
+
 func TestPreviewPullDoesNotWrite(t *testing.T) {
 	f := setup(t)
 	out := mustRun(t, f.root, "pull", "kilocode")
