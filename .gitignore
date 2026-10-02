@@ -1,1 +1,9 @@
 /bin/
+
+# build outputs of the isolated tui module
+/tui/provsync-tui
+/tui/tui
+
+# local tool config, not for the repository
+/.claude/
+/CLAUDE.md
