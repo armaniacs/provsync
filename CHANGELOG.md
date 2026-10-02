@@ -61,6 +61,11 @@
 
 - `provsync doctor` コマンド。パス解決・中央設定と各ツール設定の存在と構文・`apiKeyEnv` の環境変数の設定有無・ファイル権限を一覧で診断する。通信せずファイルも書かない。NG があるときは終了コード 1。秘密の値は出力しない。
 
+### Added (docs)
+
+- CONTRIBUTING.md(貢献者向け)を追加。開発手順・コミット規約・秘密の扱いの原則・新しいツールのアダプタ追加ガイドを記載。
+- 全アダプタに適用する共通の契約テスト(`TestAdapterContract`)を追加。往復冪等、ファイル内の秘密キー保持、未知フィールド保持、秘密がカノニカル形へ漏れないことを検証する。
+
 ### Added (CI)
 
 - CI(`.github/workflows/ci.yml`)を追加。push to main と PR で `make check` / `make test-race` / `make lint` / `make vuln` を macOS / Linux マトリクスで実行。

@@ -342,6 +342,7 @@ make test-race  # データ競合検出付きテスト
 
 - [CHANGELOG.md](CHANGELOG.md)
 - [設計ドキュメント](docs/superpowers/specs/2026-10-02-provsync-multi-tool-sync-design.md)
+- [CONTRIBUTING.md](CONTRIBUTING.md)(貢献者向け: アダプタ追加ガイド)
 
 ## English
 
@@ -666,6 +667,7 @@ Package layout: `main.go` (dispatch), `internal/cli` (subcommands), `internal/mo
 
 - [CHANGELOG.md](CHANGELOG.md)
 - [Design document](docs/superpowers/specs/2026-10-02-provsync-multi-tool-sync-design.md)
+- [CONTRIBUTING.md](CONTRIBUTING.md) (contributor guide: adding an adapter)
 
 ## License / ライセンス
 
