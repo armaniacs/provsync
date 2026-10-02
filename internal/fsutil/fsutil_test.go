@@ -53,3 +53,48 @@ func TestWriteFileAtomicCreatesDir(t *testing.T) {
 		t.Errorf("file not created: %v", err)
 	}
 }
+
+func TestWriteFileAtomicNewFileMode(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "f.json")
+	if err := WriteFileAtomic(path, []byte("{}\n")); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0o600 {
+		t.Errorf("new file mode = %o, want 600", info.Mode().Perm())
+	}
+	sub := filepath.Join(dir, "sub")
+	path2 := filepath.Join(sub, "f.json")
+	if err := WriteFileAtomic(path2, []byte("{}\n")); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	info, err = os.Stat(sub)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0o700 {
+		t.Errorf("new dir mode = %o, want 700", info.Mode().Perm())
+	}
+}
+
+func TestWriteFileAtomicKeepsExistingDirMode(t *testing.T) {
+	dir := t.TempDir()
+	sub := filepath.Join(dir, "sub")
+	if err := os.MkdirAll(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := WriteFileAtomic(filepath.Join(sub, "f.json"), []byte("{}\n")); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	info, err := os.Stat(sub)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0o755 {
+		t.Errorf("existing dir mode = %o, want 755", info.Mode().Perm())
+	}
+}

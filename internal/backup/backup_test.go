@@ -93,6 +93,72 @@ func TestRetention(t *testing.T) {
 	}
 }
 
+func TestSetMax(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "a.json")
+	if err := os.WriteFile(path, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	st := New(filepath.Join(dir, "state"))
+	st.SetMax(5)
+	for i := 0; i < 8; i++ {
+		if _, err := st.Record("op", []string{path}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	ops, err := st.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ops) != 5 {
+		t.Errorf("len = %d, want 5", len(ops))
+	}
+}
+
+func TestPrune(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "a.json")
+	if err := os.WriteFile(path, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	stateDir := filepath.Join(dir, "state")
+	st := New(stateDir)
+	for i := 0; i < 6; i++ {
+		if _, err := st.Record("op", []string{path}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	removed, err := st.Prune(2)
+	if err != nil {
+		t.Fatalf("prune: %v", err)
+	}
+	if removed != 4 {
+		t.Errorf("removed = %d, want 4", removed)
+	}
+	ops, err := st.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ops) != 2 {
+		t.Errorf("len = %d, want 2", len(ops))
+	}
+	entries, err := os.ReadDir(filepath.Join(stateDir, "backups"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 2 {
+		t.Errorf("backup dirs = %d, want 2", len(entries))
+	}
+	// 冪等: 再実行では何も消えない
+	removed, err = st.Prune(2)
+	if err != nil {
+		t.Fatalf("prune 2nd: %v", err)
+	}
+	if removed != 0 {
+		t.Errorf("2nd removed = %d, want 0", removed)
+	}
+}
+
 func TestFindUnknownIDErrors(t *testing.T) {
 	st := New(t.TempDir())
 	if _, err := st.Find("nope"); err == nil {

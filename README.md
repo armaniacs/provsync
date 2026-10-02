@@ -160,7 +160,7 @@ $ provsync undo
 | `push <tool>` | 中央設定をツール設定へ反映する |
 | `sync --from <a> --to <b>` | a を取り込み b へ反映する(`--from` 省略時は中央設定をそのまま使う) |
 | `diff <from> <to>` | from を to に適用した場合の差分(意味差分 + 統合 diff)を表示 |
-| `undo [id]` | 直前または指定操作を復元する(`--list` で履歴) |
+| `undo [id]` | 直前または指定操作を復元する(`--list` で履歴、`--prune --keep <n>` で掃除) |
 | `completion <shell>` | bash / zsh / fish 用の補完スクリプトを出力 |
 | `--version` / `version` | バージョンを表示 |
 
@@ -173,6 +173,7 @@ $ provsync undo
 | `--root <dir>` | `$HOME` | パス解決の基準ディレクトリを差し替える(テスト用) |
 | `--from` / `--to` | — | `sync` の取り込み元 / 反映先 |
 | `--list` | `false` | `undo` の履歴を表示 |
+| `--prune` / `--keep <n>` | `false` / `20` | `undo` の履歴を掃除する / 残す件数 |
 | `--version` | `false` | バージョンを表示 |
 | `--help` / `-h` | `false` | ヘルプを表示 |
 
@@ -217,7 +218,7 @@ $ provsync undo
 
 - 書き込み直前に、影響する全ファイルを 1 操作としてバックアップする。
 - 保存先は `~/.local/state/provsync/`:`index.json`(操作履歴)と `backups/<op-id>/`(SHA-256 検証付きのファイルスナップショット)。
-- 最新 20 操作を保持し、古い操作は自動削除される。
+- 最新 20 操作を保持し、古い操作は自動削除される。`PROVSYNC_KEEP` 環境変数で保持数を変更できる(1 以上の整数)。
 
 ```console
 $ provsync undo --list
@@ -229,7 +230,9 @@ $ provsync undo --list
 
 - `provsync undo` は直前の書き込みを、`provsync undo <id>` は指定操作を復元する。`--write` を要求せず直接適用する。
 - undo は復元前の現状を新しい操作として記録し、やり直し用の ID を表示する(`やり直し: provsync undo <id>`)。
+- `provsync undo --prune --keep <n>` で新しい n 件を残して履歴を掃除できる(削除件数が表示される)。
 - `--no-backup` での書き込みはマーカー操作として履歴に記録される。後続の `undo` では「直近の書き込みはバックアップなしで行われたため、この undo はそれより前の状態に戻します」と警告される。
+- 新規作成される中央設定と状態ディレクトリは 0600 / 0700 で作られる。既存ファイルの権限は変更されない。`status` は権限が緩い場合に `chmod` を案内する。
 
 ### 秘密情報の扱い
 
@@ -408,7 +411,7 @@ $ provsync undo
 | `push <tool>` | Reflect the central config into a tool config |
 | `sync --from <a> --to <b>` | Pull from a and push to b (`--from` optional: uses the central config as-is) |
 | `diff <from> <to>` | Show what applying from to to would change (semantic + unified diff) |
-| `undo [id]` | Restore the last (or given) operation (`--list` for history) |
+| `undo [id]` | Restore the last (or given) operation (`--list` for history, `--prune --keep <n>` to clean up) |
 | `completion <shell>` | Print a completion script for bash / zsh / fish |
 
 | Flag | Default | Description |
@@ -420,6 +423,7 @@ $ provsync undo
 | `--root <dir>` | `$HOME` | Override the base directory for path resolution (testing) |
 | `--from` / `--to` | — | Source / target tools for `sync` |
 | `--list` | `false` | Show `undo` history |
+| `--prune` / `--keep <n>` | `false` / `20` | Clean up `undo` history / ops to keep |
 | `--version` | `false` | Show the version |
 | `--help` / `-h` | `false` | Show help |
 
@@ -464,7 +468,7 @@ Known fields (`name` / `npm` / `baseURL` / `apiKeyEnv` / `models`) are normalize
 
 - Just before every write, all affected files are backed up as one operation.
 - Location: `~/.local/state/provsync/` — `index.json` (operation history) and `backups/<op-id>/` (SHA-256-verified file snapshots).
-- The last 20 operations are retained; older ones are pruned automatically.
+- The last 20 operations are retained; older ones are pruned automatically. `PROVSYNC_KEEP` changes the retention count (an integer of 1 or more).
 
 ```console
 $ provsync undo --list
@@ -476,7 +480,9 @@ $ provsync undo --list
 
 - `provsync undo` restores the last write; `provsync undo <id>` restores a specific operation. It applies directly, without `--write`.
 - undo records the pre-restore state as a new operation and prints an ID to redo with (`やり直し: provsync undo <id>`).
+- `provsync undo --prune --keep <n>` removes history, keeping the newest n operations (the removed count is printed).
 - Writes made with `--no-backup` are recorded as marker operations. A subsequent `undo` warns that the latest write was made without a backup and that it restores the state before that write.
+- Newly created central configs and state directories are created with 0600 / 0700 permissions. Existing file permissions are never changed. `status` suggests `chmod` when permissions are loose.
 
 ### Secret Handling
 

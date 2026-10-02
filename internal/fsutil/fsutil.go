@@ -22,11 +22,12 @@ func MarshalIndentSorted(v any) ([]byte, error) {
 }
 
 // WriteFileAtomic は一時ファイルへ書いてから rename で置換する。
-// 既存ファイルがある場合はそのパーミッションを引き継ぐ。
+// 既存ファイルがある場合はそのパーミッションを引き継ぎ、新規ファイルは 0600、
+// 新規ディレクトリは 0700 で作る(既存の親ディレクトリの権限は変えない)。
 // 途中で失敗しても既存ファイルは壊れない。
 func WriteFileAtomic(path string, data []byte) error {
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return err
 	}
 	tmp, err := os.CreateTemp(dir, ".provsync-*.tmp")
@@ -44,7 +45,7 @@ func WriteFileAtomic(path string, data []byte) error {
 		return err
 	}
 
-	mode := os.FileMode(0o644)
+	mode := os.FileMode(0o600)
 	if info, err := os.Stat(path); err == nil {
 		mode = info.Mode().Perm()
 	}

@@ -343,6 +343,74 @@ func TestInitSecretWarning(t *testing.T) {
 	}
 }
 
+func TestKeepEnvLimitsRetention(t *testing.T) {
+	f := setup(t)
+	t.Setenv("PROVSYNC_KEEP", "3")
+	for i := 0; i < 4; i++ {
+		write(t, f.central, `{"providers": {}}`)
+		mustRun(t, f.root, "pull", "kilocode", "--write")
+	}
+	out := mustRun(t, f.root, "undo", "--list")
+	if got := strings.Count(out, "pull kilocode"); got != 3 {
+		t.Errorf("undo --list must show 3 ops with PROVSYNC_KEEP=3:\n%s", out)
+	}
+}
+
+func TestKeepEnvInvalidErrors(t *testing.T) {
+	f := setup(t)
+	t.Setenv("PROVSYNC_KEEP", "abc")
+	_, err := run(t, f.root, "pull", "kilocode", "--write")
+	if err == nil {
+		t.Error("expected error for invalid PROVSYNC_KEEP")
+	}
+	if !strings.Contains(err.Error(), "PROVSYNC_KEEP") {
+		t.Errorf("error must mention PROVSYNC_KEEP: %v", err)
+	}
+}
+
+func TestUndoPrune(t *testing.T) {
+	f := setup(t)
+	for i := 0; i < 4; i++ {
+		write(t, f.central, `{"providers": {}}`)
+		mustRun(t, f.root, "pull", "kilocode", "--write")
+	}
+	out := mustRun(t, f.root, "undo", "--prune", "--keep", "1")
+	if !strings.Contains(out, "削除: 3 件") {
+		t.Errorf("undo --prune must report removed count:\n%s", out)
+	}
+	out = mustRun(t, f.root, "undo", "--list")
+	if got := strings.Count(out, "pull kilocode"); got != 1 {
+		t.Errorf("undo --list must show 1 op after prune:\n%s", out)
+	}
+}
+
+func TestStatusWarnsLoosePerm(t *testing.T) {
+	f := setup(t)
+	mustRun(t, f.root, "pull", "kilocode", "--write")
+	if err := os.Chmod(f.central, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out := mustRun(t, f.root, "status")
+	if !strings.Contains(out, "権限が緩い") {
+		t.Errorf("status must warn about loose permissions:\n%s", out)
+	}
+	if !strings.Contains(out, "chmod 600") {
+		t.Errorf("status must suggest chmod 600:\n%s", out)
+	}
+}
+
+func TestInitCreatesCentralWithStrictPerms(t *testing.T) {
+	f := setup(t)
+	mustRun(t, f.root, "init", "kilocode", "--write")
+	info, err := os.Stat(f.central)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0o600 {
+		t.Errorf("central mode = %o, want 600", info.Mode().Perm())
+	}
+}
+
 func TestPreviewPullDoesNotWrite(t *testing.T) {
 	f := setup(t)
 	out := mustRun(t, f.root, "pull", "kilocode")

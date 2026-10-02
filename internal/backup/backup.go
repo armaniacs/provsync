@@ -45,11 +45,17 @@ type index struct {
 // Store は状態ディレクトリ配下のバックアップを管理する。
 type Store struct {
 	dir string
+	max int
 }
 
 // New は状態ディレクトリを指定して Store を作る。
 func New(stateDir string) *Store {
-	return &Store{dir: stateDir}
+	return &Store{dir: stateDir, max: MaxOperations}
+}
+
+// SetMax は保持する操作履歴の最大数を変更する。
+func (s *Store) SetMax(n int) {
+	s.max = n
 }
 
 func (s *Store) indexPath() string  { return filepath.Join(s.dir, "index.json") }
@@ -219,17 +225,43 @@ func (s *Store) Restore(op Operation) (Operation, error) {
 }
 
 func (s *Store) prune(idx *index) error {
-	if len(idx.Operations) <= MaxOperations {
+	if len(idx.Operations) <= s.max {
 		return nil
 	}
-	removed := idx.Operations[MaxOperations:]
-	idx.Operations = idx.Operations[:MaxOperations]
+	removed := idx.Operations[s.max:]
+	idx.Operations = idx.Operations[:s.max]
 	for _, op := range removed {
 		if err := os.RemoveAll(filepath.Join(s.backupsDir(), op.ID)); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// Prune は新しい keep 件を残して残りの操作を履歴と実体の両方から削除する。
+// 削除件数を返す。
+func (s *Store) Prune(keep int) (int, error) {
+	idx, err := s.load()
+	if err != nil {
+		return 0, err
+	}
+	if keep < 0 {
+		keep = 0
+	}
+	if len(idx.Operations) <= keep {
+		return 0, nil
+	}
+	removed := idx.Operations[keep:]
+	idx.Operations = idx.Operations[:keep]
+	for _, op := range removed {
+		if err := os.RemoveAll(filepath.Join(s.backupsDir(), op.ID)); err != nil {
+			return 0, err
+		}
+	}
+	if err := s.save(idx); err != nil {
+		return 0, err
+	}
+	return len(removed), nil
 }
 
 func capture(path, opDir string, seq int) (FileRef, error) {

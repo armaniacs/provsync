@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/armaniacs/provsync/internal/adapter"
@@ -32,6 +33,8 @@ type options struct {
 	from        string
 	to          string
 	list        bool
+	prune       bool
+	keep        int
 	help        bool
 	version     bool
 	showSecrets bool
@@ -60,7 +63,7 @@ func Run(args []string, out io.Writer) error {
 // RunWith は stdout / stderr を分けて注入できるエントリポイント。
 // 通常出力は out、警告とフラグ解析エラーは errOut へ出す。
 func RunWith(args []string, out, errOut io.Writer) error {
-	opts := &options{out: out, errOut: errOut}
+	opts := &options{out: out, errOut: errOut, keep: backup.MaxOperations}
 	fs := flag.NewFlagSet("provsync", flag.ContinueOnError)
 	fs.SetOutput(errOut)
 	registerFlags(fs, opts)
@@ -120,6 +123,8 @@ func registerFlags(fs *flag.FlagSet, o *options) {
 	fs.StringVar(&o.from, "from", o.from, "sync の取り込み元ツール")
 	fs.StringVar(&o.to, "to", o.to, "sync の反映先ツール")
 	fs.BoolVar(&o.list, "list", o.list, "undo の履歴を表示")
+	fs.BoolVar(&o.prune, "prune", o.prune, "undo の履歴を掃除する")
+	fs.IntVar(&o.keep, "keep", o.keep, "残す履歴数(--prune 用)")
 	fs.BoolVar(&o.version, "version", o.version, "バージョンを表示")
 	fs.BoolVar(&o.showSecrets, "show-secrets", o.showSecrets, "diff の出力で秘密の値をそのまま表示する(非推奨)")
 	fs.BoolVar(&o.help, "help", o.help, "ヘルプを表示")
@@ -268,11 +273,13 @@ func cmdStatus(o *options, args []string) error {
 	if cfg, err := store.Load(root.CentralConfigPath()); err == nil {
 		central = cfg
 		fmt.Fprintf(o.out, "中央設定: %s (%d providers)\n", root.CentralConfigPath(), len(cfg.Providers))
+		warnLoosePerm(o.errOut, root.CentralConfigPath(), false)
 	} else if _, statErr := os.Stat(root.CentralConfigPath()); os.IsNotExist(statErr) {
 		fmt.Fprintf(o.out, "中央設定: %s (未作成)\n", root.CentralConfigPath())
 	} else {
 		return err
 	}
+	warnLoosePerm(o.errOut, root.StateDir(), true)
 
 	for _, name := range tools {
 		a, err := adapter.Get(name, root)
@@ -676,6 +683,20 @@ func cmdUndo(o *options, args []string) error {
 		return err
 	}
 	st := backup.New(root.StateDir())
+	max, err := keepFromEnv()
+	if err != nil {
+		return err
+	}
+	st.SetMax(max)
+
+	if o.prune {
+		removed, err := st.Prune(o.keep)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(o.out, "削除: %d 件\n", removed)
+		return nil
+	}
 
 	if o.list {
 		ops, err := st.List()
@@ -912,6 +933,37 @@ var commands = []string{"list", "status", "init", "pull", "push", "sync", "diff"
 
 // ---- 共通 ----
 
+// keepFromEnv はバックアップ保持数を環境変数 PROVSYNC_KEEP から読む。
+// 未設定は backup.Store の既定値を使う。1 未満・非数はエラー。
+func keepFromEnv() (int, error) {
+	v := os.Getenv("PROVSYNC_KEEP")
+	if v == "" {
+		return backup.MaxOperations, nil
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n < 1 {
+		return 0, fmt.Errorf("PROVSYNC_KEEP は 1 以上の整数で指定してください (値: %s)", v)
+	}
+	return n, nil
+}
+
+// warnLoosePerm は path が他ユーザーから読める権限なら chmod を案内する。
+func warnLoosePerm(out io.Writer, path string, dir bool) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return
+	}
+	if info.Mode().Perm()&0o077 == 0 {
+		return
+	}
+	perm := info.Mode().Perm()
+	suggest := "600"
+	if dir {
+		suggest = "700"
+	}
+	fmt.Fprintf(out, "警告: 権限が緩い (%04o): %s  chmod %s %s\n", perm, path, suggest, path)
+}
+
 func (o *options) applyOrPreview(label string, p plan.Plan) error {
 	root, err := o.root()
 	if err != nil {
@@ -937,7 +989,13 @@ func (o *options) applyOrPreview(label string, p plan.Plan) error {
 		for _, c := range changed {
 			paths = append(paths, c.Path)
 		}
-		op, err := backup.New(root.StateDir()).Record(label, paths)
+		st := backup.New(root.StateDir())
+		max, err := keepFromEnv()
+		if err != nil {
+			return err
+		}
+		st.SetMax(max)
+		op, err := st.Record(label, paths)
 		if err != nil {
 			return fmt.Errorf("バックアップに失敗しました: %w", err)
 		}

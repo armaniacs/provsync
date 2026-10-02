@@ -19,6 +19,12 @@
 - 終了コードを体系化: `0` 成功 / `1` 実行時エラー / `2` 使い方の誤り。使い方の誤りは `UsageError` 型で判別する。
 - 通常出力は stdout、警告とフラグ解析エラーは stderr へ分離(`RunWith` で stdout / stderr を注入可能)。
 
+### Added (backup)
+
+- バックアップ保持数を `PROVSYNC_KEEP` 環境変数で設定可能に(既定は 20 のまま)。
+- `provsync undo --prune --keep <n>` で履歴を掃除。新しい n 件を残して削除し、削除件数を表示する。
+- 新規作成されるファイルは 0600、新規ディレクトリは 0700 で作る(既存ファイルの権限は引き継ぐ)。`status` は中央設定・状態ディレクトリの権限が緩い場合に `chmod` を案内する。
+
 ### Added (CI)
 
 - CI(`.github/workflows/ci.yml`)を追加。push to main と PR で `make check` / `make test-race` / `make lint` / `make vuln` を macOS / Linux マトリクスで実行。
