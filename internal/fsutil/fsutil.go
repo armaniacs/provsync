@@ -3,6 +3,7 @@ package fsutil
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -22,10 +23,17 @@ func MarshalIndentSorted(v any) ([]byte, error) {
 }
 
 // WriteFileAtomic は一時ファイルへ書いてから rename で置換する。
-// 既存ファイルがある場合はそのパーミッションを引き継ぎ、新規ファイルは 0600、
-// 新規ディレクトリは 0700 で作る(既存の親ディレクトリの権限は変えない)。
+// path がシンボリックリンクの場合はリンクを維持したままリンク先の実体を置換する
+// (一時ファイルは必ずリンク先と同じディレクトリに作るため、rename が別
+// ファイルシステムを跨がない)。既存ファイルがある場合はそのパーミッションを
+// 引き継ぎ、新規ファイルは 0600、新規ディレクトリは 0700 で作る。
 // 途中で失敗しても既存ファイルは壊れない。
 func WriteFileAtomic(path string, data []byte) error {
+	resolved, err := resolveWritePath(path)
+	if err != nil {
+		return err
+	}
+	path = resolved
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return err
@@ -53,4 +61,24 @@ func WriteFileAtomic(path string, data []byte) error {
 		return err
 	}
 	return os.Rename(tmpName, path)
+}
+
+// resolveWritePath はシンボリックリンクを辿った実体のパスを返す。
+// 存在しないパスと通常ファイルはそのまま返す。リンク切れはエラーにする。
+func resolveWritePath(path string) (string, error) {
+	li, err := os.Lstat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return path, nil
+		}
+		return "", err
+	}
+	if li.Mode()&os.ModeSymlink == 0 {
+		return path, nil
+	}
+	resolved, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return "", fmt.Errorf("シンボリックリンクのリンク先を解決できません (%s): %w", path, err)
+	}
+	return resolved, nil
 }

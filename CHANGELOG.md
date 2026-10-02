@@ -30,6 +30,10 @@
 - リリース自動化(`.goreleaser.yaml` と `.github/workflows/release.yml`)。タグ push で darwin / linux(amd64・arm64)の tar.gz アーカイブと checksums を GitHub Release に添付する。CHANGELOG に該当バージョンの節が無い場合は失敗する。
 - README のインストール手順にバイナリ入手の方法を追記。対応環境に macOS / Linux(Windows は非対応)を明記。
 
+### Fixed
+
+- 書き込み先がシンボリックリンクの場合、リンク自体が通常ファイルに置き換わる問題。リンクを維持したままリンク先の実体を atomic に更新する。リンク切れは明確なエラーにする。`list` はリンク先を表示する。
+
 ### Added (CI)
 
 - CI(`.github/workflows/ci.yml`)を追加。push to main と PR で `make check` / `make test-race` / `make lint` / `make vuln` を macOS / Linux マトリクスで実行。

@@ -411,6 +411,86 @@ func TestInitCreatesCentralWithStrictPerms(t *testing.T) {
 	}
 }
 
+func TestPushKeepsSymlink(t *testing.T) {
+	f := setup(t)
+	mustRun(t, f.root, "pull", "kilocode", "--write")
+	real := filepath.Join(t.TempDir(), "opencode.json")
+	data, _ := os.ReadFile(f.opencode)
+	if err := os.WriteFile(real, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(f.opencode); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(real, f.opencode); err != nil {
+		t.Fatal(err)
+	}
+
+	mustRun(t, f.root, "push", "opencode", "--write")
+
+	info, err := os.Lstat(f.opencode)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		t.Error("symlink was replaced by a regular file")
+	}
+	got, _ := os.ReadFile(real)
+	if !strings.Contains(string(got), "llm-01") {
+		t.Error("link target was not updated")
+	}
+}
+
+func TestUndoKeepsSymlink(t *testing.T) {
+	f := setup(t)
+	mustRun(t, f.root, "pull", "kilocode", "--write")
+	real := filepath.Join(t.TempDir(), "opencode.json")
+	original, _ := os.ReadFile(f.opencode)
+	if err := os.WriteFile(real, original, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(f.opencode); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(real, f.opencode); err != nil {
+		t.Fatal(err)
+	}
+
+	mustRun(t, f.root, "push", "opencode", "--write")
+	mustRun(t, f.root, "undo")
+
+	info, err := os.Lstat(f.opencode)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		t.Error("undo replaced the symlink with a regular file")
+	}
+	got, _ := os.ReadFile(real)
+	if !strings.Contains(string(got), "LLM 02 old") {
+		t.Errorf("link target was not restored to the original content:\n%s", got)
+	}
+}
+
+func TestPushBrokenSymlinkErrors(t *testing.T) {
+	f := setup(t)
+	mustRun(t, f.root, "pull", "kilocode", "--write")
+	if err := os.Remove(f.opencode); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join(t.TempDir(), "missing.json"), f.opencode); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := run(t, f.root, "push", "opencode", "--write")
+	if err == nil {
+		t.Error("expected error for broken symlink")
+	}
+	if !strings.Contains(err.Error(), "リンク先") {
+		t.Errorf("error must mention the broken symlink: %v", err)
+	}
+}
+
 func TestPreviewPullDoesNotWrite(t *testing.T) {
 	f := setup(t)
 	out := mustRun(t, f.root, "pull", "kilocode")

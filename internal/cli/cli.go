@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -248,13 +249,27 @@ func cmdList(o *options) error {
 			fmt.Fprintf(o.out, "%-9s %s (未作成)\n", name, path)
 			continue
 		}
+		suffix := symlinkSuffix(path)
 		providers, _, err := a.Pull()
 		if err != nil {
 			return err
 		}
-		fmt.Fprintf(o.out, "%-9s %s (%d providers)\n", name, path, len(providers))
+		fmt.Fprintf(o.out, "%-9s %s%s (%d providers)\n", name, path, suffix, len(providers))
 	}
 	return nil
+}
+
+// symlinkSuffix は path がシンボリックリンクなら実体を示す接尾辞を返す。
+func symlinkSuffix(path string) string {
+	li, err := os.Lstat(path)
+	if err != nil || li.Mode()&os.ModeSymlink == 0 {
+		return ""
+	}
+	real, err := os.Readlink(path)
+	if err != nil {
+		return " (symlink)"
+	}
+	return " (symlink → " + real + ")"
 }
 
 // ---- status ----
@@ -619,6 +634,9 @@ func buildSyncPlan(o *options, root adapter.Root, from, to string) (plan.Plan, e
 }
 
 func buildToolChange(a adapter.Adapter, managed map[string]model.Provider) (plan.FileChange, error) {
+	if err := checkReadable(a.Path()); err != nil {
+		return plan.FileChange{}, err
+	}
 	before, err := os.ReadFile(a.Path())
 	if err != nil {
 		return plan.FileChange{}, fmt.Errorf("ツール設定を読めません (%s): %w", a.Path(), err)
@@ -641,6 +659,24 @@ func buildToolChange(a adapter.Adapter, managed map[string]model.Provider) (plan
 		After:    after,
 		Semantic: plan.ProvidersDiff(a.Project(managed), current),
 	}, nil
+}
+
+// checkReadable は壊れたシンボリックリンクを明確なエラーにする。
+// os.ReadFile だけではリンク切れと欠落を区別できない。
+func checkReadable(path string) error {
+	li, err := os.Lstat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("ツール設定がありません: %s", path)
+		}
+		return err
+	}
+	if li.Mode()&os.ModeSymlink != 0 {
+		if _, err := filepath.EvalSymlinks(path); err != nil {
+			return fmt.Errorf("シンボリックリンクのリンク先を解決できません (%s): %w", path, err)
+		}
+	}
+	return nil
 }
 
 // ---- diff ----
