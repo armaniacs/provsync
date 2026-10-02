@@ -8,7 +8,7 @@ title: provsync
 
 # provsync
 
-**複数の LLM ツールの provider 設定を、たった一つの中央設定に同期する**
+**複数の LLM ツールの provider 設定を、ただ一つの中央設定に同期する**
 
 `pull` でツールから中央へ取り込み、`push` で中央からツールへ反映する。書き込みの前には自動バックアップ、取り消しは `undo` で。
 
@@ -21,12 +21,23 @@ title: provsync
 
 <div class="grid cards" markdown>
 
-- :material-shield-check-outline: **安全に書き換える** \
-  プレビューが既定。書き込みの直前には影響する全ファイルが自動でバックアップされ、`undo` と redo で元に戻せる
-- :material-database-outline: **中央設定を唯一の正に** \
-  pull → push の往復で情報は失われない。`aliases` でモデル ID を各ツール向けに自動変換
-- :material-stethoscope: **壊れる前に気づく** \
-  `doctor` で環境を診断し、`check` で API の到達可否を確認する
+- :material-shield-check-outline:{ .lg .middle } __安全に書き換える__
+
+    ---
+
+    プレビューが既定。書き込みの直前には影響する全ファイルが自動でバックアップされ、`undo` と redo で元に戻せる
+
+- :material-database-outline:{ .lg .middle } __中央設定を唯一の正に__
+
+    ---
+
+    pull → push の往復で情報は失われない。`aliases` でモデル ID を各ツール向けに自動変換
+
+- :material-stethoscope:{ .lg .middle } __壊れる前に気づく__
+
+    ---
+
+    `doctor` で環境を診断し、`check` で API の到達可否を確認する
 
 </div>
 

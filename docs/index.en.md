@@ -21,12 +21,23 @@ provsync imports from a tool into the central config with `pull`, and reflects t
 
 <div class="grid cards" markdown>
 
-- :material-shield-check-outline: **Rewrite safely** \
-  Preview by default. All affected files are backed up automatically just before every write, and `undo` / redo bring them back
-- :material-database-outline: **One canonical config** \
-  Nothing is lost across pull → push round trips. `aliases` convert model IDs per tool automatically
-- :material-stethoscope: **Notice before it breaks** \
-  `doctor` diagnoses the environment and `check` verifies API reachability
+- :material-shield-check-outline:{ .lg .middle } __Rewrite safely__
+
+    ---
+
+    Preview by default. All affected files are backed up automatically just before every write, and `undo` / redo bring them back
+
+- :material-database-outline:{ .lg .middle } __One canonical config__
+
+    ---
+
+    Nothing is lost across pull → push round trips. `aliases` convert model IDs per tool automatically
+
+- :material-stethoscope:{ .lg .middle } __Notice before it breaks__
+
+    ---
+
+    `doctor` diagnoses the environment and `check` verifies API reachability
 
 </div>
 
