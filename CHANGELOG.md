@@ -70,6 +70,10 @@
 
 - `provsync check` コマンド。中央設定の各 provider について `baseURL` の `/models` へ認証付き GET を送り到達可否を分類表示する(`[OK]` / `[認証失敗]` / `[応答異常]` / `[到達不可]` / `[スキップ]`)。タイムアウト 5 秒。通信するのはこのコマンドだけで、キーの値は出力しない。
 
+### Added (routes)
+
+- 中央設定の `routes`(エイリアス名 → provider キーの優先順)で、`push` 時に使える経路(apiKeyEnv 設定済みまたは不要)を選び、選ばれなかった経路の provider を描画対象から除く。判定は環境変数の有無のみで通信しない。どの経路も使えないときは警告して変更しない。`routes` は pull しても消えない。スキーマは追加のみで version は 1 のまま。
+
 ### Added (CI)
 
 - CI(`.github/workflows/ci.yml`)を追加。push to main と PR で `make check` / `make test-race` / `make lint` / `make vuln` を macOS / Linux マトリクスで実行。

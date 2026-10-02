@@ -900,6 +900,102 @@ func setupCheck(t *testing.T, status int, delay time.Duration) (fixture, *atomic
 	return f, &hits
 }
 
+const routeCentral = `{
+  "routes": {
+    "sonnet": ["anthropic", "openrouter"]
+  },
+  "providers": {
+    "anthropic": {
+      "name": "Anthropic",
+      "npm": "@ai-sdk/anthropic",
+      "baseURL": "https://anthropic.example/v1",
+      "apiKeyEnv": "ANTHROPIC_API_KEY",
+      "models": { "sonnet": { "name": "Sonnet" } }
+    },
+    "openrouter": {
+      "name": "OpenRouter",
+      "npm": "@openrouter/ai-sdk-provider",
+      "baseURL": "https://openrouter.example/v1",
+      "apiKeyEnv": "OPENROUTER_API_KEY",
+      "models": { "sonnet": { "name": "Sonnet" } }
+    }
+  },
+  "version": 1
+}`
+
+func TestPushRouteFallsBackToSecondRoute(t *testing.T) {
+	f := setup(t)
+	write(t, f.central, routeCentral)
+	t.Setenv("OPENROUTER_API_KEY", "set")
+	os.Unsetenv("ANTHROPIC_API_KEY")
+
+	mustRun(t, f.root, "push", "opencode", "--write")
+	got := read(t, f.opencode)
+	if !strings.Contains(got, "openrouter") {
+		t.Errorf("opencode must gain the openrouter provider:\n%s", got)
+	}
+	if strings.Contains(got, "anthropic.example") {
+		t.Errorf("the unselected route must not be rendered:\n%s", got)
+	}
+}
+
+func TestPushRoutePrefersFirstRoute(t *testing.T) {
+	f := setup(t)
+	write(t, f.central, routeCentral)
+	t.Setenv("ANTHROPIC_API_KEY", "set")
+	t.Setenv("OPENROUTER_API_KEY", "set")
+
+	mustRun(t, f.root, "push", "opencode", "--write")
+	got := read(t, f.opencode)
+	if !strings.Contains(got, "anthropic.example") {
+		t.Errorf("opencode must gain the preferred provider:\n%s", got)
+	}
+	if strings.Contains(got, "openrouter.example") {
+		t.Errorf("the unselected route must not be rendered:\n%s", got)
+	}
+}
+
+func TestPushRouteAllUnavailableWarns(t *testing.T) {
+	f := setup(t)
+	write(t, f.central, routeCentral)
+	os.Unsetenv("ANTHROPIC_API_KEY")
+	os.Unsetenv("OPENROUTER_API_KEY")
+
+	out := mustRun(t, f.root, "push", "opencode", "--write")
+	if !strings.Contains(out, "警告") {
+		t.Errorf("all-unavailable routes must warn:\n%s", out)
+	}
+	got := read(t, f.opencode)
+	if !strings.Contains(got, "anthropic.example") || !strings.Contains(got, "openrouter.example") {
+		t.Errorf("providers must stay unchanged when no route is selectable:\n%s", got)
+	}
+}
+
+func TestPullPreservesRoutes(t *testing.T) {
+	f := setup(t)
+	write(t, f.central, routeCentral)
+
+	mustRun(t, f.root, "pull", "kilocode", "--write")
+	if !strings.Contains(read(t, f.central), `"routes"`) {
+		t.Error("pull must preserve the routes section")
+	}
+}
+
+func TestPushWithoutRoutesIsUnchanged(t *testing.T) {
+	f := setup(t)
+	mustRun(t, f.root, "pull", "kilocode", "--write")
+	mustRun(t, f.root, "push", "opencode", "--write")
+
+	var doc map[string]any
+	if err := json.Unmarshal([]byte(read(t, f.opencode)), &doc); err != nil {
+		t.Fatal(err)
+	}
+	providers := doc["provider"].(map[string]any)
+	if _, ok := providers["llm-01"]; !ok {
+		t.Error("push without routes must behave as before")
+	}
+}
+
 func TestPreviewPullDoesNotWrite(t *testing.T) {
 	f := setup(t)
 	out := mustRun(t, f.root, "pull", "kilocode")

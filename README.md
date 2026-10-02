@@ -287,6 +287,27 @@ $ provsync undo
 - 当該ツール向けの ID が未定義のエイリアスは警告して素通しする。`--strict` を付けるとエラーで終了し、何も書かない。
 - 組み込みの対応表はない。対応表の正はユーザー定義の `aliases` で、pull しても消えない。
 
+### 経路別フォールバック(routes)
+
+中央設定の `routes` に、エイリアス名ごとに provider キーの優先順を書くと、`push` のときに「使える経路」(apiKeyEnv が設定済み、または apiKeyEnv 不要の provider)を先頭から選び、選ばれなかった経路の provider は描画対象から除く。
+
+```json
+{
+  "routes": {
+    "sonnet": ["anthropic", "openrouter"]
+  },
+  "providers": {
+    "anthropic": { "apiKeyEnv": "ANTHROPIC_API_KEY", "models": { "sonnet": {} } },
+    "openrouter": { "apiKeyEnv": "OPENROUTER_API_KEY", "models": { "sonnet": {} } }
+  }
+}
+```
+
+- 判定は環境変数の有無のみ。通信しない。値は読まない・出力しない。
+- どの経路も使えないときは警告して、provider は変更せず残す。
+- `apiKeyEnv` が空の provider は「環境変数不要」として常に使える経路になる。
+- `routes` は pull しても消えない。ツール別の上書きは未対応(全ツール共通のみ)。
+
 ### API の疎通確認(check)
 
 `provsync check` は中央設定の各 provider について、`baseURL` の `/models` へ認証付きの GET を送り到達可否を表示する。
@@ -620,6 +641,27 @@ Known fields (`name` / `npm` / `baseURL` / `apiKeyEnv` / `models`) are normalize
 - Model names not in `aliases` pass through unchanged.
 - An alias without a mapping for the target tool passes through with a warning. `--strict` errors out and writes nothing.
 - There is no built-in mapping table. The user-defined `aliases` are the source of truth and survive `pull`.
+
+### Route fallback (routes)
+
+`routes` in the central config maps an alias name to a priority-ordered list of provider keys; on `push`, the first usable route (a provider whose `apiKeyEnv` is set, or that needs no env) is selected and unselected route providers are dropped from the render.
+
+```json
+{
+  "routes": {
+    "sonnet": ["anthropic", "openrouter"]
+  },
+  "providers": {
+    "anthropic": { "apiKeyEnv": "ANTHROPIC_API_KEY", "models": { "sonnet": {} } },
+    "openrouter": { "apiKeyEnv": "OPENROUTER_API_KEY", "models": { "sonnet": {} } }
+  }
+}
+```
+
+- Selection uses environment-variable presence only. No network access; values are never read or printed.
+- When no route is usable, provsync warns and leaves the providers unchanged.
+- A provider with an empty `apiKeyEnv` needs no env and is always usable.
+- `routes` survive `pull`. Per-tool overrides are not supported (all tools share the routes).
 
 ### API reachability (check)
 

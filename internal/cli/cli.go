@@ -655,8 +655,8 @@ func buildCentralChange(root adapter.Root, tool string, pulled map[string]model.
 	if version == 0 {
 		version = model.Version
 	}
-	// aliases はユーザー定義の正。pull のたびに消えないよう引き継ぐ。
-	cfg := &model.Config{Version: version, Providers: merged, Aliases: base.Aliases}
+	// aliases / routes はユーザー定義の正。pull のたびに消えないよう引き継ぐ。
+	cfg := &model.Config{Version: version, Providers: merged, Aliases: base.Aliases, Routes: base.Routes}
 	after, err := store.Marshal(cfg)
 	if err != nil {
 		return plan.FileChange{}, nil, err
@@ -693,6 +693,7 @@ func cmdPush(o *options, args []string) error {
 	if err != nil {
 		return err
 	}
+	managed = o.applyRoutes(managed, central)
 	managed, err = o.applyAliases(managed, central, a)
 	if err != nil {
 		return err
@@ -702,6 +703,37 @@ func cmdPush(o *options, args []string) error {
 		return err
 	}
 	return o.applyOrPreview("push "+a.Name(), plan.Plan{Changes: []plan.FileChange{change}})
+}
+
+// applyRoutes は push の描画対象から、routes で選ばれなかった経路の provider を
+// 除く。中央設定は変えない。どの経路も選べなかったときは警告し、provider は
+// 変更せず残す。判定は環境変数の有無のみで、通信しない。
+func (o *options) applyRoutes(managed map[string]model.Provider, central *model.Config) map[string]model.Provider {
+	if len(central.Routes) == 0 {
+		return managed
+	}
+	lookup := func(name string) bool {
+		_, ok := os.LookupEnv(name)
+		return ok
+	}
+	aliases := make([]string, 0, len(central.Routes))
+	for a := range central.Routes {
+		aliases = append(aliases, a)
+	}
+	sort.Strings(aliases)
+	for _, alias := range aliases {
+		key, ok := syncer.SelectRoute(central.Routes[alias], managed, lookup)
+		if !ok {
+			fmt.Fprintf(o.errOut, "警告: エイリアス %q の経路で使える provider がありません(apiKeyEnv が未設定)。変更せず残します\n", alias)
+			continue
+		}
+		for _, cand := range central.Routes[alias] {
+			if cand != key {
+				delete(managed, cand)
+			}
+		}
+	}
+	return managed
 }
 
 // applyAliases は push の描画前に managed のモデル名をツール向け ID に変換する。
@@ -781,6 +813,7 @@ func buildSyncPlan(o *options, root adapter.Root, from, to string) (plan.Plan, e
 	if err != nil {
 		return plan.Plan{}, err
 	}
+	managed = o.applyRoutes(managed, central)
 	managed, err = o.applyAliases(managed, central, toA)
 	if err != nil {
 		return plan.Plan{}, err

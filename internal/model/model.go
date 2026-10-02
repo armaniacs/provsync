@@ -9,6 +9,7 @@ type Config struct {
 	Version   int                          `json:"version"`
 	Providers map[string]Provider          `json:"providers"`
 	Aliases   map[string]map[string]string `json:"aliases,omitempty"`
+	Routes    map[string][]string          `json:"routes,omitempty"`
 }
 
 // NewConfig は空のカノニカル設定を返す。
