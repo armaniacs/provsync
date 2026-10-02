@@ -1,16 +1,34 @@
+---
+title: provsync
+---
+
+<div class="tx-hero" markdown>
+
+<div class="tx-hero__content" markdown>
+
 # provsync
 
 **Sync provider entries across your LLM tools into one central canonical config.**
 
-provsync is a CLI that syncs the `provider` entries your LLM coding tools each keep in their own format, using a central canonical config as the single source of truth. `pull` imports from a tool into the central config; `push` reflects the central config back into a tool. Built on the Go standard library only, with no external dependencies.
+provsync imports from a tool into the central config with `pull`, and reflects the central config back with `push`. Writes are preceded by an automatic backup, and `undo` restores.
 
-## Safety Design
+[Read the docs](usage.en.md){ .md-button .md-button--primary }
+[Open on GitHub](https://github.com/armaniacs/provsync){ .md-button }
 
-- Preview-only by default. Files change only with `--write`.
-- Every write is preceded by an automatic timestamped backup of all affected files as a single operation.
-- `undo` records the pre-restore state as a new operation, so undo itself can be undone (redoable).
-- Preview, `diff`, apply, and backup are all generated from the same Plan. What you see in the diff is exactly what gets written — and what undo restores.
-- Byte-identical writes are skipped (idempotent). If nothing changes, you just get `変更はありません` ("no changes").
+</div>
+
+</div>
+
+<div class="grid cards" markdown>
+
+- :material-shield-check-outline: **Rewrite safely** \
+  Preview by default. All affected files are backed up automatically just before every write, and `undo` / redo bring them back
+- :material-database-outline: **One canonical config** \
+  Nothing is lost across pull → push round trips. `aliases` convert model IDs per tool automatically
+- :material-stethoscope: **Notice before it breaks** \
+  `doctor` diagnoses the environment and `check` verifies API reachability
+
+</div>
 
 ## Supported Tools
 
@@ -27,7 +45,7 @@ macOS / Linux only. Windows is unsupported.
 
 ## Installation
 
-Go 1.25.14 or later. macOS / Linux only (Windows is unsupported).
+Go 1.25.14 or later.
 
 ```bash
 go install github.com/armaniacs/provsync@latest
@@ -68,8 +86,10 @@ $ provsync push opencode --write
 
 With the tool omitted, provsync detects tools whose config files exist. With multiple candidates, specify the tool with `provsync init <tool>`. An existing central config is never overwritten; use `pull` for everyday updates.
 
-Next steps:
+## Next Steps
 
-- [Usage](usage.md) — quick start and feature details
-- [CLI Reference](cli.md) — commands, flags, and exit codes
-- [Backups and Undo](backup.md) — restoring and managing history
+- [Usage](usage.en.md) — quick start and feature details
+- [CLI Reference](cli.en.md) — commands, flags, and exit codes
+- [Backups and Undo](backup.en.md) — restoring and managing history
+
+If this documentation doesn't answer your question, report it via [GitHub Issues](https://github.com/armaniacs/provsync/issues). Improvement proposals are accepted along the [CONTRIBUTING](https://github.com/armaniacs/provsync/blob/main/CONTRIBUTING.md) guide.

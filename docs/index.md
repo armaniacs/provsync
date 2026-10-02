@@ -1,14 +1,34 @@
+---
+title: provsync
+---
+
+<div class="tx-hero" markdown>
+
+<div class="tx-hero__content" markdown>
+
 # provsync
 
 **複数の LLM ツールの provider 設定を、たった一つの中央設定に同期する**
 
-provsync は、複数の LLM コーディングツールがそれぞれ独自の形式で持つ `provider` 設定を、中央のカノニカル設定を唯一の正(single source of truth)として同期する CLI ツール。`pull` でツールから中央へ取り込み、`push` で中央からツールへ反映する。Go 標準ライブラリのみで実装され、外部依存はない。
+`pull` でツールから中央へ取り込み、`push` で中央からツールへ反映する。書き込みの前には自動バックアップ、取り消しは `undo` で。
 
-## 安全設計
+[使い方をみる](usage.md){ .md-button .md-button--primary }
+[GitHub で開く](https://github.com/armaniacs/provsync){ .md-button }
 
-既定の動作はプレビューのみで、`--write` を付けたときにだけファイルが変わる。書き込みの直前には、影響する全ファイルがタイムスタンプ付きの 1 操作として自動でバックアップされる。取り消しも `undo` ででき、undo 自体が復元前の現状を新しい操作として記録するので、取り消しの取り消し(redo)もできる。
+</div>
 
-見どころは Plan の一点だ。プレビュー・`diff`・適用・バックアップは、すべて同一の変更計画(Plan)から生成される。そのため「diff で見た内容」がそのまま「書かれる内容」であり、undo で戻る内容とも一致する。同じ状態への再書き込みはスキップされる(冪等)ので、変更が無ければ `変更はありません` と表示されるだけだ。
+</div>
+
+<div class="grid cards" markdown>
+
+- :material-shield-check-outline: **安全に書き換える** \
+  プレビューが既定。書き込みの直前には影響する全ファイルが自動でバックアップされ、`undo` と redo で元に戻せる
+- :material-database-outline: **中央設定を唯一の正に** \
+  pull → push の往復で情報は失われない。`aliases` でモデル ID を各ツール向けに自動変換
+- :material-stethoscope: **壊れる前に気づく** \
+  `doctor` で環境を診断し、`check` で API の到達可否を確認する
+
+</div>
 
 ## 対応ツール
 
@@ -66,7 +86,7 @@ $ provsync push opencode --write
 
 ツールを省略すると、設定ファイルが存在するツールを検出する。候補が複数ある場合は `provsync init <tool>` で指定する。中央設定が既にある場合は上書きしないため、日常の更新には `pull` を使う。
 
-次のステップ:
+## 次のステップ
 
 - [使い方](usage.md) — クイックスタートと機能の詳細
 - [CLI リファレンス](cli.md) — コマンド・フラグ・終了コードの一覧

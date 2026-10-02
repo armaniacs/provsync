@@ -1,0 +1,34 @@
+/* プライマリカラー: ダークネイビー(スレート系)、アクセント: インディゴ */
+:root {
+  --md-primary-fg-color: #0f172a;
+  --md-primary-fg-color--light: #334155;
+  --md-primary-fg-color--dark: #020617;
+  --md-accent-fg-color: #4f46e5;
+}
+
+/* Hero セクション */
+.tx-hero {
+  text-align: center;
+  padding: 2.25rem 0 2.75rem;
+  margin-bottom: 1.75rem;
+  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+}
+
+.tx-hero__content h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.35;
+  margin-bottom: 0.9rem;
+}
+
+.tx-hero__content p {
+  font-size: 1.02rem;
+  color: var(--md-default-fg-color--light);
+  max-width: 40rem;
+  margin: 0 auto 1.4rem;
+}
+
+/* 機能カードの見た目を寄せる */
+.md-typeset .grid.cards > ul > li {
+  border: 1px solid var(--md-default-fg-color--lightest);
+}

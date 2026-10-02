@@ -12,24 +12,36 @@ exclude_docs: |
 theme:
   name: material
   language: ja
+  font:
+    text: "Noto Sans JP"
+    code: "Roboto Mono"
   palette:
     - scheme: default
+      primary: custom
+      accent: indigo
       toggle:
         icon: material/brightness-7
         name: ダークモードへ切替
     - scheme: slate
+      primary: custom
+      accent: indigo
       toggle:
         icon: material/brightness-4
         name: ライトモードへ切替
   features:
     - content.code.copy
     - navigation.footer
+    - navigation.tabs
+    - navigation.tabs.sticky
 
 markdown_extensions:
   - admonition
+  - attr_list
+  - md_in_html
   - tables
   - toc:
       permalink: true
+      slugify: !!python/name:markdown.extensions.toc.slugify_unicode
   - pymdownx.highlight
   - pymdownx.superfences
 
@@ -63,3 +75,6 @@ nav:
   - セキュリティ: security.md
   - 開発者向け: development.md
   - CHANGELOG: changelog.md
+
+extra_css:
+  - stylesheets/landing.css
