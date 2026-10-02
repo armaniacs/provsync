@@ -145,6 +145,16 @@ type toolStatus struct {
 	Providers int      `json:"providers"`
 	Warnings  []string `json:"warnings"`
 	Drift     []string `json:"drift"`
+	// DriftEntries は drift の構造化版(additive)。TUI が文言の逆解析に頼らず
+	// 済むようにする。差分がないときは省略する。
+	DriftEntries []driftEntry `json:"driftEntries,omitempty"`
+}
+
+// driftEntry は 1 provider の差分を構造化したもの。Op の値は固定集合
+// (not-in-tool / not-in-central / drift)で、後から勝手に増やさない。
+type driftEntry struct {
+	Provider string `json:"provider"`
+	Op       string `json:"op"`
 }
 
 // buildStatusReport は tools と中央設定の同期状態を集計する。
@@ -180,11 +190,10 @@ func buildStatusReport(root adapter.Root, tools []string) (*statusReport, error)
 		ts.Providers = len(providers)
 		ts.Warnings = warnings
 		if central != nil {
-			for _, line := range driftLines(a.Project(central.Providers), providers) {
-				if line == "差分なし" {
-					continue
-				}
-				ts.Drift = append(ts.Drift, line)
+			entries := driftEntries(a.Project(central.Providers), providers)
+			for _, e := range entries {
+				ts.DriftEntries = append(ts.DriftEntries, e)
+				ts.Drift = append(ts.Drift, fmt.Sprintf("%s: %s", e.Provider, driftOpLabel(e.Op)))
 			}
 		}
 		rep.Tools = append(rep.Tools, ts)
@@ -224,9 +233,9 @@ func renderStatusText(o *options, root adapter.Root, rep *statusReport) {
 	}
 }
 
-// driftLines は projected(ツール可視の形へ写した中央設定)と tool の
-// provider 集合を比較し、status 表示用の行を返す。
-func driftLines(projected, tool map[string]model.Provider) []string {
+// driftEntries は projected(ツール可視の形へ写した中央設定)と tool の
+// provider 集合を比較し、1 provider ごとの差分を構造化して返す。
+func driftEntries(projected, tool map[string]model.Provider) []driftEntry {
 	seen := map[string]bool{}
 	var keys []string
 	for k := range projected {
@@ -243,21 +252,31 @@ func driftLines(projected, tool map[string]model.Provider) []string {
 	}
 	sort.Strings(keys)
 
-	var lines []string
+	var entries []driftEntry
 	for _, k := range keys {
 		c, inCentral := projected[k]
 		t, inTool := tool[k]
 		switch {
 		case inCentral && !inTool:
-			lines = append(lines, fmt.Sprintf("%s: ツールに無い", k))
+			entries = append(entries, driftEntry{Provider: k, Op: "not-in-tool"})
 		case !inCentral && inTool:
-			lines = append(lines, fmt.Sprintf("%s: 中央に無い", k))
+			entries = append(entries, driftEntry{Provider: k, Op: "not-in-central"})
 		case len(plan.ChangedFields(c, t)) > 0:
-			lines = append(lines, fmt.Sprintf("%s: 差分あり", k))
+			entries = append(entries, driftEntry{Provider: k, Op: "drift"})
 		}
 	}
-	if len(lines) == 0 {
-		lines = append(lines, "差分なし")
+	return entries
+}
+
+// driftOpLabel は driftEntry の op を status 表示用の文言に対応づける。
+func driftOpLabel(op string) string {
+	switch op {
+	case "not-in-tool":
+		return "ツールに無い"
+	case "not-in-central":
+		return "中央に無い"
+	case "drift":
+		return "差分あり"
 	}
-	return lines
+	return ""
 }

@@ -224,7 +224,7 @@ $ provsync undo
 }
 ```
 
-- `status --json`: 上の形。`drift` が空 = 差分なし。
+- `status --json`: 上の形。`drift` が空 = 差分なし。`driftEntries` は drift の構造化版(additive)で、`op` は固定集合 `not-in-tool` / `not-in-central` / `drift` のいずれか。対話ツール(TUI など)は文言の逆解析ではなく `driftEntries` を使うことを推奨。
 - `list --json`: `warnings` / `drift` を除いた形。
 - `diff --json`: `{"schemaVersion": 1, "changes": [{"tool", "path", "semantic": [...], "diff": "マスク済み unified diff"}]}`。
 - `status --exit-code`: 差分があるとき終了コード `3`、同期済みなら `0`。
@@ -594,7 +594,7 @@ $ provsync undo
 }
 ```
 
-- `status --json`: the shape above; empty `drift` = no drift.
+- `status --json`: the shape above; empty `drift` = no drift. `driftEntries` is the structured version of `drift` (additive); `op` is one of the fixed set `not-in-tool` / `not-in-central` / `drift`. Interactive tools (the TUI, etc.) should use `driftEntries` instead of parsing the human-readable strings.
 - `list --json`: the same shape without `warnings` / `drift`.
 - `diff --json`: `{"schemaVersion": 1, "changes": [{"tool", "path", "semantic": [...], "diff": "masked unified diff"}]}`.
 - `status --exit-code`: exit code `3` when drift exists, `0` when synced.

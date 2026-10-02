@@ -10,6 +10,7 @@
 - `provsync --version` / `provsync version` でバージョンを表示。版の決定順はビルド時の ldflags 注入値、`go install` のモジュール版、`dev` の順。`make build` は `git describe` の結果を ldflags で注入する。
 - 引数なし実行・`--help` の使い方の先頭にバージョンを表示。
 - 引数なし実行・`--help` に、中央設定・各ツール設定・バックアップ保存先のパスと存在有無(未作成)を表示。中央設定が未作成のときは作成手順を案内する。
+- `status --json` に `driftEntries`(drift の構造化版)を additive 追加。`op` は固定集合 `not-in-tool` / `not-in-central` / `drift`。既存の `drift` 文字列とテキスト出力は不変。`provsync-tui` は driftEntries を優先使用し、旧 CLI の応答には文字列逆解析でフォールバックする。
 - `diff` の出力で、秘密情報らしいキー(`apiKey` / `token` など)の値を既定で `********` にマスク。`--show-secrets` で実値を表示(警告付き)。書き込まれるファイルの内容はマスクされない。秘密キーの判定は pull と共通の仕組み(`internal/secret`)に集約。
 - `init [tool]` コマンド。初回セットアップ用に `pull` と同じ Plan で中央設定を作る。既存の中央設定は上書きしない。ツール省略時は設定ファイルが存在するツールを検出し、候補が 1 つなら自動選択する。秘密が検出されたときは `apiKeyEnv` への移行手順を警告する。
 

@@ -28,6 +28,16 @@ type toolStatus struct {
 	Providers int      `json:"providers"`
 	Warnings  []string `json:"warnings"`
 	Drift     []string `json:"drift"`
+	// DriftEntries は drift の構造化版(additive)。旧 CLI の応答には無いため、
+	// 存在すればそれを優先し、無ければ drift 文字列の逆解析にフォールバックする。
+	DriftEntries []driftEntry `json:"driftEntries,omitempty"`
+}
+
+// driftEntry は status --json の driftEntries の 1 要素。op は固定集合
+// (not-in-tool / not-in-central / drift)。
+type driftEntry struct {
+	Provider string `json:"provider"`
+	Op       string `json:"op"`
 }
 
 // pair は同期対象の 1 組み合わせ(tool × provider)。
@@ -43,13 +53,18 @@ type selection struct {
 }
 
 // newSelection は toolStatus から、存在するツールの (tool, provider) 組み合わせを作る。
-// provider 一覧は drift と warnings からは取れないため、各ツールの provider 数だけが
-// 分かる。選択肢は `provsync list --json` ではなく `provsync status --json` の
-// tools[i].drift の provider 名から組み立てる(ツールに無い/差分ありのみ候補にする)。
+// driftEntries があればそれを優先し、無い場合(旧 CLI の応答)は drift 文字列の
+// 逆解析にフォールバックする。
 func newSelection(report statusReport) *selection {
 	s := &selection{Selected: map[pair]bool{}}
 	for _, ts := range report.Tools {
 		if !ts.Exists {
+			continue
+		}
+		if len(ts.DriftEntries) > 0 {
+			for _, e := range ts.DriftEntries {
+				s.addPair(ts.Name, e.Provider)
+			}
 			continue
 		}
 		for _, line := range ts.Drift {
@@ -57,15 +72,20 @@ func newSelection(report statusReport) *selection {
 			if !ok {
 				continue
 			}
-			p := pair{Tool: ts.Name, Provider: name}
-			if _, dup := s.Selected[p]; dup {
-				continue
-			}
-			s.Items = append(s.Items, p)
-			s.Selected[p] = false
+			s.addPair(ts.Name, name)
 		}
 	}
 	return s
+}
+
+// addPair は重複を避けて候補を追加する。
+func (s *selection) addPair(tool, provider string) {
+	p := pair{Tool: tool, Provider: provider}
+	if _, dup := s.Selected[p]; dup {
+		return
+	}
+	s.Items = append(s.Items, p)
+	s.Selected[p] = false
 }
 
 // providerFromDriftLine は drift 行("xxx: 中央に無い" など)から provider 名を取り出す。

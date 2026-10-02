@@ -32,6 +32,38 @@ func TestNewSelectionBuildsPairsFromDrift(t *testing.T) {
 	}
 }
 
+func TestNewSelectionPrefersDriftEntries(t *testing.T) {
+	r := testReport()
+	r.Tools = []toolStatus{
+		{Name: "opencode", Path: "/tmp/opencode.json", Exists: true, Providers: 2,
+			Drift:        []string{"LLM 01: ツールに無い"},
+			DriftEntries: []driftEntry{{Provider: "llm-01", Op: "not-in-tool"}, {Provider: "llm-02", Op: "drift"}}},
+	}
+	s := newSelection(r)
+	if len(s.Items) != 2 {
+		t.Fatalf("items = %d, want 2: %v", len(s.Items), s.Items)
+	}
+	// driftEntries が優先され、drift 文字列の逆解析（"LLM 01"）は使われない
+	if s.Items[0] != (pair{Tool: "opencode", Provider: "llm-01"}) {
+		t.Errorf("items[0] = %v, want llm-01 from driftEntries", s.Items[0])
+	}
+	if s.Items[1] != (pair{Tool: "opencode", Provider: "llm-02"}) {
+		t.Errorf("items[1] = %v, want llm-02 from driftEntries", s.Items[1])
+	}
+}
+
+func TestNewSelectionFallsBackToDriftLines(t *testing.T) {
+	// driftEntries を含まない旧 CLI の応答では逆解析にフォールバックする
+	r := testReport()
+	for i := range r.Tools {
+		r.Tools[i].DriftEntries = nil
+	}
+	s := newSelection(r)
+	if len(s.Items) != 3 {
+		t.Fatalf("items = %d, want 3: %v", len(s.Items), s.Items)
+	}
+}
+
 func TestToggleAndSelectedPairs(t *testing.T) {
 	s := newSelection(testReport())
 	if len(s.SelectedPairs()) != 0 {

@@ -526,6 +526,60 @@ func TestStatusJSON(t *testing.T) {
 	}
 }
 
+func TestStatusJSONDriftEntries(t *testing.T) {
+	f := setup(t)
+	mustRun(t, f.root, "pull", "kilocode", "--write")
+	out := mustRun(t, f.root, "status", "--json", "opencode")
+
+	var rep struct {
+		SchemaVersion int `json:"schemaVersion"`
+		Tools         []struct {
+			Name         string   `json:"name"`
+			Drift        []string `json:"drift"`
+			DriftEntries []struct {
+				Provider string `json:"provider"`
+				Op       string `json:"op"`
+			} `json:"driftEntries"`
+		} `json:"tools"`
+	}
+	if err := json.Unmarshal([]byte(out), &rep); err != nil {
+		t.Fatalf("status --json is not valid JSON: %v\n%s", err, out)
+	}
+	if len(rep.Tools) != 1 {
+		t.Fatalf("tools = %d, want 1", len(rep.Tools))
+	}
+	ts := rep.Tools[0]
+	if len(ts.DriftEntries) == 0 {
+		t.Fatalf("driftEntries must be present:\n%s", out)
+	}
+	// 既存の drift 文字列と 1 対 1 に対応する（文言の逆解析に頼らない）
+	if len(ts.DriftEntries) != len(ts.Drift) {
+		t.Errorf("driftEntries = %d, drift = %d, want 1:1", len(ts.DriftEntries), len(ts.Drift))
+	}
+	var found bool
+	for _, e := range ts.DriftEntries {
+		if e.Provider == "llm-01" && e.Op == "not-in-tool" {
+			found = true
+		}
+		if e.Op != "not-in-tool" && e.Op != "not-in-central" && e.Op != "drift" {
+			t.Errorf("op value %q is not in the fixed set", e.Op)
+		}
+	}
+	if !found {
+		t.Errorf("driftEntries must contain {llm-01 not-in-tool}: %+v", ts.DriftEntries)
+	}
+	// 既存の drift 文字列は従来どおり
+	var driftHasLLM01 bool
+	for _, line := range ts.Drift {
+		if strings.Contains(line, "llm-01") {
+			driftHasLLM01 = true
+		}
+	}
+	if !driftHasLLM01 {
+		t.Errorf("drift = %v, want the legacy line for llm-01", ts.Drift)
+	}
+}
+
 func TestStatusExitCodeNoDrift(t *testing.T) {
 	f := setup(t)
 	mustRun(t, f.root, "pull", "kilocode", "--write")
