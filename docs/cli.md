@@ -31,6 +31,7 @@
 | `--prune` / `--keep <n>` | `false` / `20` | `undo` の履歴を掃除する / 残す件数 |
 | `--json` | `false` | `list` / `status` / `diff` を JSON で出力する |
 | `--exit-code` | `false` | `status` で差分があるとき終了コード 3 で終了する |
+| `--strict` | `false` | エイリアス未定義のモデル名があるときエラーにする(push) |
 | `--version` | `false` | バージョンを表示 |
 | `--help` / `-h` | `false` | ヘルプを表示 |
 

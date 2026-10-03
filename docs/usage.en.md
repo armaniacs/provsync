@@ -11,43 +11,43 @@ The everyday sync flow and details of each feature.
 # Import kilocode providers into the central config (preview first)
 $ provsync pull kilocode
 central: /home/you/.config/provsync/config.json
-  llm-01: 追加
-  llm-02: 追加
-(プレビューのみ; 適用するには --write)
+  llm-01: added
+  llm-02: added
+(preview only; apply with --write)
 
 # Apply with --write; a backup is recorded just before writing
 $ provsync pull kilocode --write
 central: /home/you/.config/provsync/config.json
-  llm-01: 追加
-  llm-02: 追加
-バックアップ: 20261002T093012-3fa1
-書き込み: /home/you/.config/provsync/config.json
+  llm-01: added
+  llm-02: added
+backup: 20261002T093012-3fa1
+wrote: /home/you/.config/provsync/config.json
 
 # Reflect the central config into opencode
 $ provsync push opencode --write
 opencode: /home/you/.config/opencode/opencode.json
-  llm-01: 追加
-  llm-02: 追加
-バックアップ: 20261002T093045-8c2d
-書き込み: /home/you/.config/opencode/opencode.json
+  llm-01: added
+  llm-02: added
+backup: 20261002T093045-8c2d
+wrote: /home/you/.config/opencode/opencode.json
 
 # Re-writing the same state is idempotent
 $ provsync push opencode --write
 opencode: /home/you/.config/opencode/opencode.json
-  変更なし
-変更はありません
+  no change
+no changes
 ```
 
 ## Check Sync Status
 
 ```console
 $ provsync status
-中央設定: /home/you/.config/provsync/config.json (2 providers)
+central config: /home/you/.config/provsync/config.json (2 providers)
 kilocode  /home/you/.config/kilo/kilo.jsonc (2 providers)
-  差分なし
+  no drift
 opencode  /home/you/.config/opencode/opencode.json (3 providers)
-  警告: 秘密情報らしいフィールド "options.apiKey" を検出しました。秘密は仲介しないため取り込みません
-  groq: 中央に無い
+  warning: detected a secret-like field "options.apiKey"; secrets are never mediated, so it was not imported
+  groq: not in central
 ```
 
 Providers that exist only in a tool (`groq` above) show as "not in central". `push` never deletes unmanaged entries in the target tool config.
@@ -57,17 +57,17 @@ Providers that exist only in a tool (`groq` above) show as "not in central". `pu
 ```console
 $ provsync diff kilocode opencode
 opencode: /home/you/.config/opencode/opencode.json
-  llm-01: 追加
-  llm-02: 追加
+  llm-01: added
+  llm-02: added
 --- a/home/you/.config/opencode/opencode.json
 +++ b/home/you/.config/opencode/opencode.json
 @@ -1,15 +1,44 @@
    ...
 
 $ provsync undo
-復元しました: 20261002T093045-8c2d (push opencode)
-やり直し: provsync undo 20261002T100001-51b7
-  復元: /home/you/.config/opencode/opencode.json
+restored: 20261002T093045-8c2d (push opencode)
+redo: provsync undo 20261002T100001-51b7
+  restored: /home/you/.config/opencode/opencode.json
 ```
 
 `undo` applies directly; it does not require `--write`.
@@ -150,8 +150,8 @@ Known fields (`name` / `npm` / `baseURL` / `apiKeyEnv` / `models`) are normalize
 `provsync check` sends an authenticated GET to `<baseURL>/models` for each provider in the central config and prints reachability.
 
 - `check` is the only command that talks to the network. Other commands never access anything beyond the synced files.
-- Key values are read from environment variables but never appear in output or logs. 401/403 shows as `[認証失敗]` (auth failure); timeouts and connection failures show as `[到達不可]` (unreachable).
-- Providers with an unset `apiKeyEnv`, environment variable, or `baseURL` are skipped without any request (`[スキップ]`).
+- Key values are read from environment variables but never appear in output or logs. 401/403 shows as `[auth failed]`; timeouts and connection failures show as `[unreachable]`.
+- Providers with an unset `apiKeyEnv`, environment variable, or `baseURL` are skipped without any request (`[skip]`).
 
 ## Environment Diagnosis (doctor)
 
@@ -159,11 +159,12 @@ Known fields (`name` / `npm` / `baseURL` / `apiKeyEnv` / `models`) are normalize
 
 ```console
 $ provsync doctor
-[OK] パス解決
-[OK] 中央設定: 2 providers
-[警告] apiKeyEnv llm-01: 環境変数 LLM01_API_KEY が未設定です
-[OK] ツール kilocode: /home/you/.config/kilo/kilo.jsonc
-診断結果: OK 3 件 / 警告 1 件 / NG 0 件
+[OK] path resolution
+[OK] central config
+[warning] apiKeyEnv llm-01: env var LLM01_API_KEY is not set
+[OK] tool kilocode
+[OK] tool opencode
+diagnosis: 4 OK / 1 warning / 0 NG
 ```
 
 ## TUI Dashboard (optional)
@@ -178,7 +179,7 @@ go build -o provsync-tui .
 
 - The TUI calls the `provsync` binary as a child process (`provsync status --json` to build the view, `provsync push <tool> --provider <p> --write` to apply). It never computes changes itself.
 - Nothing is written until you approve on the confirmation screen.
-- With a non-terminal stdin it errors out with an "interaction required" message. The message language follows `PROVSYNC_LANG` / `LANG`.
+- With a non-terminal stdin it errors out with an "interaction required" message. The message language follows `PROVSYNC_LANG` / `LANG` (English by default, Japanese for locales starting with `ja`).
 - `PROVSYNC_BIN` overrides the provsync binary path (default: `provsync` from PATH).
 
 ## Secret Handling
@@ -190,7 +191,7 @@ go build -o provsync-tui .
 - `diff` output masks values of secret-like keys as `********` by default. The written file content is never masked (display only).
 - To inspect actual values, pass `--show-secrets`. Values are shown with a warning at the top.
 - `status` / `list` show key-name warnings only; values are never printed.
-- See [Security](security.md) for how to report a vulnerability.
+- See [Security](security.en.md) for how to report a vulnerability.
 
 ## Re-serialization Caveat
 

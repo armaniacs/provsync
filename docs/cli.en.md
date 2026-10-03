@@ -31,6 +31,7 @@
 | `--prune` / `--keep <n>` | `false` / `20` | Clean up `undo` history / ops to keep |
 | `--json` | `false` | Output `list` / `status` / `diff` as JSON |
 | `--exit-code` | `false` | Exit with code 3 when `status` detects drift |
+| `--strict` | `false` | Fail when model names have no alias mapping (push) |
 | `--version` | `false` | Show the version |
 | `--help` / `-h` | `false` | Show help |
 
@@ -63,7 +64,7 @@ Errors and warnings go to stderr; normal output to stdout.
       "exists": true,
       "providers": 2,
       "warnings": ["secret-like field ..."],
-      "drift": ["llm-01: ツールに無い"],
+      "drift": ["llm-01: not in tool"],
       "driftEntries": [{ "provider": "llm-01", "op": "not-in-tool" }]
     }
   ]

@@ -49,8 +49,8 @@ provsync の価値は対応ツールの広がりにある。新しいツール�
 
 ## パッケージ構成
 
-- `main.go` — ディスパッチ。`cli.RunWith` がテスト可能なエントリポイント
-- `internal/cli` — サブコマンド(`cli.go`(ディスパッチと共通書き込み)、`sync.go`(同期系と前処理)、`status.go`(一覧・状態)、`history.go`(diff・undo)、`doctor.go`(診断)、`check.go`(疎通確認)、`help.go`(ヘルプと補完のレジストリ)、`render.go`(共通描画)、`errors.go`(使い方エラー)、`platform.go`(対応 OS))
+- `main.go` — 起動のみ。`cli.Supported` で OS 判定し、`cli.RunWith` がテスト可能なエントリポイント
+- `internal/cli` — サブコマンド(`cli.go`(ディスパッチと共通書き込み)、`sync.go`(同期系と前処理)、`status.go`(一覧・状態)、`history.go`(diff・undo)、`help.go`(コマンドレジストリ・ヘルプ・補完)、`doctor.go`(診断)、`check.go`(疎通確認)、`errors.go`(使い方エラー)、`render.go`(共通描画)、`platform.go`(対応 OS)、`version.go`(バージョン表示))
 - `internal/model` — カノニカル表現
 - `internal/adapter` — kilocode / opencode 変換
 - `internal/store` — 中央設定
@@ -59,7 +59,11 @@ provsync の価値は対応ツールの広がりにある。新しいツール�
 - `internal/plan` — 変更計画と意味差分
 - `internal/diff` — 統合 diff
 - `internal/backup` — バックアップと復元
+- `internal/lock` — flock 排他ロック
+- `internal/secret` — 秘密キー判定とマスク
 - `internal/fsutil` — atomic write・JSON 整形
+- `internal/version` — バージョン文字列解決
+- `tui/` — bubbletea TUI(独立モジュール。`tui/go.mod` が replace で親を参照)
 
 ## ドキュメントサイトの更新
 

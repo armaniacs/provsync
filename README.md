@@ -191,6 +191,7 @@ $ provsync undo
 | `--prune` / `--keep <n>` | `false` / `20` | `undo` の履歴を掃除する / 残す件数 |
 | `--json` | `false` | `list` / `status` / `diff` を JSON で出力する |
 | `--exit-code` | `false` | `status` で差分があるとき終了コード 3 で終了する |
+| `--strict` | `false` | エイリアス未定義のモデル名があるときエラーにする(push) |
 | `--version` | `false` | バージョンを表示 |
 | `--help` / `-h` | `false` | ヘルプを表示 |
 
@@ -386,7 +387,7 @@ make test-race  # データ競合検出付きテスト
 make docs-serve  # ドキュメントサイトのローカルプレビュー
 ```
 
-パッケージ構成: `main.go`(ディスパッチ)、`internal/cli`(サブコマンド。`cli.go`(ディスパッチと共通書き込み)、`sync.go`(同期系コマンドと前処理)、`status.go`(一覧・状態表示)、`history.go`(diff・undo)、`doctor.go`(診断)、`check.go`(API 疎通確認)、`help.go`(ヘルプと補完)、`render.go`(共通描画)、`errors.go`(使い方エラー)、`platform.go`(対応 OS))、`internal/model`(カノニカル表現)、`internal/adapter`(kilocode / opencode 変換)、`internal/store`(中央設定)、`internal/syncer`(マージ)、`internal/jsonc`(JSONC 前処理)、`internal/plan`(変更計画と意味差分)、`internal/diff`(統合 diff)、`internal/backup`(バックアップと復元)、`internal/fsutil`(atomic write・JSON 整形)。
+パッケージ構成: `main.go`(起動のみ)、`internal/cli`(サブコマンド。`cli.go`(ディスパッチと共通書き込み)、`sync.go`(同期系コマンドと前処理)、`status.go`(一覧・状態表示)、`history.go`(diff・undo)、`help.go`(コマンドレジストリ・ヘルプ・補完)、`doctor.go`(診断)、`check.go`(API 疎通確認)、`errors.go`(使い方エラー)、`render.go`(共通描画)、`platform.go`(対応 OS)、`version.go`(バージョン表示))、`internal/model`(カノニカル表現)、`internal/adapter`(kilocode / opencode 変換)、`internal/store`(中央設定)、`internal/syncer`(マージ・エイリアス・経路選択)、`internal/jsonc`(JSONC 前処理)、`internal/plan`(変更計画と意味差分)、`internal/diff`(統合 diff)、`internal/backup`(バックアップと復元)、`internal/lock`(flock 排他ロック)、`internal/secret`(秘密キー判定とマスク)、`internal/fsutil`(atomic write・JSON 整形)、`internal/version`(バージョン文字列解決)、`tui/`(bubbletea TUI・独立モジュール)。
 
 - [CHANGELOG.md](CHANGELOG.md)
 - [設計ドキュメント](docs/superpowers/specs/2026-10-02-provsync-multi-tool-sync-design.md)
@@ -406,7 +407,7 @@ provsync is a CLI that syncs the `provider` entries your LLM coding tools each k
 - Every write is preceded by an automatic timestamped backup of all affected files as a single operation.
 - `undo` records the pre-restore state as a new operation, so undo itself can be undone (redoable).
 - Preview, `diff`, apply, and backup are all generated from the same Plan. What you see in the diff is exactly what gets written — and what undo restores.
-- Byte-identical writes are skipped (idempotent). If nothing changes, you just get `変更はありません` ("no changes").
+- Byte-identical writes are skipped (idempotent). If nothing changes, you just get `no changes`.
 
 ### Supported Tools
 
@@ -472,43 +473,43 @@ Note: CLI messages are English by default. Set `PROVSYNC_LANG` (or `LC_ALL` / `L
 # Import kilocode providers into the central config (preview first)
 $ provsync pull kilocode
 central: /home/you/.config/provsync/config.json
-  llm-01: 追加
-  llm-02: 追加
-(プレビューのみ; 適用するには --write)
+  llm-01: added
+  llm-02: added
+(preview only; apply with --write)
 
 # Apply with --write; a backup is recorded just before writing
 $ provsync pull kilocode --write
 central: /home/you/.config/provsync/config.json
-  llm-01: 追加
-  llm-02: 追加
-バックアップ: 20261002T093012-3fa1
-書き込み: /home/you/.config/provsync/config.json
+  llm-01: added
+  llm-02: added
+backup: 20261002T093012-3fa1
+wrote: /home/you/.config/provsync/config.json
 
 # Reflect the central config into opencode
 $ provsync push opencode --write
 opencode: /home/you/.config/opencode/opencode.json
-  llm-01: 追加
-  llm-02: 追加
-バックアップ: 20261002T093045-8c2d
-書き込み: /home/you/.config/opencode/opencode.json
+  llm-01: added
+  llm-02: added
+backup: 20261002T093045-8c2d
+wrote: /home/you/.config/opencode/opencode.json
 
 # Re-writing the same state is idempotent
 $ provsync push opencode --write
 opencode: /home/you/.config/opencode/opencode.json
-  変更なし
-変更はありません
+  no change
+no changes
 ```
 
 Check sync status:
 
 ```console
 $ provsync status
-中央設定: /home/you/.config/provsync/config.json (2 providers)
+central config: /home/you/.config/provsync/config.json (2 providers)
 kilocode  /home/you/.config/kilo/kilo.jsonc (2 providers)
-  差分なし
+  no drift
 opencode  /home/you/.config/opencode/opencode.json (3 providers)
-  警告: 秘密情報らしいフィールド "options.apiKey" を検出しました。秘密は仲介しないため取り込みません
-  groq: 中央に無い
+  warning: detected a secret-like field "options.apiKey"; secrets are never mediated, so it was not imported
+  groq: not in central
 ```
 
 Providers that exist only in a tool (`groq` above) show as "not in central". `push` never deletes unmanaged entries in the target tool config.
@@ -518,20 +519,35 @@ Inspect changes and undo:
 ```console
 $ provsync diff kilocode opencode
 central: /home/you/.config/provsync/config.json
-  変更なし
-  変更なし
+  no change
+  no change
 opencode: /home/you/.config/opencode/opencode.json
-  llm-01: 追加
-  llm-02: 追加
+  llm-01: added
+  llm-02: added
 --- a/home/you/.config/opencode/opencode.json
 +++ b/home/you/.config/opencode/opencode.json
 @@ -1,15 +1,44 @@
+   {
+-  "theme": "dark",
+   "provider": {
+     "groq": {
++      "models": {
++        "llama-3.3-70b-versatile": {
++          "name": "Llama 3.3 70B Versatile"
++        }
++      },
+       "name": "Groq",
+       "npm": "@ai-sdk/groq",
+       "options": {
+         "apiKey": "********"
   ...
++  "theme": "dark"
+ }
 
 $ provsync undo
-復元しました: 20261002T093045-8c2d (push opencode)
-やり直し: provsync undo 20261002T100001-51b7
-  復元: /home/you/.config/opencode/opencode.json
+restored: 20261002T093045-8c2d (push opencode)
+redo: provsync undo 20261002T100001-51b7
+  restored: /home/you/.config/opencode/opencode.json
 ```
 
 `undo` applies directly; it does not require `--write`.
@@ -551,6 +567,7 @@ $ provsync undo
 | `doctor` | Diagnose the environment (existence, syntax, `apiKeyEnv`, permissions; no network) |
 | `check` | Check API reachability per provider (the only command that talks to the network) |
 | `completion <shell>` | Print a completion script for bash / zsh / fish |
+| `--version` / `version` | Show the version |
 
 | Flag | Default | Description |
 |---|---|---|
@@ -564,6 +581,7 @@ $ provsync undo
 | `--prune` / `--keep <n>` | `false` / `20` | Clean up `undo` history / ops to keep |
 | `--json` | `false` | Output `list` / `status` / `diff` as JSON |
 | `--exit-code` | `false` | Exit with code 3 when `status` detects drift |
+| `--strict` | `false` | Fail when model names have no alias mapping (push) |
 | `--version` | `false` | Show the version |
 | `--help` / `-h` | `false` | Show help |
 
@@ -593,7 +611,7 @@ $ provsync undo
       "exists": true,
       "providers": 2,
       "warnings": ["secret-like field ..."],
-      "drift": ["llm-01: ツールに無い"]
+      "drift": ["llm-01: not in tool"]
     }
   ]
 }
@@ -688,8 +706,8 @@ Known fields (`name` / `npm` / `baseURL` / `apiKeyEnv` / `models`) are normalize
 `provsync check` sends an authenticated GET to `<baseURL>/models` for each provider in the central config and prints reachability.
 
 - `check` is the only command that talks to the network. Other commands never access anything beyond the synced files.
-- Key values are read from environment variables but never appear in output or logs. 401/403 shows as `[認証失敗]` (auth failure); timeouts and connection failures show as `[到達不可]` (unreachable).
-- Providers with an unset `apiKeyEnv`, environment variable, or `baseURL` are skipped without any request (`[スキップ]`).
+- Key values are read from environment variables but never appear in output or logs. 401/403 shows as `[auth failed]`; timeouts and connection failures show as `[unreachable]`.
+- Providers with an unset `apiKeyEnv`, environment variable, or `baseURL` are skipped without any request (`[skip]`).
 
 ### TUI dashboard (optional)
 
@@ -703,7 +721,7 @@ go build -o provsync-tui .
 
 - The TUI calls the `provsync` binary as a child process (`provsync status --json` to build the view, `provsync push <tool> --provider <p> --write` to apply). It never computes changes itself.
 - Nothing is written until you approve on the confirmation screen.
-- With a non-terminal stdin it errors out with an "interaction required" message. The message language follows `PROVSYNC_LANG` / `LANG`.
+- With a non-terminal stdin it errors out with an "interaction required" message. The message language follows `PROVSYNC_LANG` / `LANG` (default English; Japanese for locales starting with `ja`).
 - `PROVSYNC_BIN` overrides the provsync binary path (default: `provsync` from PATH).
 
 ### Backups and undo
@@ -721,12 +739,12 @@ $ provsync undo --list
 ```
 
 - `provsync undo` restores the last write; `provsync undo <id>` restores a specific operation. It applies directly, without `--write`.
-- undo records the pre-restore state as a new operation and prints an ID to redo with (`やり直し: provsync undo <id>`).
+- undo records the pre-restore state as a new operation and prints an ID to redo with (`redo: provsync undo <id>`).
 - `provsync undo --prune --keep <n>` removes history, keeping the newest n operations (the removed count is printed).
 - Writes made with `--no-backup` are recorded as marker operations. A subsequent `undo` warns that the latest write was made without a backup and that it restores the state before that write.
 - Newly created central configs and state directories are created with 0600 / 0700 permissions. Existing file permissions are never changed. `status` suggests `chmod` when permissions are loose.
 - Symlinks from dotfiles management are preserved. Writes go to the link target's real file; the link itself is never replaced by a regular file. Broken links error out before writing. `list` shows the link target as ` (symlink → target)`.
-- The `--write` and `undo` restore sections are protected by an exclusive lock (flock) on the state directory. Concurrent runs wait, then fail with "別の provsync が実行中" after a 10-second timeout. Preview, `diff`, and `status` take no lock. A crashed process recovers automatically because the OS releases the lock.
+- The `--write` and `undo` restore sections are protected by an exclusive lock (flock) on the state directory. Concurrent runs wait, then fail with "another provsync is running (...)" after a 10-second timeout. Preview, `diff`, and `status` take no lock. A crashed process recovers automatically because the OS releases the lock.
 
 ### Secret Handling
 
@@ -734,7 +752,7 @@ $ provsync undo --list
 - On `pull`, secret-like fields (`apiKey` / `api_key` / `token` / `secret` / `password` / `accessToken` / `access_token`, including inside `options`) are dropped with a warning:
 
 ```console
-警告: 秘密情報らしいフィールド "options.apiKey" を検出しました。秘密は仲介しないため取り込みません
+warning: detected a secret-like field "options.apiKey"; secrets are never mediated, so it was not imported
 ```
 
 - On `push`, secret fields that already exist in the target tool config are preserved as-is (never deleted, never leaked into the central config).
@@ -759,7 +777,7 @@ make test-race  # race-detector tests
 make docs-serve  # local preview of the docs site
 ```
 
-Package layout: `main.go` (dispatch), `internal/cli` (subcommands; `cli.go` (dispatch and common write path), `sync.go` (sync commands and pipelines), `status.go` (list and status display), `history.go` (diff and undo), `doctor.go` (diagnosis), `check.go` (API reachability), `help.go` (help and completion), `render.go` (shared rendering), `errors.go` (usage errors), `platform.go` (supported OS)), `internal/model` (canonical representation), `internal/adapter` (kilocode / opencode conversion), `internal/store` (central config), `internal/syncer` (merge), `internal/jsonc` (JSONC preprocessing), `internal/plan` (change plan and semantic diff), `internal/diff` (unified diff), `internal/backup` (backup and restore), `internal/fsutil` (atomic write, JSON formatting).
+Package layout: `main.go` (entry only), `internal/cli` (subcommands; `cli.go` (dispatch and common write path), `sync.go` (sync commands and pipelines), `status.go` (list and status display), `history.go` (diff and undo), `help.go` (command registry, help, and completion), `doctor.go` (diagnosis), `check.go` (API reachability), `errors.go` (usage errors), `render.go` (shared rendering), `platform.go` (supported OS), `version.go` (version display)), `internal/model` (canonical representation), `internal/adapter` (kilocode / opencode conversion), `internal/store` (central config), `internal/syncer` (merge, aliases, route selection), `internal/jsonc` (JSONC preprocessing), `internal/plan` (change plan and semantic diff), `internal/diff` (unified diff), `internal/backup` (backup and restore), `internal/lock` (flock-based exclusive lock), `internal/secret` (secret-like key detection and masking), `internal/fsutil` (atomic write, JSON formatting), `internal/version` (version string resolution), `tui/` (bubbletea TUI, separate module).
 
 - [CHANGELOG.md](CHANGELOG.md)
 - [Design document](docs/superpowers/specs/2026-10-02-provsync-multi-tool-sync-design.md)

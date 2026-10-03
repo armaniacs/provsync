@@ -49,8 +49,8 @@ provsync's value grows with the set of supported tools. Add a new tool as follow
 
 ## Package Layout
 
-- `main.go` — dispatch; `cli.RunWith` is the testable entrypoint
-- `internal/cli` — subcommands (`cli.go` (dispatch and common write path), `sync.go` (sync commands and pipelines), `status.go` (list and status), `history.go` (diff and undo), `doctor.go` (diagnosis), `check.go` (reachability), `help.go` (help and completion registry), `render.go` (shared rendering), `errors.go` (usage errors), `platform.go` (supported OS))
+- `main.go` — entry only; `cli.Supported` guards the OS and `cli.RunWith` is the testable entrypoint
+- `internal/cli` — subcommands (`cli.go` (dispatch and common write path), `sync.go` (sync commands and pipelines), `status.go` (list and status), `history.go` (diff and undo), `help.go` (command registry, help, and completion), `doctor.go` (diagnosis), `check.go` (reachability), `errors.go` (usage errors), `render.go` (shared rendering), `platform.go` (supported OS), `version.go` (version display))
 - `internal/model` — canonical representation
 - `internal/adapter` — kilocode / opencode conversion
 - `internal/store` — central config
@@ -59,12 +59,11 @@ provsync's value grows with the set of supported tools. Add a new tool as follow
 - `internal/plan` — change plan and semantic diff
 - `internal/diff` — unified diff
 - `internal/backup` — backup and restore
+- `internal/lock` — flock-based exclusive lock
+- `internal/secret` — secret-like key detection and masking
 - `internal/fsutil` — atomic write and JSON formatting
-
-## Related Documents
-
-- [Design document](https://github.com/armaniacs/provsync/blob/main/docs/superpowers/specs/2026-10-02-provsync-multi-tool-sync-design.md)
-- [CONTRIBUTING.md](https://github.com/armaniacs/provsync/blob/main/CONTRIBUTING.md) (contributor guide: adding an adapter)
+- `internal/version` — version string resolution
+- `tui/` — bubbletea TUI (separate module; `tui/go.mod` references the parent via `replace`)
 
 ## Updating This Site
 
@@ -76,3 +75,8 @@ make docs          # build into site/
 ```
 
 Dependencies are pinned in `requirements.txt` (`pip install -r requirements.txt`).
+
+## Related Documents
+
+- [Design document](https://github.com/armaniacs/provsync/blob/main/docs/superpowers/specs/2026-10-02-provsync-multi-tool-sync-design.md)
+- [CONTRIBUTING.md](https://github.com/armaniacs/provsync/blob/main/CONTRIBUTING.md) (contributor guide: adding an adapter)

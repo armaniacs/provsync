@@ -19,7 +19,7 @@ $ provsync undo --list
 ## Restoring
 
 - `provsync undo` restores the last write; `provsync undo <id>` restores a specific operation. It applies directly, without `--write`.
-- undo records the pre-restore state as a new operation and prints an ID to redo with (`やり直し: provsync undo <id>`).
+- undo records the pre-restore state as a new operation and prints an ID to redo with (`redo: provsync undo <id>`).
 - `provsync undo --prune --keep <n>` removes history, keeping the newest n operations (the removed count is printed).
 
 ## --no-backup Behavior
@@ -38,6 +38,6 @@ Writes made with `--no-backup` are recorded as marker operations. A subsequent `
 
 ## Exclusive Lock
 
-- The `--write` and `undo` restore sections are protected by an exclusive lock (flock) on the state directory. Concurrent runs wait, then fail with "別の provsync が実行中" after a 10-second timeout.
+- The `--write` and `undo` restore sections are protected by an exclusive lock (flock) on the state directory. Concurrent runs wait, then fail with "another provsync is running (...)" after a 10-second timeout.
 - Preview, `diff`, and `status` take no lock.
 - A crashed process recovers automatically because the OS releases the lock.

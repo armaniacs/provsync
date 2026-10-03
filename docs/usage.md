@@ -146,7 +146,7 @@ $ provsync undo
 
 経路の判定は環境変数の有無だけで行われる。通信は発生せず、値を読むことも出力することもない。`apiKeyEnv` が空の provider は環境変数不要として、常に使える経路になる。
 
-書ける経路が 1 つもないときは警告を出して、provider を変更せずに残す。どの経路も未設定のまま push しても設定が消えないのは、このためだ。
+書ける経路が 1 つもないときは警告を出して、provider を変更せずに残す。どの経路も未設定のまま push しても設定が消えないのは、このためだ。`routes` 自体は pull で消えない（中央設定のトップレベルとして保持される）。
 
 ツール別の上書きには対応していないため、経路の優先順は全ツール共通だ。
 
@@ -165,10 +165,11 @@ $ provsync undo
 ```console
 $ provsync doctor
 [OK] パス解決
-[OK] 中央設定: 2 providers
+[OK] 中央設定
 [警告] apiKeyEnv llm-01: 環境変数 LLM01_API_KEY が未設定です
-[OK] ツール kilocode: /home/you/.config/kilo/kilo.jsonc
-診断結果: OK 3 件 / 警告 1 件 / NG 0 件
+[OK] ツール kilocode
+[OK] ツール opencode
+診断結果: OK 4 件 / 警告 1 件 / NG 0 件
 ```
 
 ## TUI ダッシュボード(任意)

@@ -2,6 +2,8 @@
 
 ## Secret Handling (Design)
 
+For per-command behavior, see [Usage](usage.en.md#secret-handling).
+
 - The central config holds only `apiKeyEnv` (an environment variable name). Actual keys are never mediated.
 - On `pull`, secret-like fields (`apiKey` / `api_key` / `token` / `secret` / `password` / `accessToken` / `access_token`, including inside `options`) are dropped with a warning.
 - On `push`, secret fields that already exist in the target tool config are preserved as-is (never deleted, never leaked into the central config).
