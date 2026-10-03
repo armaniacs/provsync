@@ -2,13 +2,14 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/armaniacs/provsync/internal/adapter"
+	"github.com/armaniacs/provsync/internal/fsutil"
 	"github.com/armaniacs/provsync/internal/i18n"
 	"github.com/armaniacs/provsync/internal/model"
 	"github.com/armaniacs/provsync/internal/plan"
@@ -360,17 +361,17 @@ func buildToolChange(a adapter.Adapter, managed map[string]model.Provider) (plan
 // os.ReadFile だけではリンク切れと欠落を区別できない。
 // エラーは言語中立の Message で返し、描画(main の Localize)が言語を決める。
 func checkReadable(path string) error {
-	li, err := os.Lstat(path)
+	_, err := fsutil.ResolveSymlinkTarget(path)
 	if err != nil {
+		// The resolve error unwraps to ENOENT, so it must be matched first.
+		var msg *i18n.Message
+		if errors.As(err, &msg) && msg.ID == "err.symlink.resolve" {
+			return err
+		}
 		if os.IsNotExist(err) {
 			return i18n.New("err.tool.missing", path)
 		}
 		return err
-	}
-	if li.Mode()&os.ModeSymlink != 0 {
-		if _, err := filepath.EvalSymlinks(path); err != nil {
-			return i18n.Wrap(err, "err.symlink.resolve", path)
-		}
 	}
 	return nil
 }

@@ -3,6 +3,7 @@ package fsutil
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 
@@ -64,14 +65,13 @@ func WriteFileAtomic(path string, data []byte) error {
 	return os.Rename(tmpName, path)
 }
 
-// resolveWritePath はシンボリックリンクを辿った実体のパスを返す。
-// 存在しないパスと通常ファイルはそのまま返す。リンク切れはエラーにする。
-func resolveWritePath(path string) (string, error) {
+// ResolveSymlinkTarget returns the real path behind a symlink.
+// Plain files are returned unchanged. Lstat errors pass through unwrapped
+// so the caller keeps its missing-path policy. A broken symlink is wrapped
+// as err.symlink.resolve.
+func ResolveSymlinkTarget(path string) (string, error) {
 	li, err := os.Lstat(path)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return path, nil
-		}
 		return "", err
 	}
 	if li.Mode()&os.ModeSymlink == 0 {
@@ -80,6 +80,24 @@ func resolveWritePath(path string) (string, error) {
 	resolved, err := filepath.EvalSymlinks(path)
 	if err != nil {
 		return "", i18n.Wrap(err, "err.symlink.resolve", path)
+	}
+	return resolved, nil
+}
+
+// resolveWritePath はシンボリックリンクを辿った実体のパスを返す。
+// 存在しないパスと通常ファイルはそのまま返す。リンク切れはエラーにする。
+func resolveWritePath(path string) (string, error) {
+	resolved, err := ResolveSymlinkTarget(path)
+	if err != nil {
+		// The resolve error unwraps to ENOENT, so it must be matched first.
+		var msg *i18n.Message
+		if errors.As(err, &msg) && msg.ID == "err.symlink.resolve" {
+			return "", err
+		}
+		if os.IsNotExist(err) {
+			return path, nil
+		}
+		return "", err
 	}
 	return resolved, nil
 }
