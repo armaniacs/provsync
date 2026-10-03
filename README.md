@@ -1,7 +1,7 @@
 # provsync
 
 **複数の LLM ツールの provider 設定を、たった一つの中央設定に同期する**
-*Sync provider entries across your LLM tools into one central canonical config.*
+*Sync provider entries across your LLM tools into one central config.*
 
 [日本語](#日本語) | [English](#english)
 
@@ -11,7 +11,7 @@
 
 ### 概要
 
-provsync は、複数の LLM コーディングツールがそれぞれ独自の形式で持つ `provider` 設定を、中央のカノニカル設定を唯一の正(single source of truth)として同期する CLI ツール。`pull` でツールから中央へ取り込み、`push` で中央からツールへ反映する。Go 標準ライブラリのみで実装され、外部依存はない。
+provsync は、複数の LLM コーディングツールがそれぞれ独自の形式で持つ `provider` 設定を、中央設定を唯一の正(single source of truth)として同期する CLI ツール。`pull` でツールから中央へ取り込み、`push` で中央からツールへ反映する。Go 標準ライブラリのみで実装され、外部依存はない。
 
 ### 安全設計
 
@@ -399,7 +399,7 @@ make docs-serve  # ドキュメントサイトのローカルプレビュー
 
 ### Overview
 
-provsync is a CLI that syncs the `provider` entries your LLM coding tools each keep in their own format, using a central canonical config as the single source of truth. `pull` imports from a tool into the central config; `push` reflects the central config back into a tool. Built on the Go standard library only, with no external dependencies.
+provsync is a CLI that syncs the `provider` entries your LLM coding tools each keep in their own format, using a central config as the single source of truth. `pull` imports from a tool into the central config; `push` reflects the central config back into a tool. Built on the Go standard library only, with no external dependencies.
 
 ### Safety Design
 

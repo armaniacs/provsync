@@ -133,7 +133,7 @@ CLI・TUI のメッセージの日英対応と、ドキュメントサイトの�
 ### Changed
 
 - CLI をサブコマンド化(`list` / `status` / `pull` / `push` / `sync` / `diff` / `undo`)。旧フラグ(`--source` / `--target` / `--providers` / `--backup`)を削除(**破壊的変更**)。
-- 中央カノニカル設定 `~/.config/provsync/config.json` を唯一の正とする設計へ変更。
+- 中央設定 `~/.config/provsync/config.json` を唯一の正とする設計へ変更。
 - provider の既知フィールドを正規化し、ツール固有の未知フィールドは `Extras` に保持して往復。
 - `--provider` はカンマ区切り・繰り返し指定に対応。バックアップ無効化は `--no-backup` に変更。
 - 意味差分をツール可視の射影(adapter の `Project`)で比較し、ツールが描画しないフィールド(`apiKeyEnv` 等)による `status`・プレビューの誤検知を解消。

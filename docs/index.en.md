@@ -8,7 +8,7 @@ title: provsync
 
 # provsync
 
-**Sync provider entries across your LLM tools into one central canonical config.**
+**Sync provider entries across your LLM tools into one central config.**
 
 provsync imports from a tool into the central config with `pull`, and reflects the central config back with `push`. Writes are preceded by an automatic backup, and `undo` restores.
 
@@ -27,7 +27,7 @@ provsync imports from a tool into the central config with `pull`, and reflects t
 
     Preview by default. All affected files are backed up automatically just before every write, and `undo` / redo bring them back
 
-- :material-database-outline:{ .lg .middle } __One canonical config__
+- :material-database-outline:{ .lg .middle } __One central config__
 
     ---
 

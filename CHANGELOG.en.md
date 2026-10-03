@@ -133,7 +133,7 @@ Redesign for multi-tool sync.
 ### Changed
 
 - Switched the CLI to subcommands (`list` / `status` / `pull` / `push` / `sync` / `diff` / `undo`). Removed the old flags (`--source` / `--target` / `--providers` / `--backup`) (**breaking change**).
-- Moved to a design with the central canonical config `~/.config/provsync/config.json` as the single source of truth.
+- Moved to a design with the central config `~/.config/provsync/config.json` as the single source of truth.
 - Normalized known provider fields; tool-specific unknown fields are kept in `Extras` and round-tripped.
 - `--provider` accepts comma-separated and repeatable values. Backup disabling changed to `--no-backup`.
 - Compare semantic diff on the tool-visible projection (adapter `Project`), fixing false positives in `status` and preview from fields the tool never renders (`apiKeyEnv`, etc.).
