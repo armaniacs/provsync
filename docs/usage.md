@@ -185,7 +185,11 @@ provsync-tui
 
 TUI は provsync バイナリを子プロセスとして呼ぶ構成で、状態の取得は `provsync status --json`、適用は `provsync push <tool> --provider <p> --write` で行う。変更内容の計算を TUI 側で持たないため、画面に見えたものと実際に書かれるものの整合は CLI 側の Plan に一任される。
 
-確認画面には実行コマンドごとに `--write` なし push のプレビュー(意味差分)が表示されるため、何が変わるかを見てから承認できる。確認画面で承認するまで、ファイルは一切変わらない。適用後の完了画面では `u` で直前の操作を取り消せる(`undo` 相当の確認を挟んで実行する)。標準入力が端末でない場合(CI 実行など)は「interaction required」で終了する。エラー文言の言語は PROVSYNC_LANG / LANG に従う(既定は英語、`ja` で始まるロケールでは日本語)。provsync バイナリの場所は `PROVSYNC_BIN` 環境変数で指定でき、既定では PATH にある `provsync` を使う。
+確認画面には実行コマンドごとに `--write` なし push のプレビュー(意味差分)が表示されるため、何が変わるかを見てから承認できる。確認画面で承認するまで、ファイルは一切変わらない。適用後の完了画面では `u` で直前の操作を取り消せる(`undo` 相当の確認を挟んで実行する)。
+
+差分が無いときは一覧の代わりにコマンドメニューが開く。一覧画面でも `m` で開ける。メニューは全サブコマンド(`status` / `list` / `pull` / `push` / `sync` / `diff` / `undo` / `doctor` / `check` / `init` / `version` / `completion`)を並べ、選んで引数を入れると実行する。書き込みを伴う操作は確認を挟み、`pull` / `push` / `sync` / `init` はプレビュー表示のうえで承認後に `--write` 付きで実行する。
+
+標準入力が端末でない場合(CI 実行など)は「interaction required」で終了する。エラー文言の言語は PROVSYNC_LANG / LANG に従う(既定は英語、`ja` で始まるロケールでは日本語)。provsync バイナリの場所は `PROVSYNC_BIN` 環境変数で指定でき、既定では PATH にある `provsync` を使う。
 
 ## 秘密情報の扱い
 

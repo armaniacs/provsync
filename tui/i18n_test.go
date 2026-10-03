@@ -25,7 +25,7 @@ func TestViewLocalizedInEn(t *testing.T) {
 	if !strings.Contains(enView, "central config:") {
 		t.Errorf("en view must use the en label:\n%s", enView)
 	}
-	if !strings.Contains(enView, "space to select, enter to confirm, q to quit") {
+	if !strings.Contains(enView, "space to select, enter to confirm, m for commands, q to quit") {
 		t.Errorf("en view must use the en hint:\n%s", enView)
 	}
 	if cjkRe.MatchString(enView) {
@@ -33,19 +33,24 @@ func TestViewLocalizedInEn(t *testing.T) {
 	}
 }
 
-// TestViewNoDriftLocalizedInEn は差分なし画面の en 描画を検証する。
-func TestViewNoDriftLocalizedInEn(t *testing.T) {
+// TestNoDriftStartsAtMenuLocalizedInEn は差分なし起動でコマンドメニューに
+// 直接入ることと、その en 描画を検証する(行き止まりの一覧画面は廃止)。
+func TestNoDriftStartsAtMenuLocalizedInEn(t *testing.T) {
 	r := testReport()
 	for i := range r.Tools {
 		r.Tools[i].Drift = nil
 		r.Tools[i].DriftEntries = nil
 	}
-	enView := newListModel("provsync-unused", r, "en").View()
-	if !strings.Contains(enView, "no applicable drift (already synced)") {
-		t.Errorf("en no-drift view must use the en message:\n%s", enView)
+	m := newListModel("provsync-unused", r, "en")
+	if m.screen != screenMenu {
+		t.Fatalf("no-drift startup must open the menu, got screen %d", m.screen)
+	}
+	enView := m.View()
+	if !strings.Contains(enView, "commands") {
+		t.Errorf("en menu view must show the menu title:\n%s", enView)
 	}
 	if cjkRe.MatchString(enView) {
-		t.Errorf("en no-drift view must not contain CJK:\n%s", enView)
+		t.Errorf("en menu view must not contain CJK:\n%s", enView)
 	}
 }
 

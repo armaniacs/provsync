@@ -14,6 +14,10 @@ const (
 	screenConfirm
 	screenDone
 	screenConfirmUndo
+	screenMenu
+	screenMenuPrompt
+	screenMenuPreview
+	screenMenuResult
 )
 
 // previewResult は 1 ペア分の push プレビュー(--write なし)の結果。
@@ -40,16 +44,31 @@ type listModel struct {
 	screen   screen
 	message  []string
 	previews []previewResult
+	// 以下はコマンドメニュー用の作業状態。
+	menuCursor  int
+	menuActive  *menuCmd
+	menuValues  []string
+	menuPrompt  int
+	menuInput   []rune
+	menuContext []string
+	menuPreview []string
+	menuOutput  []string
 }
 
 func newListModel(bin string, report statusReport, lang string) *listModel {
-	return &listModel{
+	m := &listModel{
 		bin:    bin,
 		lang:   lang,
 		report: report,
 		sel:    newSelection(report),
 		screen: screenList,
 	}
+	if len(m.sel.Items) == 0 {
+		// 差分が無いときの一覧画面は行き止まりになるため、
+		// 最初からコマンドメニューを開く。
+		m.screen = screenMenu
+	}
+	return m
 }
 
 func (m *listModel) Init() tea.Cmd { return nil }
@@ -81,6 +100,14 @@ func (m *listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateConfirm(key)
 	case screenConfirmUndo:
 		return m.updateConfirmUndo(key)
+	case screenMenu:
+		return m.updateMenu(key)
+	case screenMenuPrompt:
+		return m.updateMenuPrompt(key)
+	case screenMenuPreview:
+		return m.updateMenuPreview(key)
+	case screenMenuResult:
+		return m.updateMenuResult(key)
 	default:
 		switch key.String() {
 		case "q", "ctrl+c":
@@ -113,6 +140,10 @@ func (m *listModel) updateList(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.previews = nil
 			return m, m.fetchPreviews()
 		}
+	case "m":
+		m.menuCursor = 0
+		m.screen = screenMenu
+		return m, nil
 	}
 	return m, nil
 }
@@ -220,11 +251,6 @@ func (m *listModel) View() string {
 
 	switch m.screen {
 	case screenList:
-		if len(m.sel.Items) == 0 {
-			b.WriteString(i18n.T(m.lang, "msg.tui.noDrift") + "\n\n")
-			b.WriteString(i18n.T(m.lang, "msg.tui.quit") + "\n")
-			return b.String()
-		}
 		b.WriteString(i18n.T(m.lang, "msg.tui.listHint") + "\n\n")
 		for i, p := range m.sel.Items {
 			check := " "
@@ -246,6 +272,21 @@ func (m *listModel) View() string {
 		b.WriteString("\n" + i18n.T(m.lang, "msg.tui.confirmPrompt") + "\n")
 	case screenConfirmUndo:
 		b.WriteString(i18n.T(m.lang, "msg.tui.confirmUndo") + "\n")
+	case screenMenu:
+		b.WriteString(m.menuView())
+	case screenMenuPrompt:
+		b.WriteString(m.menuPromptView())
+	case screenMenuPreview:
+		b.WriteString(i18n.T(m.lang, "msg.tui.menuPreviewHeader") + "\n\n")
+		for _, line := range m.menuPreview {
+			b.WriteString("  " + line + "\n")
+		}
+		b.WriteString("\n" + i18n.T(m.lang, "msg.tui.menuRunPrompt") + "\n")
+	case screenMenuResult:
+		for _, line := range m.menuOutput {
+			b.WriteString(line + "\n")
+		}
+		b.WriteString("\n" + i18n.T(m.lang, "msg.tui.menuBack") + "\n")
 	case screenDone:
 		b.WriteString(strings.Join(m.message, "\n"))
 		b.WriteString("\n\n" + i18n.T(m.lang, "msg.tui.doneHint") + "\n")

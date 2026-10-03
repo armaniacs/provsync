@@ -238,6 +238,8 @@ func scanCatalogIDRefs(t *testing.T) map[string]string {
 		regexp.MustCompile(`(?m)(?:^|[^.\w])(?:i18n\.)?New\("([a-z][A-Za-z0-9.]*)"`),
 		regexp.MustCompile(`(?m)(?:^|[^.\w])(?:i18n\.)?Wrap\([^,]+,\s*"([a-z][A-Za-z0-9.]*)"`),
 		regexp.MustCompile(`(?:helpKey|summaryKey):\s*"([a-z][A-Za-z0-9.]*)"`),
+		// tui のコマンドメニューは入力ラベル ID を labelKey 付きリテラルで持つ。
+		regexp.MustCompile(`labelKey:\s*"([a-z][A-Za-z0-9.]*)"`),
 		regexp.MustCompile(`nameID:\s*"([a-z][A-Za-z0-9.]*)"`),
 		regexp.MustCompile(`"(status\.op\.[A-Za-z]+)"`),
 	}

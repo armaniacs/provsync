@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 // TestE2EPreviewApplyUndoRoundTrip は preview → apply → undo の全路を
@@ -94,5 +96,64 @@ func TestE2EPreviewApplyUndoRoundTrip(t *testing.T) {
 	}
 	if string(afterUndo) != string(before) {
 		t.Errorf("undo must restore the pre-apply content.\nbefore: %s\nafter: %s", before, afterUndo)
+	}
+}
+
+// TestE2EMenuPullFlow はメニュー経由の pull(入力→プレビュー→適用)を
+// 実バイナリ相手にキー操作で駆動する。メニューが組み立てる引数体系が
+// CLI 側とずれた場合の実行時失敗を固定する。
+func TestE2EMenuPullFlow(t *testing.T) {
+	home := isolateHomeEnv(t)
+	bin := buildRealProvsync(t)
+
+	toolPath := filepath.Join(home, ".config", "kilo", "kilo.jsonc")
+	writeE2EFile(t, toolPath, `{"provider": {"e2e-menu-new": {"name": "E2E Menu", "npm": "@ai-sdk/x",
+"options": {"baseURL": "https://tool.example/v1"}, "models": {}}}}`)
+	central := filepath.Join(home, ".config", "provsync", "config.json")
+	writeE2EFile(t, central, `{"version":1,"providers":{}}`)
+
+	rep, err := fetchStatus(bin)
+	if err != nil {
+		t.Fatalf("fetchStatus: %v", err)
+	}
+	m := newListModel(bin, rep, "en")
+	if m.screen != screenList {
+		t.Fatalf("drift startup must open the list, got screen %d", m.screen)
+	}
+	// m でメニューを開き、pull(3 項目目)へ進む。
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'m'}})
+	m2 := updated.(*listModel)
+	for i := 0; i < 2; i++ {
+		updated, _ = m2.Update(tea.KeyMsg{Type: tea.KeyDown})
+		m2 = updated.(*listModel)
+	}
+	updated, _ = m2.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m3 := updated.(*listModel)
+	if m3.screen != screenMenuPrompt {
+		t.Fatalf("pull must open the prompt, got screen %d", m3.screen)
+	}
+	// ツール名を入力して確定→プレビュー画面。ファイルは変わらない。
+	updated, _ = m3.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("kilocode")})
+	m4 := updated.(*listModel)
+	updated, _ = m4.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m5 := updated.(*listModel)
+	if m5.screen != screenMenuPreview {
+		t.Fatalf("pull must show the preview, got screen %d", m5.screen)
+	}
+	if !strings.Contains(strings.Join(m5.menuPreview, "\n"), "e2e-menu-new") {
+		t.Errorf("preview must show the semantic change: %v", m5.menuPreview)
+	}
+	// y で適用→ツール側の provider がセントラル設定に取り込まれる。
+	updated, _ = m5.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	m6 := updated.(*listModel)
+	if m6.screen != screenMenuResult {
+		t.Fatalf("y must run and show the result, got screen %d", m6.screen)
+	}
+	raw, err := os.ReadFile(central)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), "e2e-menu-new") {
+		t.Errorf("after menu apply, central must contain the provider:\n%s", raw)
 	}
 }
