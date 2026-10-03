@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"github.com/armaniacs/provsync/internal/adapter"
+	"github.com/armaniacs/provsync/internal/i18n"
 	"github.com/armaniacs/provsync/internal/model"
 	"github.com/armaniacs/provsync/internal/plan"
 	"github.com/armaniacs/provsync/internal/store"
@@ -51,17 +52,17 @@ func cmdList(o *options, args []string) error {
 		return encodeJSON(o.out, rep)
 	}
 	if rep.Central.Exists {
-		fmt.Fprintf(o.out, "中央設定: %s (%d providers)\n", rep.Central.Path, rep.Central.Providers)
+		o.msgf(o.out, "msg.central", rep.Central.Path, rep.Central.Providers)
 	} else {
-		fmt.Fprintf(o.out, "中央設定: %s (未作成)\n", rep.Central.Path)
+		o.msgf(o.out, "msg.centralMissing", rep.Central.Path)
 	}
 	for _, ti := range rep.Tools {
 		if !ti.Exists {
-			fmt.Fprintf(o.out, "%-9s %s (未作成)\n", ti.Name, ti.Path)
+			o.msgf(o.out, "msg.toolMissing", ti.Name, ti.Path)
 			continue
 		}
 		suffix := symlinkSuffix(ti.Path)
-		fmt.Fprintf(o.out, "%-9s %s%s (%d providers)\n", ti.Name, ti.Path, suffix, ti.Providers)
+		o.msgf(o.out, "msg.tool", ti.Name, ti.Path, suffix, ti.Providers)
 	}
 	return nil
 }
@@ -108,16 +109,18 @@ func cmdStatus(o *options, args []string) error {
 	if err != nil {
 		return err
 	}
+	// 表示(JSON の値を含む)はロケール連動。--exit-code は機械値で判定する。
+	lrep := localizeStatus(rep, o.lang)
 	if o.jsonOut {
-		if err := encodeJSON(o.out, rep); err != nil {
+		if err := encodeJSON(o.out, lrep); err != nil {
 			return err
 		}
 	} else {
-		renderStatusText(o, root, rep)
+		renderStatusText(o, root, lrep)
 	}
 	if o.exitCode {
 		for _, ts := range rep.Tools {
-			if len(ts.Drift) > 0 {
+			if len(ts.DriftEntries) > 0 {
 				return &ExitError{Code: 3}
 			}
 		}
@@ -148,6 +151,9 @@ type toolStatus struct {
 	// DriftEntries は drift の構造化版(additive)。TUI が文言の逆解析に頼らず
 	// 済むようにする。差分がないときは省略する。
 	DriftEntries []driftEntry `json:"driftEntries,omitempty"`
+	// warnMsgs は警告の言語中立の値。JSON には出さず、localizeStatus が
+	// Warnings へ翻訳して載せる。
+	warnMsgs []*i18n.Message `json:"-"`
 }
 
 // driftEntry は 1 provider の差分を構造化したもの。Op の値は固定集合
@@ -158,7 +164,8 @@ type driftEntry struct {
 }
 
 // buildStatusReport は tools と中央設定の同期状態を集計する。
-// Drift は driftLines の「差分なし」を除いたもので、空 = 差分なし。
+// 警告と差分は言語中立の値(warnMsgs / DriftEntries)で保持し、
+// 表示(localizeStatus)で初めて言語が決まる。空 = 差分なし。
 func buildStatusReport(root adapter.Root, tools []string) (*statusReport, error) {
 	rep := &statusReport{SchemaVersion: 1, Tools: []toolStatus{}}
 	centralPath := root.CentralConfigPath()
@@ -188,43 +195,59 @@ func buildStatusReport(root adapter.Root, tools []string) (*statusReport, error)
 			return nil, err
 		}
 		ts.Providers = len(providers)
-		ts.Warnings = warnings
+		ts.warnMsgs = warnings
 		if central != nil {
-			entries := driftEntries(a.Project(central.Providers), providers)
-			for _, e := range entries {
-				ts.DriftEntries = append(ts.DriftEntries, e)
-				ts.Drift = append(ts.Drift, fmt.Sprintf("%s: %s", e.Provider, driftOpLabel(e.Op)))
-			}
+			ts.DriftEntries = driftEntries(a.Project(central.Providers), providers)
 		}
 		rep.Tools = append(rep.Tools, ts)
 	}
 	return rep, nil
 }
 
+// localizeStatus は機械値レポートを表示用(翻訳済み)に複製する。
+// JSON のキー・型は不変で、drift 行と warnings の値だけがロケール連動になる。
+func localizeStatus(rep *statusReport, lang string) *statusReport {
+	out := *rep
+	out.Tools = make([]toolStatus, len(rep.Tools))
+	for i, ts := range rep.Tools {
+		nts := ts
+		nts.Warnings = nil
+		for _, m := range ts.warnMsgs {
+			nts.Warnings = append(nts.Warnings, i18n.Localize(lang, m))
+		}
+		nts.Drift = nil
+		for _, e := range ts.DriftEntries {
+			nts.Drift = append(nts.Drift, fmt.Sprintf("%s: %s", e.Provider, i18n.T(lang, driftOpKey(e.Op))))
+		}
+		out.Tools[i] = nts
+	}
+	return &out
+}
+
 // renderStatusText は statusReport を従来のテキスト形式で出す。
 func renderStatusText(o *options, root adapter.Root, rep *statusReport) {
 	if rep.Central.Exists {
-		fmt.Fprintf(o.out, "中央設定: %s (%d providers)\n", rep.Central.Path, rep.Central.Providers)
-		warnLoosePerm(o.errOut, rep.Central.Path, false)
+		o.msgf(o.out, "msg.central", rep.Central.Path, rep.Central.Providers)
+		warnLoosePerm(o, rep.Central.Path, false)
 	} else {
-		fmt.Fprintf(o.out, "中央設定: %s (未作成)\n", rep.Central.Path)
+		o.msgf(o.out, "msg.centralMissing", rep.Central.Path)
 	}
-	warnLoosePerm(o.errOut, root.StateDir(), true)
+	warnLoosePerm(o, root.StateDir(), true)
 
 	for _, ts := range rep.Tools {
 		if !ts.Exists {
-			fmt.Fprintf(o.out, "%-9s %s (未作成)\n", ts.Name, ts.Path)
+			o.msgf(o.out, "msg.toolMissing", ts.Name, ts.Path)
 			continue
 		}
-		fmt.Fprintf(o.out, "%-9s %s (%d providers)\n", ts.Name, ts.Path, ts.Providers)
+		o.msgf(o.out, "msg.tool", ts.Name, ts.Path, "", ts.Providers)
 		for _, w := range ts.Warnings {
-			fmt.Fprintf(o.errOut, "  警告: %s\n", w)
+			fmt.Fprintf(o.errOut, "  %s: %s\n", o.T("label.warning"), w)
 		}
 		if !rep.Central.Exists {
 			continue
 		}
 		if len(ts.Drift) == 0 {
-			fmt.Fprintln(o.out, "  差分なし")
+			o.msgf(o.out, "msg.noDrift")
 			continue
 		}
 		for _, line := range ts.Drift {
@@ -268,15 +291,15 @@ func driftEntries(projected, tool map[string]model.Provider) []driftEntry {
 	return entries
 }
 
-// driftOpLabel は driftEntry の op を status 表示用の文言に対応づける。
-func driftOpLabel(op string) string {
+// driftOpKey は driftEntry の op を status 表示用のカタログ ID に対応づける。
+func driftOpKey(op string) string {
 	switch op {
 	case "not-in-tool":
-		return "ツールに無い"
+		return "status.op.notInTool"
 	case "not-in-central":
-		return "中央に無い"
+		return "status.op.notInCentral"
 	case "drift":
-		return "差分あり"
+		return "status.op.drift"
 	}
 	return ""
 }

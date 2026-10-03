@@ -12,13 +12,14 @@ import (
 
 // command はサブコマンド 1 件の定義。コマンド一覧はこのレジストリに集約し、
 // dispatch・ヘルプ・usage・補完がここから生成される。新しいコマンドは
-// commandRegistry に 1 エントリ足すだけで反映される。
+// commandRegistry に 1 エントリ足すだけで反映される。文言はカタログ ID で持ち、
+// 表示時に初めて言語が決まる。
 type command struct {
-	name    string
-	usage   string // usage のコマンド部分(例: "status [tool...]")
-	summary string // usage のコマンド一覧の説明
-	help    string // 詳細ヘルプ(`provsync <cmd> --help`)
-	handler func(o *options, args []string) error
+	name       string
+	usage      string // usage のコマンド部分(例: "status [tool...]")。構文は言語中立
+	summaryKey string // usage のコマンド一覧の説明(カタログ ID)
+	helpKey    string // 詳細ヘルプ(`provsync <cmd> --help`)の本文(カタログ ID)
+	handler    func(o *options, args []string) error
 	// inUsage は usage のコマンド一覧に載せるか。completion / version のような
 	// meta コマンドは従来どおり一覧から除外する。
 	inUsage bool
@@ -29,176 +30,18 @@ type command struct {
 // 初期化サイクルを避けるためである。
 func commandRegistry() []command {
 	return []command{
-		{name: "list", usage: "list", summary: "対応ツールと設定パスを表示", handler: cmdList, inUsage: true, help: `list - 対応ツールと設定パスを表示
-
-用途: 各ツールの設定ファイルと中央設定のパス、provider 数を表示する。
-
-使い方: provsync list
-
-例:
-  provsync list
-`},
-		{name: "status", usage: "status [tool...]", summary: "ツールと中央設定の同期状態を表示", handler: cmdStatus, inUsage: true, help: `status - ツールと中央設定の同期状態を表示
-
-用途: ツール設定と中央設定の provider 差分( drift )を表示する。
-
-使い方: provsync status [tool...]
-
-引数: tool を省略すると全対応ツールを表示する。
-
-関連フラグ:
-  --json    JSON で出力する
-
-例:
-  provsync status
-  provsync status kilocode
-`},
-		{name: "init", usage: "init [tool]", summary: "初回セットアップ(中央設定を作る)", handler: cmdInit, inUsage: true, help: `init - 初回セットアップ(中央設定を作る)
-
-用途: ツール設定から中央設定を作成する。初回専用で、既存の中央設定は上書きしない。
-
-使い方: provsync init [tool]
-
-引数: tool を省略すると、設定ファイルが存在するツールを検出する。
-      候補が複数ある場合は一覧を表示するので指定する。
-
-関連フラグ:
-  --write   中央設定を作成する(既定はプレビュー)
-
-例:
-  provsync init kilocode
-  provsync init kilocode --write
-`},
-		{name: "pull", usage: "pull <tool>", summary: "ツール設定を中央設定へ取り込む", handler: cmdPull, inUsage: true, help: `pull - ツール設定を中央設定へ取り込む
-
-用途: ツール設定の provider エントリを中央設定へマージする。
-
-使い方: provsync pull <tool>
-
-引数: tool は kilocode(別名 kilo) / opencode。
-
-関連フラグ:
-  --write          中央設定へ書き込む(既定はプレビュー)
-  --provider <p>   対象 provider を限定(カンマ区切り)
-
-例:
-  provsync pull kilocode
-  provsync pull kilocode --write
-`},
-		{name: "push", usage: "push <tool>", summary: "中央設定をツール設定へ反映する", handler: cmdPush, inUsage: true, help: `push - 中央設定をツール設定へ反映する
-
-用途: 中央設定の provider エントリをツール設定へマージする。
-
-使い方: provsync push <tool>
-
-引数: tool は kilocode(別名 kilo) / opencode。
-
-関連フラグ:
-  --write          ツール設定へ書き込む(既定はプレビュー)
-  --provider <p>   対象 provider を限定(カンマ区切り)
-
-例:
-  provsync push opencode
-  provsync push opencode --write
-`},
-		{name: "sync", usage: "sync --from <a> --to <b>", summary: "a を取り込み b へ反映する(--from 省略可)", handler: cmdSync, inUsage: true, help: `sync - 取り込みと反映を一度に行う
-
-用途: --from のツール設定を中央設定へ取り込み、--to のツール設定へ反映する。
-
-使い方: provsync sync --from <a> --to <b>
-
-引数: --from を省略すると中央設定をそのまま使う。
-
-関連フラグ:
-  --from <tool>   取り込み元ツール(省略可)
-  --to <tool>     反映先ツール(必須)
-  --write         ファイルへ書き込む(既定はプレビュー)
-
-例:
-  provsync sync --from kilocode --to opencode --write
-`},
-		{name: "diff", usage: "diff <from> <to>", summary: "from を to に適用した場合の差分を表示", handler: cmdDiff, inUsage: true, help: `diff - 適用した場合の差分を表示
-
-用途: from を to に適用した場合の意味差分と統合 diff を表示する。
-
-使い方: provsync diff <from> <to>
-
-引数: from / to はツール名か central。
-
-関連フラグ:
-  --show-secrets   秘密の値をそのまま表示する(非推奨)
-
-例:
-  provsync diff kilocode opencode
-`},
-		{name: "undo", usage: "undo [id]", summary: "直前または指定操作を復元する(--list で履歴)", handler: cmdUndo, inUsage: true, help: `undo - 直前または指定操作を復元する
-
-用途: 書き込み操作をバックアップから復元する。--write は不要で直接適用する。
-
-使い方: provsync undo [id]
-
-引数: id を省略すると直前の書き込みを復元する。undo 自体を undo できる(redo)。
-
-関連フラグ:
-  --list   履歴を表示する
-  --prune / --keep <n>   履歴を掃除する
-
-例:
-  provsync undo
-  provsync undo --list
-  provsync undo 20261002T093045-8c2d
-`},
-		{name: "doctor", usage: "doctor", summary: "環境を診断する(通信しない)", handler: cmdDoctor, inUsage: true, help: `doctor - 環境を診断する
-
-用途: 設定の存在・構文・apiKeyEnv の環境変数・権限を一覧で診断する。
-
-使い方: provsync doctor
-
-通信せず、ファイルも書かない。NG があるときは終了コード 1 で終わる。
-
-例:
-  provsync doctor
-`},
-		{name: "check", usage: "check", summary: "各 provider の API 到達可否を確認する(明示実行のみ)", handler: cmdCheck, inUsage: true, help: `check - API の疎通確認
-
-用途: 中央設定の各 provider について API への到達可否を確認する。
-
-使い方: provsync check
-
-通信するのはこのコマンドだけ。他のコマンドから呼ばない。
-タイムアウトは 1 provider あたり 5 秒。秘密の値は出力しない。
-
-関連フラグ:
-  --provider <p>   対象 provider を限定(カンマ区切り)
-
-例:
-  provsync check
-`},
-		{name: "completion", usage: "completion <shell>", summary: "シェル補完スクリプトを出力", handler: cmdCompletion, help: `completion - シェル補完スクリプトを出力
-
-用途: bash / zsh / fish 用の補完スクリプトを標準出力へ出す。
-
-使い方: provsync completion <shell>
-
-引数: shell は bash / zsh / fish。
-
-例:
-  # zsh
-  provsync completion zsh > "${fpath[1]}/_provsync"
-
-  # bash
-  source <(provsync completion bash)
-`},
-		{name: "version", usage: "version", summary: "バージョンを表示", handler: cmdVersion, help: `version - バージョンを表示
-
-用途: バイナリのバージョンを 1 行で表示する。
-
-使い方: provsync version
-
-例:
-  provsync version
-  provsync --version
-`},
+		{name: "list", usage: "list", summaryKey: "usage.summary.list", helpKey: "help.list", handler: cmdList, inUsage: true},
+		{name: "status", usage: "status [tool...]", summaryKey: "usage.summary.status", helpKey: "help.status", handler: cmdStatus, inUsage: true},
+		{name: "init", usage: "init [tool]", summaryKey: "usage.summary.init", helpKey: "help.init", handler: cmdInit, inUsage: true},
+		{name: "pull", usage: "pull <tool>", summaryKey: "usage.summary.pull", helpKey: "help.pull", handler: cmdPull, inUsage: true},
+		{name: "push", usage: "push <tool>", summaryKey: "usage.summary.push", helpKey: "help.push", handler: cmdPush, inUsage: true},
+		{name: "sync", usage: "sync --from <a> --to <b>", summaryKey: "usage.summary.sync", helpKey: "help.sync", handler: cmdSync, inUsage: true},
+		{name: "diff", usage: "diff <from> <to>", summaryKey: "usage.summary.diff", helpKey: "help.diff", handler: cmdDiff, inUsage: true},
+		{name: "undo", usage: "undo [id]", summaryKey: "usage.summary.undo", helpKey: "help.undo", handler: cmdUndo, inUsage: true},
+		{name: "doctor", usage: "doctor", summaryKey: "usage.summary.doctor", helpKey: "help.doctor", handler: cmdDoctor, inUsage: true},
+		{name: "check", usage: "check", summaryKey: "usage.summary.check", helpKey: "help.check", handler: cmdCheck, inUsage: true},
+		{name: "completion", usage: "completion <shell>", summaryKey: "usage.summary.completion", helpKey: "help.completion", handler: cmdCompletion},
+		{name: "version", usage: "version", summaryKey: "usage.summary.version", helpKey: "help.version", handler: cmdVersion},
 	}
 }
 
@@ -225,22 +68,15 @@ func lookupCommand(name string) (command, bool) {
 // HOME が解決できない場合でも使い方本文は出し、設定ファイル節だけ省略する。
 func printUsage(o *options) {
 	var b strings.Builder
-	b.WriteString(`使い方: provsync <command> [flags]
-
-コマンド:
-`)
+	b.WriteString(o.T("usage.header"))
+	b.WriteString("\n")
 	for _, c := range commandRegistry() {
 		if !c.inUsage {
 			continue
 		}
-		fmt.Fprintf(&b, "  %-24s %s\n", c.usage, c.summary)
+		fmt.Fprintf(&b, "  %-24s %s\n", c.usage, o.T(c.summaryKey))
 	}
-	b.WriteString(`
-共通フラグ:
-  --write          変更を書き込む(既定はプレビュー)
-  --provider <p>   対象 provider を限定(カンマ区切り)
-  --no-backup      バックアップを記録しない
-  --root <dir>     パス解決の基準を差し替える(テスト用)`)
+	b.WriteString(o.T("usage.commonFlags"))
 	fmt.Fprintln(o.out, "provsync "+version.String())
 	fmt.Fprintln(o.out, b.String())
 
@@ -248,13 +84,13 @@ func printUsage(o *options) {
 	if err != nil {
 		return
 	}
-	fmt.Fprintln(o.out, "\n設定ファイル:")
+	fmt.Fprintln(o.out, "\n"+o.T("usage.filesHeader"))
 	central := root.CentralConfigPath()
 	if _, err := os.Stat(central); err == nil {
-		fmt.Fprintf(o.out, "  中央設定: %s\n", central)
+		o.msgf(o.out, "usage.central", central)
 	} else {
-		fmt.Fprintf(o.out, "  中央設定: %s (未作成)\n", central)
-		fmt.Fprintln(o.out, "    provsync init <tool> --write で作成します")
+		o.msgf(o.out, "usage.centralMissing", central)
+		o.msgf(o.out, "usage.createdBy")
 	}
 	for _, name := range adapter.Names() {
 		a, err := adapter.Get(name, root)
@@ -264,10 +100,10 @@ func printUsage(o *options) {
 		if _, err := os.Stat(a.Path()); err == nil {
 			fmt.Fprintf(o.out, "  %-9s %s\n", name, a.Path())
 		} else {
-			fmt.Fprintf(o.out, "  %-9s %s (未作成)\n", name, a.Path())
+			o.msgf(o.out, "usage.toolMissing", name, a.Path())
 		}
 	}
-	fmt.Fprintf(o.out, "  バックアップ: %s\n", root.StateDir())
+	o.msgf(o.out, "usage.backupDir", root.StateDir())
 }
 
 // cmdVersion はバージョンを 1 行で表示する。
@@ -277,9 +113,10 @@ func cmdVersion(o *options, args []string) error {
 }
 
 // cmdCompletion はシェル補完スクリプトを出力する。
+// スクリプト本体は機械可読のため翻訳しない。使い方エラーのみ翻訳される。
 func cmdCompletion(o *options, args []string) error {
 	if len(args) != 1 {
-		return usageErr("使い方: provsync completion <bash|zsh|fish>")
+		return o.usageErr("err.usage.completion")
 	}
 	shell := args[0]
 	tools := adapter.Names()
@@ -302,7 +139,7 @@ complete -F _provsync provsync
 		fmt.Fprintf(o.out, "complete -c provsync -n '__fish_use_subcommand' -a '%s'\n", strings.Join(commands, " "))
 		fmt.Fprintf(o.out, "complete -c provsync -n '__fish_seen_subcommand_from pull push' -a '%s'\n", strings.Join(tools, " "))
 	default:
-		return usageErr("未知のシェル %q です(有効: bash / zsh / fish)", shell)
+		return o.usageErr("err.completion.unknownShell", shell)
 	}
 	return nil
 }

@@ -29,7 +29,7 @@ func cmdCheck(o *options, args []string) error {
 	}
 	cfg, err := store.Load(root.CentralConfigPath())
 	if err != nil {
-		return fmt.Errorf("中央設定がありません。先に pull / init を実行してください: %w", err)
+		return fmt.Errorf("%s: %w", o.T("err.check.noCentral"), err)
 	}
 	keys := make([]string, 0, len(cfg.Providers))
 	for k := range cfg.Providers {
@@ -52,16 +52,16 @@ func cmdCheck(o *options, args []string) error {
 		p := cfg.Providers[k]
 		switch {
 		case p.APIKeyEnv == "":
-			fmt.Fprintf(o.out, "[スキップ] %s: apiKeyEnv が未設定\n", k)
+			o.msgf(o.out, "check.skip.noAPIKeyEnv", k)
 			continue
 		}
 		if _, ok := os.LookupEnv(p.APIKeyEnv); !ok {
 			// 変数の値は読んでも出力しない。
-			fmt.Fprintf(o.out, "[スキップ] %s: 環境変数 %s が未設定\n", k, p.APIKeyEnv)
+			o.msgf(o.out, "check.skip.noEnvVar", k, p.APIKeyEnv)
 			continue
 		}
 		if p.BaseURL == "" {
-			fmt.Fprintf(o.out, "[スキップ] %s: baseURL が未設定\n", k)
+			o.msgf(o.out, "check.skip.noBaseURL", k)
 			continue
 		}
 		checkProvider(o, k, p)
@@ -77,7 +77,7 @@ func checkProvider(o *options, key string, p model.Provider) {
 	url := strings.TrimSuffix(p.BaseURL, "/") + "/models"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		fmt.Fprintf(o.out, "[応答異常] %s: リクエストを構築できません\n", key)
+		o.msgf(o.out, "check.badRequest", key)
 		return
 	}
 	token := os.Getenv(p.APIKeyEnv)
@@ -87,17 +87,17 @@ func checkProvider(o *options, key string, p model.Provider) {
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		// エラー文字列には URL やヘッダが入らないよう、分類済みの短い文言にする。
-		fmt.Fprintf(o.out, "[到達不可] %s\n", key)
+		o.msgf(o.out, "check.unreachable", key)
 		return
 	}
 	defer resp.Body.Close()
 	ms := time.Since(start).Milliseconds()
 	switch {
 	case resp.StatusCode >= 200 && resp.StatusCode < 300:
-		fmt.Fprintf(o.out, "[OK] %s (%dms)\n", key, ms)
+		o.msgf(o.out, "check.ok", key, ms)
 	case resp.StatusCode == 401 || resp.StatusCode == 403:
-		fmt.Fprintf(o.out, "[認証失敗] %s\n", key)
+		o.msgf(o.out, "check.authFailed", key)
 	default:
-		fmt.Fprintf(o.out, "[応答異常] %s: HTTP %d\n", key, resp.StatusCode)
+		o.msgf(o.out, "check.badStatus", key, resp.StatusCode)
 	}
 }

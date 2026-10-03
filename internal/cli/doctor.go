@@ -8,17 +8,29 @@ import (
 	"strings"
 
 	"github.com/armaniacs/provsync/internal/adapter"
+	"github.com/armaniacs/provsync/internal/i18n"
 	"github.com/armaniacs/provsync/internal/model"
 	"github.com/armaniacs/provsync/internal/store"
 )
 
 // ---- doctor ----
 
-// diagnosisCheck は doctor の 1 診断項目。
+// checkStatus は診断結果の内部判別子。表示文言は doctor.status.* カタログで決める。
+type checkStatus string
+
+const (
+	statusOK   checkStatus = "ok"
+	statusWarn checkStatus = "warn"
+	statusNG   checkStatus = "ng"
+)
+
+// diagnosisCheck は doctor の 1 診断項目。name と detail はカタログ ID で持ち、
+// 表示(cmdDoctor)で初めて言語が決まる。
 type diagnosisCheck struct {
-	Name   string
-	Status string // OK / 警告 / NG
-	Detail string // 次にやること。OK のときは空
+	nameID  string
+	nameArg any
+	status  checkStatus
+	detail  error // nil のとき空。*i18n.Message または下位パッケージのエラー
 }
 
 // cmdDoctor は設定・環境を診断する。通信せず、ファイルも書かない。
@@ -30,43 +42,48 @@ func cmdDoctor(o *options, args []string) error {
 	}
 
 	var checks []diagnosisCheck
-	checks = append(checks, doctorCheckPaths(root)...)
+	checks = append(checks, doctorCheckPaths()...)
 	checks = append(checks, doctorCheckCentral(root)...)
-	checks = append(checks, doctorCheckTools(root)...)
+	checks = append(checks, doctorCheckTools(o.lang, root)...)
 	checks = append(checks, doctorCheckPerms(root)...)
 
 	ng := 0
 	for _, c := range checks {
-		switch c.Status {
-		case "OK":
-			fmt.Fprintf(o.out, "[OK] %s\n", c.Name)
-		case "警告":
-			fmt.Fprintf(o.out, "[警告] %s: %s\n", c.Name, c.Detail)
-		case "NG":
-			fmt.Fprintf(o.out, "[NG] %s: %s\n", c.Name, c.Detail)
+		name := o.T(c.nameID, c.nameArg)
+		detail := ""
+		if c.detail != nil {
+			detail = i18n.Localize(o.lang, c.detail)
+		}
+		switch c.status {
+		case statusOK:
+			fmt.Fprintf(o.out, "[%s] %s\n", o.T("doctor.status.ok"), name)
+		case statusWarn:
+			fmt.Fprintf(o.out, "[%s] %s: %s\n", o.T("doctor.status.warn"), name, detail)
+		case statusNG:
+			fmt.Fprintf(o.out, "[%s] %s: %s\n", o.T("doctor.status.ng"), name, detail)
 			ng++
 		}
 	}
-	fmt.Fprintf(o.out, "診断結果: OK %d 件 / 警告 %d 件 / NG %d 件\n", countStatus(checks, "OK"), countStatus(checks, "警告"), ng)
+	o.msgf(o.out, "doctor.summary", countStatus(checks, statusOK), countStatus(checks, statusWarn), ng)
 	if ng > 0 {
-		return fmt.Errorf("診断で問題が見つかりました (NG %d 件)", ng)
+		return i18n.New("err.doctor.problems", ng)
 	}
 	return nil
 }
 
-func countStatus(checks []diagnosisCheck, status string) int {
+func countStatus(checks []diagnosisCheck, status checkStatus) int {
 	n := 0
 	for _, c := range checks {
-		if c.Status == status {
+		if c.status == status {
 			n++
 		}
 	}
 	return n
 }
 
-func doctorCheckPaths(root adapter.Root) []diagnosisCheck {
+func doctorCheckPaths() []diagnosisCheck {
 	return []diagnosisCheck{
-		{Name: "パス解決", Status: "OK", Detail: root.CentralConfigPath()},
+		{nameID: "doctor.name.paths", status: statusOK},
 	}
 }
 
@@ -74,15 +91,15 @@ func doctorCheckCentral(root adapter.Root) []diagnosisCheck {
 	var checks []diagnosisCheck
 	centralPath := root.CentralConfigPath()
 	if _, err := os.Stat(centralPath); err != nil {
-		checks = append(checks, diagnosisCheck{Name: "中央設定", Status: "警告", Detail: "未作成です。provsync init <tool> --write を実行してください"})
+		checks = append(checks, diagnosisCheck{nameID: "doctor.name.central", status: statusWarn, detail: i18n.New("doctor.detail.centralMissing")})
 		return checks
 	}
 	cfg, err := store.Load(centralPath)
 	if err != nil {
-		checks = append(checks, diagnosisCheck{Name: "中央設定", Status: "NG", Detail: err.Error()})
+		checks = append(checks, diagnosisCheck{nameID: "doctor.name.central", status: statusNG, detail: err})
 		return checks
 	}
-	checks = append(checks, diagnosisCheck{Name: "中央設定", Status: "OK", Detail: fmt.Sprintf("%d providers", len(cfg.Providers))})
+	checks = append(checks, diagnosisCheck{nameID: "doctor.name.central", status: statusOK})
 	checks = append(checks, doctorCheckAPIKeyEnv(cfg)...)
 	return checks
 }
@@ -100,16 +117,16 @@ func doctorCheckAPIKeyEnv(cfg *model.Config) []diagnosisCheck {
 			continue
 		}
 		if _, ok := os.LookupEnv(env); ok {
-			checks = append(checks, diagnosisCheck{Name: "apiKeyEnv " + k, Status: "OK", Detail: env})
+			checks = append(checks, diagnosisCheck{nameID: "doctor.name.apiKeyEnv", nameArg: k, status: statusOK})
 		} else {
 			// 変数の値は読んでも出力しない。名前のみを案内する。
-			checks = append(checks, diagnosisCheck{Name: "apiKeyEnv " + k, Status: "警告", Detail: fmt.Sprintf("環境変数 %s が未設定です", env)})
+			checks = append(checks, diagnosisCheck{nameID: "doctor.name.apiKeyEnv", nameArg: k, status: statusWarn, detail: i18n.New("doctor.detail.envMissing", env)})
 		}
 	}
 	return checks
 }
 
-func doctorCheckTools(root adapter.Root) []diagnosisCheck {
+func doctorCheckTools(lang string, root adapter.Root) []diagnosisCheck {
 	var checks []diagnosisCheck
 	for _, name := range adapter.Names() {
 		a, err := adapter.Get(name, root)
@@ -117,20 +134,24 @@ func doctorCheckTools(root adapter.Root) []diagnosisCheck {
 			continue
 		}
 		if _, err := os.Stat(a.Path()); err != nil {
-			checks = append(checks, diagnosisCheck{Name: "ツール " + name, Status: "警告", Detail: fmt.Sprintf("%s が未作成です", a.Path())})
+			checks = append(checks, diagnosisCheck{nameID: "doctor.name.tool", nameArg: name, status: statusWarn, detail: i18n.New("doctor.detail.toolMissing", a.Path())})
 			continue
 		}
 		_, warnings, err := a.Pull()
 		if err != nil {
-			checks = append(checks, diagnosisCheck{Name: "ツール " + name, Status: "NG", Detail: err.Error()})
+			checks = append(checks, diagnosisCheck{nameID: "doctor.name.tool", nameArg: name, status: statusNG, detail: err})
 			continue
 		}
 		if len(warnings) > 0 {
 			// pull の警告は秘密らしいキー名のみを含む(値は含まない)。
-			checks = append(checks, diagnosisCheck{Name: "ツール " + name, Status: "警告", Detail: strings.Join(warnings, "; ")})
+			parts := make([]string, 0, len(warnings))
+			for _, w := range warnings {
+				parts = append(parts, i18n.Localize(lang, w))
+			}
+			checks = append(checks, diagnosisCheck{nameID: "doctor.name.tool", nameArg: name, status: statusWarn, detail: i18n.New("doctor.detail.toolWarnings", strings.Join(parts, "; "))})
 			continue
 		}
-		checks = append(checks, diagnosisCheck{Name: "ツール " + name, Status: "OK", Detail: a.Path()})
+		checks = append(checks, diagnosisCheck{nameID: "doctor.name.tool", nameArg: name, status: statusOK})
 	}
 	return checks
 }
@@ -139,10 +160,10 @@ func doctorCheckPerms(root adapter.Root) []diagnosisCheck {
 	var checks []diagnosisCheck
 	centralPath := root.CentralConfigPath()
 	if info, err := os.Stat(centralPath); err == nil && info.Mode().Perm()&0o077 != 0 {
-		checks = append(checks, diagnosisCheck{Name: "権限", Status: "警告", Detail: fmt.Sprintf("権限が緩い (%04o): %s  chmod 600 %s", info.Mode().Perm(), centralPath, centralPath)})
+		checks = append(checks, diagnosisCheck{nameID: "doctor.name.perms", status: statusWarn, detail: i18n.New("doctor.detail.loosePerm", info.Mode().Perm(), centralPath, centralPath)})
 	}
 	if stateDir := root.StateDir(); filePermLoose(stateDir) {
-		checks = append(checks, diagnosisCheck{Name: "権限", Status: "警告", Detail: fmt.Sprintf("状態ディレクトリの権限が緩い: %s  chmod 700 %s", stateDir, stateDir)})
+		checks = append(checks, diagnosisCheck{nameID: "doctor.name.perms", status: statusWarn, detail: i18n.New("doctor.detail.statePermLoose", stateDir, stateDir)})
 	}
 	return checks
 }
