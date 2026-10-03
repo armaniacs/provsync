@@ -20,7 +20,7 @@ import (
 // checkTimeout は疎通確認 1 回あたりのタイムアウト。テストで上書きする。
 var checkTimeout = 5 * time.Second
 
-// cmdCheck は中央設定の各 provider の API 到達可否を確認する。
+// cmdCheck はセントラル設定の各 provider の API 到達可否を確認する。
 // 通信するのはこのコマンドだけ。秘密の値は出力しない。
 func cmdCheck(o *options, args []string) error {
 	root, err := o.root()

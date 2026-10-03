@@ -147,7 +147,7 @@ func TestLocalize(t *testing.T) {
 	// fmt.Errorf("A: %w", fmt.Errorf("B: %w", cause)) と同じ連結形になること
 	cause := errors.New("root cause")
 	chain := Wrap(Wrap(cause, "err.central.read"), "err.backup.failed")
-	if got := Localize(LangJa, chain); got != "バックアップに失敗しました: 中央設定を読めません: root cause" {
+	if got := Localize(LangJa, chain); got != "バックアップに失敗しました: セントラル設定を読めません: root cause" {
 		t.Errorf("Localize ja chain = %q", got)
 	}
 	if got := Localize(LangEn, chain); got != "backup failed: cannot read the central config: root cause" {
@@ -307,7 +307,7 @@ func TestLocalizeMixedMessageChain(t *testing.T) {
 	mid := fmt.Errorf("pull failed: %w", inner)
 	outer := Wrap(mid, "err.backup.failed")
 
-	wantJa := "バックアップに失敗しました: pull failed: 中央設定を読めません: disk full"
+	wantJa := "バックアップに失敗しました: pull failed: セントラル設定を読めません: disk full"
 	if got := Localize(LangJa, outer); got != wantJa {
 		t.Errorf("Localize ja mixed chain = %q, want %q", got, wantJa)
 	}
@@ -327,7 +327,7 @@ func TestTMultipleArgs(t *testing.T) {
 		args     []any
 		want     string
 	}{
-		{LangJa, "msg.central", []any{"/c", 2}, "中央設定: /c (2 providers)"},
+		{LangJa, "msg.central", []any{"/c", 2}, "セントラル設定: /c (2 providers)"},
 		{LangEn, "msg.central", []any{"/c", 2}, "central config: /c (2 providers)"},
 		{LangJa, "warn.loosePerm", []any{0o644, "/a", "600 /a", "/a"}, "権限が緩い (0644): /a  chmod 600 /a /a"},
 	}
@@ -412,7 +412,7 @@ func TestLocalizeDeepChainOrder(t *testing.T) {
 				"err.backup.failed"),
 			"err.recordHistory.failed"),
 		"err.undo.none")
-	want := "undo できる操作がありません: 履歴の記録に失敗しました: バックアップに失敗しました: 中央設定を読めません: io"
+	want := "undo できる操作がありません: 履歴の記録に失敗しました: バックアップに失敗しました: セントラル設定を読めません: io"
 	if got := Localize(LangJa, chain); got != want {
 		t.Errorf("deep chain order = %q, want %q", got, want)
 	}

@@ -1,10 +1,10 @@
 // Package model はツール非依存のカノニカル表現を定義する。
 package model
 
-// Version は中央設定ファイルのスキーマバージョン。
+// Version はセントラル設定ファイルのスキーマバージョン。
 const Version = 1
 
-// Config は中央設定ファイルの内容。
+// Config はセントラル設定ファイルの内容。
 type Config struct {
 	Version   int                          `json:"version"`
 	Providers map[string]Provider          `json:"providers"`

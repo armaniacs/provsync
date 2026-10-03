@@ -10,7 +10,7 @@ import (
 	"github.com/armaniacs/provsync/internal/model"
 )
 
-// Load は中央設定を読み込む。ファイルが無い場合はエラー。
+// Load はセントラル設定を読み込む。ファイルが無い場合はエラー。
 // エラーは言語中立の Message で返し、描画(cli / main の Localize)が言語を決める。
 func Load(path string) (*model.Config, error) {
 	raw, err := os.ReadFile(path)

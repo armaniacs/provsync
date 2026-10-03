@@ -7,8 +7,8 @@ var jaCatalog = map[string]string{
 	"err.unsupportedOS": "未対応の OS です: Windows (対応: macOS / Linux)",
 
 	// ---- store ----
-	"err.central.read":    "中央設定を読めません",
-	"err.central.invalid": "中央設定の JSON が不正です",
+	"err.central.read":    "セントラル設定を読めません",
+	"err.central.invalid": "セントラル設定の JSON が不正です",
 
 	// ---- backup ----
 	"err.manifest.invalid":    "バックアップマニフェストの JSON が不正です",
@@ -66,18 +66,18 @@ var jaCatalog = map[string]string{
 	"usage.header":         "使い方: provsync <command> [flags]\n\nコマンド:",
 	"usage.commonFlags":    "\n共通フラグ:\n  --write          変更を書き込む(既定はプレビュー)\n  --provider <p>   対象 provider を限定(カンマ区切り)\n  --no-backup      バックアップを記録しない\n  --root <dir>     パス解決の基準を差し替える(テスト用)",
 	"usage.filesHeader":    "設定ファイル:",
-	"usage.central":        "  中央設定: %s",
-	"usage.centralMissing": "  中央設定: %s (未作成)",
+	"usage.central":        "  セントラル設定: %s",
+	"usage.centralMissing": "  セントラル設定: %s (未作成)",
 	"usage.createdBy":      "    provsync init <tool> --write で作成します",
 	"usage.toolMissing":    "  %-9s %s (未作成)",
 	"usage.backupDir":      "  バックアップ: %s",
 
 	// ---- cli: usage のコマンド一覧 ----
 	"usage.summary.list":       "対応ツールと設定パスを表示",
-	"usage.summary.status":     "ツールと中央設定の同期状態を表示",
-	"usage.summary.init":       "初回セットアップ(中央設定を作る)",
-	"usage.summary.pull":       "ツール設定を中央設定へ取り込む",
-	"usage.summary.push":       "中央設定をツール設定へ反映する",
+	"usage.summary.status":     "ツールとセントラル設定の同期状態を表示",
+	"usage.summary.init":       "初回セットアップ(セントラル設定を作る)",
+	"usage.summary.pull":       "ツール設定をセントラル設定へ取り込む",
+	"usage.summary.push":       "セントラル設定をツール設定へ反映する",
 	"usage.summary.sync":       "a を取り込み b へ反映する(--from 省略可)",
 	"usage.summary.diff":       "from を to に適用した場合の差分を表示",
 	"usage.summary.undo":       "直前または指定操作を復元する(--list で履歴)",
@@ -102,21 +102,21 @@ var jaCatalog = map[string]string{
 	"msg.init.multiple":           "複数のツール設定が見つかりました:",
 	"msg.init.specifyTool":        "provsync init <tool> でツールを指定してください",
 	"msg.init.noProviders":        "取り込める provider がありません",
-	"msg.init.secretHint":         "秘密は中央設定に保存されません。環境変数名を中央設定の apiKeyEnv に設定してください",
-	"msg.init.next":               "次に: provsync init %s --write で中央設定を作成します",
+	"msg.init.secretHint":         "秘密はセントラル設定に保存されません。環境変数名をセントラル設定の apiKeyEnv に設定してください",
+	"msg.init.next":               "次に: provsync init %s --write でセントラル設定を作成します",
 	"msg.init.nextSteps":          "次の手順:\n  1. provsync status              同期状態を確認する\n  2. provsync push <他のツール>    他のツールへ反映する(まずプレビュー)\n  3. 問題があれば provsync undo で元に戻せます",
 
 	// ---- cli: push / sync / diff 前処理 ----
-	"err.push.noCentral":  "中央設定がありません。先に pull / sync を実行してください",
-	"err.sync.noCentral":  "中央設定がありません。--from を指定するか先に pull してください",
+	"err.push.noCentral":  "セントラル設定がありません。先に pull / sync を実行してください",
+	"err.sync.noCentral":  "セントラル設定がありません。--from を指定するか先に pull してください",
 	"err.readTool.failed": "ツール設定を読めません (%s)",
 	"err.tool.missing":    "ツール設定がありません: %s",
 	"warn.route.unused":   "エイリアス %q の経路で使える provider がありません(apiKeyEnv が未設定)。変更せず残します",
 	"err.alias.strict":    "エイリアス未定義のモデル名があります (--strict): %d 件",
 
 	// ---- cli: list / status ----
-	"msg.central":            "中央設定: %s (%d providers)",
-	"msg.centralMissing":     "中央設定: %s (未作成)",
+	"msg.central":            "セントラル設定: %s (%d providers)",
+	"msg.centralMissing":     "セントラル設定: %s (未作成)",
 	"msg.toolMissing":        "%-9s %s (未作成)",
 	"msg.tool":               "%-9s %s%s (%d providers)",
 	"msg.noDrift":            "  差分なし",
@@ -146,7 +146,7 @@ var jaCatalog = map[string]string{
 
 	// ---- cli: doctor ----
 	"doctor.name.paths":            "パス解決",
-	"doctor.name.central":          "中央設定",
+	"doctor.name.central":          "セントラル設定",
 	"doctor.name.apiKeyEnv":        "apiKeyEnv %s",
 	"doctor.name.tool":             "ツール %s",
 	"doctor.name.perms":            "権限",
@@ -163,7 +163,7 @@ var jaCatalog = map[string]string{
 	"err.doctor.problems":          "診断で問題が見つかりました (NG %d 件)",
 
 	// ---- cli: check ----
-	"err.check.noCentral":    "中央設定がありません。先に pull / init を実行してください",
+	"err.check.noCentral":    "セントラル設定がありません。先に pull / init を実行してください",
 	"check.skip.noAPIKeyEnv": "[スキップ] %s: apiKeyEnv が未設定",
 	"check.skip.noEnvVar":    "[スキップ] %s: 環境変数 %s が未設定",
 	"check.skip.noBaseURL":   "[スキップ] %s: baseURL が未設定",
@@ -178,7 +178,7 @@ var jaCatalog = map[string]string{
 	"err.tui.fetch":         "provsync status --json を実行できません (%s)",
 	"err.tui.invalidOutput": "provsync status --json の出力が不正です",
 	"err.tui.schema":        "対応していない schemaVersion です: %d",
-	"msg.tui.central":       "中央設定: %s",
+	"msg.tui.central":       "セントラル設定: %s",
 	"msg.tui.noDrift":       "適用候補となる差分がありません(同期済み)",
 	"msg.tui.quit":          "q で終了",
 	"msg.tui.listHint":      "スペースで選択、Enter で確認、q で終了",
@@ -190,16 +190,16 @@ var jaCatalog = map[string]string{
 	// ---- cli: 詳細ヘルプ ----
 	"help.list": `list - 対応ツールと設定パスを表示
 
-用途: 各ツールの設定ファイルと中央設定のパス、provider 数を表示する。
+用途: 各ツールの設定ファイルとセントラル設定のパス、provider 数を表示する。
 
 使い方: provsync list
 
 例:
   provsync list
 `,
-	"help.status": `status - ツールと中央設定の同期状態を表示
+	"help.status": `status - ツールとセントラル設定の同期状態を表示
 
-用途: ツール設定と中央設定の provider 差分( drift )を表示する。
+用途: ツール設定とセントラル設定の provider 差分( drift )を表示する。
 
 使い方: provsync status [tool...]
 
@@ -212,9 +212,9 @@ var jaCatalog = map[string]string{
   provsync status
   provsync status kilocode
 `,
-	"help.init": `init - 初回セットアップ(中央設定を作る)
+	"help.init": `init - 初回セットアップ(セントラル設定を作る)
 
-用途: ツール設定から中央設定を作成する。初回専用で、既存の中央設定は上書きしない。
+用途: ツール設定からセントラル設定を作成する。初回専用で、既存のセントラル設定は上書きしない。
 
 使い方: provsync init [tool]
 
@@ -222,31 +222,31 @@ var jaCatalog = map[string]string{
       候補が複数ある場合は一覧を表示するので指定する。
 
 関連フラグ:
-  --write   中央設定を作成する(既定はプレビュー)
+  --write   セントラル設定を作成する(既定はプレビュー)
 
 例:
   provsync init kilocode
   provsync init kilocode --write
 `,
-	"help.pull": `pull - ツール設定を中央設定へ取り込む
+	"help.pull": `pull - ツール設定をセントラル設定へ取り込む
 
-用途: ツール設定の provider エントリを中央設定へマージする。
+用途: ツール設定の provider エントリをセントラル設定へマージする。
 
 使い方: provsync pull <tool>
 
 引数: tool は kilocode(別名 kilo) / opencode。
 
 関連フラグ:
-  --write          中央設定へ書き込む(既定はプレビュー)
+  --write          セントラル設定へ書き込む(既定はプレビュー)
   --provider <p>   対象 provider を限定(カンマ区切り)
 
 例:
   provsync pull kilocode
   provsync pull kilocode --write
 `,
-	"help.push": `push - 中央設定をツール設定へ反映する
+	"help.push": `push - セントラル設定をツール設定へ反映する
 
-用途: 中央設定の provider エントリをツール設定へマージする。
+用途: セントラル設定の provider エントリをツール設定へマージする。
 
 使い方: provsync push <tool>
 
@@ -262,11 +262,11 @@ var jaCatalog = map[string]string{
 `,
 	"help.sync": `sync - 取り込みと反映を一度に行う
 
-用途: --from のツール設定を中央設定へ取り込み、--to のツール設定へ反映する。
+用途: --from のツール設定をセントラル設定へ取り込み、--to のツール設定へ反映する。
 
 使い方: provsync sync --from <a> --to <b>
 
-引数: --from を省略すると中央設定をそのまま使う。
+引数: --from を省略するとセントラル設定をそのまま使う。
 
 関連フラグ:
   --from <tool>   取り込み元ツール(省略可)
@@ -320,7 +320,7 @@ var jaCatalog = map[string]string{
 `,
 	"help.check": `check - API の疎通確認
 
-用途: 中央設定の各 provider について API への到達可否を確認する。
+用途: セントラル設定の各 provider について API への到達可否を確認する。
 
 使い方: provsync check
 

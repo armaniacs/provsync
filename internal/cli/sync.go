@@ -29,7 +29,7 @@ type pullResult struct {
 	Warnings []*i18n.Message
 }
 
-// pullFromTool は「ツール設定を読み、provider を絞り込み、中央設定の変更計画を
+// pullFromTool は「ツール設定を読み、provider を絞り込み、セントラル設定の変更計画を
 // 作る」pull 側の前処理を集約する。cmdPull / cmdInit / sync --from の 3 経路で
 // 共有する。新しい pull 前処理ステップはここに 1 箇所追加する。
 // 警告は stderr へ出す（出力先・文言・順序は従来どおり）。
@@ -56,8 +56,8 @@ func (o *options) pullFromTool(root adapter.Root, toolName string) (pullResult, 
 	return pullResult{Tool: a.Name(), Change: change, Central: cfg, Pulled: pulled, Warnings: warnings}, nil
 }
 
-// cmdInit は初回セットアップ用。pull と同じ Plan を再利用して中央設定を作る。
-// 既存の中央設定は上書きしない。
+// cmdInit は初回セットアップ用。pull と同じ Plan を再利用してセントラル設定を作る。
+// 既存のセントラル設定は上書きしない。
 func cmdInit(o *options, args []string) error {
 	if len(args) > 1 {
 		return o.usageErr("err.usage.init")
@@ -157,9 +157,9 @@ func cmdPull(o *options, args []string) error {
 	return o.applyOrPreview("pull "+res.Tool, plan.Plan{Changes: []plan.FileChange{res.Change}})
 }
 
-// buildCentralChange は tool から取り込んだ pulled を中央設定へマージした
+// buildCentralChange は tool から取り込んだ pulled をセントラル設定へマージした
 // FileChange と、マージ後のカノニカル設定を返す。tool 以外の名前空間と
-// version は既存の中央設定から引き継ぐ。
+// version は既存のセントラル設定から引き継ぐ。
 func buildCentralChange(root adapter.Root, tool string, pulled map[string]model.Provider) (plan.FileChange, *model.Config, error) {
 	centralPath := root.CentralConfigPath()
 	base, err := loadCentralOrNew(centralPath)
@@ -193,7 +193,7 @@ func buildCentralChange(root adapter.Root, tool string, pulled map[string]model.
 
 // ---- push ----
 
-// toolChangeForPush は「中央設定を絞り込み、routes / aliases を適用し、ツール設定の
+// toolChangeForPush は「セントラル設定を絞り込み、routes / aliases を適用し、ツール設定の
 // 変更計画を作る」push 側の前処理を集約する。cmdPush と sync --to の 2 経路で共有する。
 // 新しい push 前処理ステップはここに 1 箇所追加する。
 func (o *options) toolChangeForPush(central *model.Config, a adapter.Adapter) (plan.FileChange, error) {
@@ -233,7 +233,7 @@ func cmdPush(o *options, args []string) error {
 }
 
 // applyRoutes は push の描画対象から、routes で選ばれなかった経路の provider を
-// 除く。中央設定は変えない。どの経路も選べなかったときは警告し、provider は
+// 除く。セントラル設定は変えない。どの経路も選べなかったときは警告し、provider は
 // 変更せず残す。判定は環境変数の有無のみで、通信しない。
 func (o *options) applyRoutes(managed map[string]model.Provider, central *model.Config) map[string]model.Provider {
 	if len(central.Routes) == 0 {
@@ -376,7 +376,7 @@ func checkReadable(path string) error {
 	return nil
 }
 
-// loadCentralOrNew は中央設定を読み込む。ファイルが無ければ新規設定を返し、
+// loadCentralOrNew はセントラル設定を読み込む。ファイルが無ければ新規設定を返し、
 // 存在するのに壊れている場合はエラーを返す。
 func loadCentralOrNew(path string) (*model.Config, error) {
 	cfg, err := store.Load(path)

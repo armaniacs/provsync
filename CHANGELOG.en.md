@@ -5,6 +5,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/), version
 
 ## [Unreleased]
 
+### Changed
+
+- Unified Japanese CLI display strings to use 「セントラル設定」 for the central config (「セントラルカノニカル設定」 for the single-source-of-truth concept). Exit codes and JSON output are unchanged.
+
 ## [0.3.1] - 2026-10-03
 
 ### Fixed

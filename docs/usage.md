@@ -42,7 +42,7 @@ opencode: /home/you/.config/opencode/opencode.json
 
 ```console
 $ provsync status
-中央設定: /home/you/.config/provsync/config.json (2 providers)
+セントラル設定: /home/you/.config/provsync/config.json (2 providers)
 kilocode  /home/you/.config/kilo/kilo.jsonc (2 providers)
   差分なし
 opencode  /home/you/.config/opencode/opencode.json (3 providers)
@@ -165,7 +165,7 @@ $ provsync undo
 ```console
 $ provsync doctor
 [OK] パス解決
-[OK] 中央設定
+[OK] セントラル設定
 [警告] apiKeyEnv llm-01: 環境変数 LLM01_API_KEY が未設定です
 [OK] ツール kilocode
 [OK] ツール opencode

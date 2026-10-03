@@ -45,7 +45,7 @@ func ResolveRoot(home, override string) Root {
 	}
 }
 
-// CentralConfigPath は中央設定ファイルのパスを返す。
+// CentralConfigPath はセントラル設定ファイルのパスを返す。
 func (r Root) CentralConfigPath() string {
 	return filepath.Join(r.ConfigHome, "provsync", "config.json")
 }

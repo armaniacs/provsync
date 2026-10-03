@@ -937,7 +937,7 @@ func TestCheckDoesNotPrintToken(t *testing.T) {
 	}
 }
 
-// setupCheck は check コマンド用に httptest サーバを BaseURL にした中央設定を作る。
+// setupCheck は check コマンド用に httptest サーバを BaseURL にしたセントラル設定を作る。
 func setupCheck(t *testing.T, status int, delay time.Duration) (fixture, *atomic.Int64) {
 	t.Helper()
 	var hits atomic.Int64

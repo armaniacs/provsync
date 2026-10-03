@@ -114,7 +114,7 @@ opencode: /home/you/.config/opencode/opencode.json
 
 ```console
 $ provsync status
-中央設定: /home/you/.config/provsync/config.json (2 providers)
+セントラル設定: /home/you/.config/provsync/config.json (2 providers)
 kilocode  /home/you/.config/kilo/kilo.jsonc (2 providers)
   差分なし
 opencode  /home/you/.config/opencode/opencode.json (3 providers)

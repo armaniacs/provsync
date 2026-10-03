@@ -157,7 +157,7 @@ type driftEntry struct {
 	Op       string `json:"op"`
 }
 
-// buildStatusReport は tools と中央設定の同期状態を集計する。
+// buildStatusReport は tools とセントラル設定の同期状態を集計する。
 // 警告と差分は言語中立の値(warnMsgs / DriftEntries)で保持し、
 // 表示(localizeStatus)で初めて言語が決まる。空 = 差分なし。
 func buildStatusReport(root adapter.Root, tools []string) (*statusReport, error) {
@@ -251,7 +251,7 @@ func renderStatusText(o *options, root adapter.Root, rep *statusReport) {
 	}
 }
 
-// driftEntries は projected(ツール可視の形へ写した中央設定)と tool の
+// driftEntries は projected(ツール可視の形へ写したセントラル設定)と tool の
 // provider 集合を比較し、1 provider ごとの差分を構造化して返す。
 func driftEntries(projected, tool map[string]model.Provider) []driftEntry {
 	seen := map[string]bool{}

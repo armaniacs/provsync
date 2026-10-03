@@ -98,7 +98,7 @@ func ChangedFields(a, b model.Provider) []string {
 }
 
 // modelsEqual は models の等価性を判定する。nil と空 map は等価として扱う。
-// 中央設定への保存で空の models は省略されるため、省略後(nil)と
+// セントラル設定への保存で空の models は省略されるため、省略後(nil)と
 // 空オブジェクト({})をそのまま比較すると、ファイルが変わらない偽差分が発生する。
 func modelsEqual(a, b map[string]any) bool {
 	if len(a) == 0 && len(b) == 0 {

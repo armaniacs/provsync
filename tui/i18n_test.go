@@ -17,7 +17,7 @@ var cjkRe = regexp.MustCompile(`[\p{Hiragana}\p{Katakana}\p{Han}]`)
 // 日本語文字を含まないことを検証する(BDD「英語ロケールで tui を起動すると英語で表示される」の単体相当)。
 func TestViewLocalizedInEn(t *testing.T) {
 	jaView := newListModel("provsync-unused", testReport(), "ja").View()
-	if !strings.Contains(jaView, "中央設定:") {
+	if !strings.Contains(jaView, "セントラル設定:") {
 		t.Errorf("ja view must use the ja label:\n%s", jaView)
 	}
 

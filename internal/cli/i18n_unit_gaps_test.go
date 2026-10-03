@@ -187,8 +187,8 @@ func TestOptionsMessageHelpers(t *testing.T) {
 		wantUsage string
 	}{
 		{
-			lang: "ja", wantMsg: "変更はありません\n", wantWarn: "警告: 中央設定を読めません\n",
-			wantWarnM: "警告: 中央設定を読めません: disk full\n", wantUsage: "使い方: provsync pull <tool>",
+			lang: "ja", wantMsg: "変更はありません\n", wantWarn: "警告: セントラル設定を読めません\n",
+			wantWarnM: "警告: セントラル設定を読めません: disk full\n", wantUsage: "使い方: provsync pull <tool>",
 		},
 		{
 			lang: "en", wantMsg: "no changes\n", wantWarn: "warning: cannot read the central config\n",
@@ -220,7 +220,7 @@ func TestOptionsMessageHelpers(t *testing.T) {
 	}
 }
 
-// TestDoctorCentralNG は中央設定が壊れているときの NG 描画を検証する。
+// TestDoctorCentralNG はセントラル設定が壊れているときの NG 描画を検証する。
 func TestDoctorCentralNG(t *testing.T) {
 	f := setup(t)
 	write(t, f.central, "{ invalid json")
@@ -231,7 +231,7 @@ func TestDoctorCentralNG(t *testing.T) {
 	if !strings.Contains(err.Error(), "diagnosis found problems") {
 		t.Errorf("doctor error must summarize: %v", err)
 	}
-	if !strings.Contains(out, "[NG] 中央設定: 中央設定の JSON が不正です") {
+	if !strings.Contains(out, "[NG] セントラル設定: セントラル設定の JSON が不正です") {
 		t.Errorf("doctor must render the NG check with the translated detail:\n%s", out)
 	}
 }
