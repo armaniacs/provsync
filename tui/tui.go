@@ -54,6 +54,9 @@ type listModel struct {
 	menuPreview    []string
 	menuPreviewErr bool
 	menuOutput     []string
+	// menuLastCmd は結果画面を表示中のコマンド名。status/list 実行直後で
+	// セントラル設定が未作成のときに i での作成案内を出すために使う。
+	menuLastCmd string
 	// showHelp は ? ヘルプオーバーレイの表示状態。
 	showHelp bool
 }
@@ -309,6 +312,9 @@ func (m *listModel) View() string {
 	case screenMenuResult:
 		for _, line := range m.menuOutput {
 			b.WriteString(line + "\n")
+		}
+		if m.showCreateHint() {
+			b.WriteString("\n" + i18n.T(m.lang, "msg.tui.resultCreateHint") + "\n")
 		}
 		b.WriteString("\n" + i18n.T(m.lang, "msg.tui.menuBack") + "\n")
 	case screenDone:

@@ -194,6 +194,7 @@ var enCatalog = map[string]string{
 	"msg.tui.footerConfirm":      "y/enter run · n/esc back · ? help",
 	"msg.tui.footerDone":         "u undo · q quit · ? help",
 	"msg.tui.helpTitle":          "shortcuts",
+	"msg.tui.resultCreateHint":   "central config is missing — press i to create it now",
 	"msg.tui.helpBody": `list: ↑↓/jk move · space select · enter confirm · m menu · g/G top/bottom
 menu: ↑↓ select · enter run · esc back · g/G top/bottom
 prompt: type + enter submit · esc cancel

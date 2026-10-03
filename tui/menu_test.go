@@ -462,3 +462,94 @@ func TestMenuInitMultipleToolsRequiresTool(t *testing.T) {
 		t.Errorf("init must preview with the typed tool: %v", calls)
 	}
 }
+
+// centralMissingReport は中央未作成・ツール2件のレポートを作る。
+func centralMissingReport() statusReport {
+	return statusReport{
+		SchemaVersion: 1,
+		Central:       centralInfo{Path: "/c", Exists: false},
+		Tools: []toolStatus{
+			{Name: "kilocode", Path: "/k", Exists: true, Providers: 1,
+				DriftEntries: []driftEntry{{Provider: "llm-01", Op: "drift"}}},
+			{Name: "opencode", Path: "/o", Exists: true, Providers: 1,
+				DriftEntries: []driftEntry{{Provider: "llm-02", Op: "drift"}}},
+		},
+	}
+}
+
+// TestMenuResultCreateHint は中央未作成の status 結果で作成案内が出て、
+// i で init フローに入ることを pin する。
+func TestMenuResultCreateHint(t *testing.T) {
+	m, log := menuTestModel(t)
+	m.report = centralMissingReport()
+	m.sel = newSelection(m.report)
+	m2, _ := press(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'m'}})
+	updated, _ := m2.Update(enterKey())
+	m3 := updated.(*listModel)
+	if m3.screen != screenMenuResult {
+		t.Fatalf("status must run to the result, got screen %d", m3.screen)
+	}
+	if !strings.Contains(m3.View(), "press i to create it now") {
+		t.Errorf("result must guide central creation:\n%s", m3.View())
+	}
+	updated, _ = m3.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}})
+	m4 := updated.(*listModel)
+	// ツール2件のため init は必須入力になる。
+	if m4.screen != screenMenuPrompt {
+		t.Fatalf("i must start the init flow, got screen %d", m4.screen)
+	}
+	m5 := typeText(m4, "kilocode")
+	updated, _ = m5.Update(enterKey())
+	m6 := updated.(*listModel)
+	if m6.screen != screenMenuPreview {
+		t.Fatalf("init with tool must show the preview, got screen %d", m6.screen)
+	}
+	calls := loggedArgs(t, log)
+	found := false
+	for _, line := range calls {
+		if line == "init kilocode" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("i flow must preview init with the typed tool: %v", calls)
+	}
+}
+
+// TestMenuResultNoHintWhenCentralExists は中央作成済みで案内が出ず、
+// i が無視されることを pin する。
+func TestMenuResultNoHintWhenCentralExists(t *testing.T) {
+	m, _ := menuTestModel(t)
+	m2, _ := press(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'m'}})
+	updated, _ := m2.Update(enterKey())
+	m3 := updated.(*listModel)
+	if strings.Contains(m3.View(), "press i to create it now") {
+		t.Errorf("result must not guide creation when central exists:\n%s", m3.View())
+	}
+	updated, _ = m3.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}})
+	m4 := updated.(*listModel)
+	if m4.screen != screenMenuResult {
+		t.Errorf("i must be ignored without the hint, got screen %d", m4.screen)
+	}
+}
+
+// TestMenuResultNoHintForOtherCommands は status/list 以外で案内が出ないことを pin する。
+func TestMenuResultNoHintForOtherCommands(t *testing.T) {
+	m, _ := menuTestModel(t)
+	m.report = centralMissingReport()
+	m.sel = newSelection(m.report)
+	// doctor は 8 項目目。
+	m2, _ := press(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'m'}})
+	m3 := m2
+	for i := 0; i < 7; i++ {
+		m3, _ = press(m3, downKey())
+	}
+	updated, _ := m3.Update(enterKey())
+	m4 := updated.(*listModel)
+	if m4.screen != screenMenuResult {
+		t.Fatalf("doctor must run to the result, got screen %d", m4.screen)
+	}
+	if strings.Contains(m4.View(), "press i to create it now") {
+		t.Errorf("non-status result must not guide creation:\n%s", m4.View())
+	}
+}

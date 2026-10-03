@@ -134,6 +134,7 @@ func (m *listModel) activateMenuCmd() {
 	}
 	if len(c.prompts) == 0 {
 		m.menuOutput, _ = m.runMenuCommand(c.previewArgs(nil))
+		m.menuLastCmd = c.name
 		m.screen = screenMenuResult
 		return
 	}
@@ -209,6 +210,7 @@ func (m *listModel) finishMenuPrompt() {
 	c := *m.menuActive
 	if !c.mutating {
 		m.menuOutput, _ = m.runMenuCommand(c.previewArgs(m.menuValues))
+		m.menuLastCmd = c.name
 		m.screen = screenMenuResult
 		return
 	}
@@ -235,6 +237,7 @@ func (m *listModel) updateMenuPreview(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		c := *m.menuActive
 		m.menuOutput, _ = m.runMenuCommand(c.applyArgs(m.menuValues))
+		m.menuLastCmd = c.name
 		m.screen = screenMenuResult
 		return m, nil
 	case "n", "esc", "q", "ctrl+c":
@@ -257,8 +260,38 @@ func (m *listModel) updateMenuResult(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.menuActive = nil
 		m.screen = screenMenu
 		return m, nil
+	case "i":
+		if m.showCreateHint() {
+			m.activateMenuInitCommand()
+			return m, nil
+		}
 	}
 	return m, nil
+}
+
+// showCreateHint は status/list の結果画面でセントラル設定が未作成のときに
+// その場作成の案内を出すかどうか。m.report は結果画面へ戻るたびに取り直すため、
+// 直近の実行結果を反映している。
+func (m *listModel) showCreateHint() bool {
+	if m.screen != screenMenuResult {
+		return false
+	}
+	if m.menuLastCmd != "status" && m.menuLastCmd != "list" {
+		return false
+	}
+	return !m.report.Central.Exists
+}
+
+// activateMenuInitCommand はメニューの init 項目を直接開始する。
+// 結果画面からの i ショートカット用に、カーソル位置によらず init を起動する。
+func (m *listModel) activateMenuInitCommand() {
+	for i, c := range menuCommands {
+		if c.name == "init" {
+			m.menuCursor = i
+			break
+		}
+	}
+	m.activateMenuCmd()
 }
 
 // runMenuCommand は子プロセスを同期実行し、出力行と成否を返す。
