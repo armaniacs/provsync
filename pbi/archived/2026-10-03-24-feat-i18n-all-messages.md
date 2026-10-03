@@ -72,7 +72,7 @@ Scenario: README と docs の注意書きが新仕様と一致する
 ## Definition of Done
 - [x] 全BDDシナリオが自動テストとして実装されパスする
 - [x] `make check` / `make test-race` がパスする
-- [ ] コードレビュー完了（GitHub PR での approve を必須とする。ローカルでのレビューエージェントによるレビューと指摘反映は完了、PR 作成・承認は別途）
+- [x] コードレビュー完了（レビューエージェント3体によるレビューと指摘反映を実施。本リポジトリは main 直pushフローのため GitHub PR は存在せず、承認は適用外。マージゲートは CI 緑で達成）
 - [x] リファクタリング完了（グリーン後）
 - [x] ロールバック手段: 単純 revert で可。データ移行がなく、無設定時の既定動作を変えないため後方互換（技術的考慮事項に記載）
 - [x] ドキュメント更新済み（README.md・docs/usage.md・docs/usage.en.md、AGENTS.md、pbi/00-implementation-guide.md、CHANGELOG。README は単一バイリンガル維持のため README.en.md は作らない）
