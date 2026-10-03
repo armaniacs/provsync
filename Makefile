@@ -3,6 +3,7 @@ BIN_DIR := bin
 PKG := ./...
 GO ?= go
 GOFLAGS ?=
+GOBIN ?= $(shell $(GO) env GOPATH)/bin
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -X github.com/armaniacs/provsync/internal/version.Version=$(VERSION)
 
@@ -76,9 +77,10 @@ tui-build:
 tui-check:
 	cd tui && $(GO) build ./... && $(GO) test ./...
 
-## install: go install でインストール
+## install: CLI と TUI をインストール($(GOBIN) へ)
 install:
 	$(GO) install $(GOFLAGS) -ldflags "$(LDFLAGS)" .
+	cd tui && $(GO) build $(GOFLAGS) -o $(GOBIN)/provsync-tui .
 
 ## clean: ビルド成果物を削除
 clean:

@@ -177,10 +177,11 @@ $ provsync doctor
 `provsync-tui` はターミナル上で provider と同期先ツールの対応をチェックボックスで選び、確認画面の承認後に適用する。コアの `go.mod` に依存を持ち込まないため、`tui/` に独立したモジュールとして隔離されており、導入は任意。
 
 ```bash
-cd tui
-go build -o provsync-tui .
-./provsync-tui
+make install    # provsync と provsync-tui をインストール
+provsync-tui
 ```
+
+手動でビルドする場合は `tui/` で `go build -o provsync-tui .` を実行する。
 
 TUI は provsync バイナリを子プロセスとして呼ぶ構成で、状態の取得は `provsync status --json`、適用は `provsync push <tool> --provider <p> --write` で行う。変更内容の計算を TUI 側で持たないため、画面に見えたものと実際に書かれるものの整合は CLI 側の Plan に一任される。
 

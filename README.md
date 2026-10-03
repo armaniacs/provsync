@@ -324,10 +324,11 @@ $ provsync undo
 `provsync-tui` はターミナル上で provider と同期先ツールの対応をチェックボックスで選び、確認画面の承認後に適用する。コアの `go.mod` に依存を持ち込まないため、`tui/` に独立したモジュールとして隔離されており、導入は任意。
 
 ```bash
-cd tui
-go build -o provsync-tui .
-./provsync-tui
+make install    # provsync と provsync-tui をインストール
+provsync-tui
 ```
+
+手動でビルドする場合は `tui/` で `go build -o provsync-tui .` を実行する。
 
 - TUI は `provsync` バイナリを子プロセスとして呼ぶ(`provsync status --json` で状態取得、`provsync push <tool> --provider <p> --write` で適用)。変更内容を自前で計算しない。
 - 確認画面で承認するまで、ファイルは一切変わらない。
@@ -714,10 +715,11 @@ Known fields (`name` / `npm` / `baseURL` / `apiKeyEnv` / `models`) are normalize
 `provsync-tui` is a terminal dashboard for selecting provider/tool pairs with checkboxes and applying them after confirmation. The core `go.mod` carries no external dependencies; the TUI is isolated as a separate module under `tui/` and is opt-in.
 
 ```bash
-cd tui
-go build -o provsync-tui .
-./provsync-tui
+make install    # installs both provsync and provsync-tui
+provsync-tui
 ```
+
+To build manually, run `go build -o provsync-tui .` inside `tui/`.
 
 - The TUI calls the `provsync` binary as a child process (`provsync status --json` to build the view, `provsync push <tool> --provider <p> --write` to apply). It never computes changes itself.
 - Nothing is written until you approve on the confirmation screen.

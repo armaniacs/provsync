@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `make install` で CLI(`provsync`)と TUI(`provsync-tui`)の両方をインストールできるようにした。
+
 ### Changed
 
 - CLI の日本語表示を「セントラル設定」の表記に統一した（single source of truth の概念は「セントラルカノニカル設定」）。終了コード・JSON 出力は不変。

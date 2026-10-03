@@ -172,10 +172,11 @@ diagnosis: 4 OK / 1 warning / 0 NG
 `provsync-tui` is a terminal dashboard for selecting provider/tool pairs with checkboxes and applying them after confirmation. The core `go.mod` carries no external dependencies; the TUI is isolated as a separate module under `tui/` and is opt-in.
 
 ```bash
-cd tui
-go build -o provsync-tui .
-./provsync-tui
+make install    # installs both provsync and provsync-tui
+provsync-tui
 ```
+
+To build manually, run `go build -o provsync-tui .` inside `tui/`.
 
 - The TUI calls the `provsync` binary as a child process (`provsync status --json` to build the view, `provsync push <tool> --provider <p> --write` to apply). It never computes changes itself.
 - Nothing is written until you approve on the confirmation screen.
