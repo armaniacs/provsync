@@ -7,6 +7,8 @@
 
 ### Added
 
+- CLI のメッセージを日英対応にした（新規パッケージ `internal/i18n` のカタログ経由）。既定は日本語のまま。`PROVSYNC_LANG` > `LC_ALL` > `LC_MESSAGES` > `LANG` の優先順位で言語を判定し、`en` で始まるロケールなら英語、未対応・空のロケールは日本語にフォールバックする。`status --json` のキー構造はロケール間で不変だが、`drift` 行と `warnings` の値はロケールに連動する。機械可読な drift は従来どおり `driftEntries` を使う。
+
 - ドキュメントサイト（MkDocs Material + mkdocs-static-i18n）を追加。push to main で GitHub Actions が自動デプロイする（`https://armaniacs.github.io/provsync/`）。日本語を既定とし、言語切替で英語版を提供する。収録: ホーム / 使い方 / CLI リファレンス / バックアップと undo / セキュリティ / 開発者向け / CHANGELOG。`make docs-serve` でローカルプレビュー、依存は `requirements.txt` に固定。
 - `provsync --version` / `provsync version` でバージョンを表示。版の決定順はビルド時の ldflags 注入値、`go install` のモジュール版、`dev` の順。`make build` は `git describe` の結果を ldflags で注入する。
 - 引数なし実行・`--help` の使い方の先頭にバージョンを表示。

@@ -19,7 +19,7 @@
 - ファイル書き込みは `fsutil.WriteFileAtomic` を通す（一時ファイル + rename）。`os.WriteFile` で設定ファイルを書かない。
 - 既定はプレビュー。`--write` が無いときにファイルを変更しない。
 - 秘密（`apiKey`, `token` など）の値を、出力・ログ・中央設定・エラーメッセージに出さない。
-- ユーザー向けメッセージ・コメント・ドキュメントは日本語。識別子は英語。
+- ユーザー向けメッセージは `internal/i18n` のカタログ経由で出す。ja が正、en を mirror し、新規の文言は両方のカタログに追加する。コメント・ドキュメントは日本語。識別子は英語。
 - コメントは「なぜ」だけを書く（「何をしているか」は書かない。変更履歴・PBI 番号も書かない）。
 - `git add -A` / `git add .` を使わない。ファイルを個別に指定する。
 - コミットメッセージは英語の Conventional Commits（`feat:` `fix:` `docs:` `test:` `chore:`）。
@@ -40,6 +40,7 @@
 | `internal/diff/diff.go` | unified diff | `Unified(path, before, after, context)` |
 | `internal/backup/backup.go` | バックアップ・undo | `Store`, `Record`, `RecordMarker`, `Restore`, `List`, `Find`, `MaxOperations` |
 | `internal/fsutil/fsutil.go` | atomic 書き込み・ソート JSON | `WriteFileAtomic`, `MarshalIndentSorted` |
+| `internal/i18n/` | 言語判定と ja/en メッセージカタログ | `Resolve`, `ResolveFromEnv`, `T`, `Message`, `Localize` |
 | `internal/jsonc/jsonc.go` | JSONC → JSON | `StripJSONC`（行コメントと末尾カンマのみ。ブロックコメントは非対応） |
 
 設定ファイルの実パス: kilocode は `<ConfigHome>/kilo/kilo.jsonc`、opencode は `<ConfigHome>/opencode/opencode.json`、中央設定は `<ConfigHome>/provsync/config.json`、バックアップは `<StateHome>/provsync/`。`ConfigHome` は `XDG_CONFIG_HOME` があればそれ、なければ `~/.config`。
@@ -60,7 +61,7 @@
 
 1. `internal/cli/cli.go` の `Run` の `switch cmd` に `case "名前": return cmdXxx(opts, rest)` を足す。
 2. `cmdXxx(o *options, args []string) error` を書く。パスは `o.root()` で得る（`os.UserHomeDir` を直接呼ばない）。
-3. 位置引数の数が合わないときは `fmt.Errorf("使い方: provsync xxx ...")` を返す。
+3. 位置引数の数が合わないときは `o.usageErr("err.usage.<cmd>")` を返す（文言は internal/i18n のカタログに追加する）。
 4. `usage` の「コマンド:」一覧に 1 行足す。
 5. README の「コマンドリファレンス」に足す。
 6. テストを書く（上記の補助関数を使う）。
@@ -86,7 +87,7 @@
 
 - [ ] BDD シナリオごとに自動テストがあり、パスする
 - [ ] `make check` が通る（出力の末尾まで確認する）
-- [ ] 新しい文言は日本語、エラーは具体的（何が・どこで・次にどうするか）
+- [ ] 新しい文言は ja / en 両カタログに追加（ja が正）、エラーは具体的（何が・どこで・次にどうするか）
 - [ ] README と CHANGELOG（`[Unreleased]`）を更新した
 - [ ] 秘密の値が出力・テストの期待値に残っていない（テスト用のダミー文字列を除く）
 - [ ] 外部依存を追加していない（`git diff go.mod` が空）

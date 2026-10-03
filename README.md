@@ -466,7 +466,7 @@ With the tool omitted, provsync detects tools whose config files exist. With mul
 
 ### Quick Start
 
-Note: CLI messages are in Japanese.
+Note: CLI messages are Japanese by default. Set `PROVSYNC_LANG` (or `LC_ALL` / `LC_MESSAGES` / `LANG`) to a locale starting with `en` for English output; unsupported locales fall back to Japanese. `status --json` keeps its key structure across locales, while the `drift` lines and `warnings` values follow the locale.
 
 ```console
 # Import kilocode providers into the central config (preview first)

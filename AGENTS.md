@@ -26,6 +26,7 @@ CI runs `make check`, `make test-race`, `make lint`, and `make vuln` on push to 
 - Secrets are never mediated. The central config holds only `apiKeyEnv` (an env var name). Pull warns and drops secret-like keys (`apiKey`, `token`, ...); push preserves the target tool's existing in-file secret keys instead of deleting them; `adapter.opencode` never renders `apiKeyEnv` (opencode stores keys in `auth.json`).
 - JSONC handling lives in `internal/jsonc` and is applied by the kilocode adapter before `encoding/json`. Keep merge logic (`internal/syncer`) independent of JSONC handling.
 - Unknown tool-specific fields are preserved under `model.Provider.Extras[<tool>]` and restored on push to the same tool.
+- `status --json` keeps its key structure across locales, but the `drift` lines and `warnings` values are locale-linked. Clients that need machine-readable drift must use `driftEntries` (fixed `op` values), not the text.
 
 ## Layout
 
@@ -40,12 +41,13 @@ CI runs `make check`, `make test-race`, `make lint`, and `make vuln` on push to 
 - `internal/diff/` — unified diff renderer.
 - `internal/backup/` — timestamped backups, manifest index, restore, retention.
 - `internal/fsutil/` — atomic write and sorted JSON marshal.
+- `internal/i18n/` — language resolution (`PROVSYNC_LANG` > `LC_ALL` > `LC_MESSAGES` > `LANG` > ja) and the ja/en message catalog. Internal packages return language-neutral `*i18n.Message` values; `cli.RunWith`/`main.go` localize at the boundary.
 
 Integration tests for `cli.Run` use `--root <tmpdir>` and real files under `t.TempDir()`.
 
 ## Conventions
 
-- Docs, code comments, and CLI messages are in Japanese.
+- Docs and code comments are in Japanese. CLI messages live in the `internal/i18n` catalog: ja is the source of truth and en mirrors it. Add every new user-facing string to both catalogs.
 - Commit messages use English Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `chore:`).
 - `CHANGELOG.md` follows Keep a Changelog / SemVer; update it for user-visible changes.
 - Design/plan docs live in `docs/superpowers/{specs,plans}/`.
