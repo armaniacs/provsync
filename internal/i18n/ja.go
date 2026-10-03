@@ -119,14 +119,14 @@ var jaCatalog = map[string]string{
 	"msg.centralMissing":     "中央設定: %s (未作成)",
 	"msg.toolMissing":        "%-9s %s (未作成)",
 	"msg.tool":               "%-9s %s%s (%d providers)",
-	"msg.noDrift":            "差分なし",
+	"msg.noDrift":         "  差分なし",
 	"status.op.notInTool":    "ツールに無い",
 	"status.op.notInCentral": "中央に無い",
 	"status.op.drift":        "差分あり",
 
 	// ---- cli: diff / undo ----
 	"warn.showSecrets":   "--show-secrets により秘密の値をそのまま表示しています",
-	"msg.noChange":       "変更なし",
+	"msg.noChange":        "  変更なし",
 	"msg.pruned":         "削除: %d 件",
 	"msg.noHistory":      "履歴はありません",
 	"msg.list.noBackup":  " [バックアップなし]",

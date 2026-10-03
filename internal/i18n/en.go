@@ -119,14 +119,14 @@ var enCatalog = map[string]string{
 	"msg.centralMissing":     "central config: %s (not created)",
 	"msg.toolMissing":        "%-9s %s (not created)",
 	"msg.tool":               "%-9s %s%s (%d providers)",
-	"msg.noDrift":            "no drift",
+	"msg.noDrift":        "  no drift",
 	"status.op.notInTool":    "not in tool",
 	"status.op.notInCentral": "not in central",
 	"status.op.drift":        "drift",
 
 	// ---- cli: diff / undo ----
 	"warn.showSecrets":   "--show-secrets shows secret values as-is",
-	"msg.noChange":       "no change",
+	"msg.noChange":       "  no change",
 	"msg.pruned":         "removed: %d entries",
 	"msg.noHistory":      "no history",
 	"msg.list.noBackup":  " [no backup]",
