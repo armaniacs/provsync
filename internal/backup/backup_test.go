@@ -255,3 +255,68 @@ func TestRecordMarkerIsNotUndoTarget(t *testing.T) {
 		t.Errorf("list should show marker first: %+v", ops)
 	}
 }
+
+func TestNewIDUniqueOver1000(t *testing.T) {
+	seen := make(map[string]struct{}, 1000)
+	for i := 0; i < 1000; i++ {
+		id := newID()
+		if _, dup := seen[id]; dup {
+			t.Fatalf("duplicate id %q at iteration %d", id, i)
+		}
+		seen[id] = struct{}{}
+	}
+}
+
+func TestRecordFailureLeavesNoOrphan(t *testing.T) {
+	dir := t.TempDir()
+	good := filepath.Join(dir, "a.json")
+	if err := os.WriteFile(good, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	bad := filepath.Join(dir, "unreadable.json")
+	if err := os.WriteFile(bad, []byte("secret"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(bad, 0); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chmod(bad, 0o644)
+
+	stateDir := filepath.Join(dir, "state")
+	st := New(stateDir)
+	if _, err := st.Record("op", []string{good}); err != nil {
+		t.Fatalf("seed record: %v", err)
+	}
+	before, err := st.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := st.Record("op", []string{good, bad}); err == nil {
+		t.Fatal("expected error for unreadable file")
+	}
+
+	after, err := st.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(after) != len(before) {
+		t.Errorf("index ops = %d, want %d", len(after), len(before))
+	}
+	indexed := make(map[string]struct{}, len(after))
+	for _, op := range after {
+		indexed[op.ID] = struct{}{}
+	}
+	entries, err := os.ReadDir(filepath.Join(stateDir, "backups"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != len(after) {
+		t.Errorf("backup dirs = %d, want %d (indexed ops)", len(entries), len(after))
+	}
+	for _, e := range entries {
+		if _, ok := indexed[e.Name()]; !ok {
+			t.Errorf("orphan backup dir %q not in index", e.Name())
+		}
+	}
+}

@@ -110,6 +110,9 @@ func (s *Store) Record(command string, paths []string) (Operation, error) {
 	for i, p := range paths {
 		ref, err := capture(p, opDir, i)
 		if err != nil {
+			// Best-effort cleanup so a failed record leaves no orphan
+			// directory behind; the original error is returned.
+			_ = os.RemoveAll(opDir)
 			return Operation{}, err
 		}
 		op.Files = append(op.Files, ref)
@@ -228,14 +231,7 @@ func (s *Store) prune(idx *index) error {
 	if len(idx.Operations) <= s.max {
 		return nil
 	}
-	removed := idx.Operations[s.max:]
-	idx.Operations = idx.Operations[:s.max]
-	for _, op := range removed {
-		if err := os.RemoveAll(filepath.Join(s.backupsDir(), op.ID)); err != nil {
-			return err
-		}
-	}
-	return nil
+	return s.removeBeyond(idx, s.max)
 }
 
 // Prune は新しい keep 件を残して残りの操作を履歴と実体の両方から削除する。
@@ -251,17 +247,27 @@ func (s *Store) Prune(keep int) (int, error) {
 	if len(idx.Operations) <= keep {
 		return 0, nil
 	}
-	removed := idx.Operations[keep:]
-	idx.Operations = idx.Operations[:keep]
-	for _, op := range removed {
-		if err := os.RemoveAll(filepath.Join(s.backupsDir(), op.ID)); err != nil {
-			return 0, err
-		}
+	removed := len(idx.Operations) - keep
+	if err := s.removeBeyond(idx, keep); err != nil {
+		return 0, err
 	}
 	if err := s.save(idx); err != nil {
 		return 0, err
 	}
-	return len(removed), nil
+	return removed, nil
+}
+
+// removeBeyond drops history entries beyond keep and deletes their
+// backup directories. All retention paths share this helper.
+func (s *Store) removeBeyond(idx *index, keep int) error {
+	removed := idx.Operations[keep:]
+	idx.Operations = idx.Operations[:keep]
+	for _, op := range removed {
+		if err := os.RemoveAll(filepath.Join(s.backupsDir(), op.ID)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func capture(path, opDir string, seq int) (FileRef, error) {
@@ -312,7 +318,7 @@ func restoreFile(f FileRef) error {
 }
 
 func newID() string {
-	var buf [2]byte
+	var buf [8]byte
 	if _, err := rand.Read(buf[:]); err != nil {
 		return time.Now().UTC().Format("20060102T150405")
 	}
