@@ -35,7 +35,7 @@ make fuzz     # StripJSONC の短時間ファズテスト
 
 - 秘密の値(`apiKey` / `token` など)を出力・ログ・エラーメッセージ・テストの期待値に出さない(テスト用のダミー文字列 `sk-test-...` を除く)。
 - 秘密の判定は `internal/secret` に集約する。pull と出力層で共有し、二重に判定を持たない。
-- 中央設定は `apiKeyEnv`(環境変数名)のみを保持し、値は中継しない。
+- セントラル設定は `apiKeyEnv`(環境変数名)のみを保持し、値は中継しない。
 - ファイル書き込みは `fsutil.WriteFileAtomic` を通す(一時ファイル + rename)。
 - 「何が変わるか」を `internal/cli` で別計算しない。`plan.Plan` を作って再利用する。
 

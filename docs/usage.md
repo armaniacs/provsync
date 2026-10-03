@@ -1,6 +1,6 @@
 # 使い方
 
-日常の同期の流れと、各機能の詳細。最初に通読するのは[クイックスタート](#クイックスタート)から[差分の確認と取り消し](#差分の確認と取り消し)までで、中央設定以降の節は必要になったときに引けば足りる。
+日常の同期の流れと、各機能の詳細。最初に通読するのは[クイックスタート](#クイックスタート)から[差分の確認と取り消し](#差分の確認と取り消し)までで、セントラル設定以降の節は必要になったときに引けば足りる。
 
 !!! note
     CLI のメッセージは英語が既定。`PROVSYNC_LANG`(または `LC_ALL` / `LC_MESSAGES` / `LANG`)が `ja` で始まるロケールなら日本語で出力される。未対応のロケールは英語にフォールバックする。
@@ -8,7 +8,7 @@
 ## クイックスタート
 
 ```console
-# kilocode の provider を中央設定へ取り込む(まずはプレビュー)
+# kilocode の provider をセントラル設定へ取り込む(まずはプレビュー)
 $ provsync pull kilocode
 central: /home/you/.config/provsync/config.json
   llm-01: 追加
@@ -23,7 +23,7 @@ central: /home/you/.config/provsync/config.json
 バックアップ: 20261002T093012-3fa1
 書き込み: /home/you/.config/provsync/config.json
 
-# 中央設定を opencode へ反映する
+# セントラル設定を opencode へ反映する
 $ provsync push opencode --write
 opencode: /home/you/.config/opencode/opencode.json
   llm-01: 追加
@@ -75,7 +75,7 @@ $ provsync undo
 
 `undo` は `--write` を要求せず直接適用する。
 
-## 中央設定
+## セントラル設定
 
 既知フィールド(`name` / `npm` / `baseURL` / `apiKeyEnv` / `models`)は正規化して保持し、ツール固有の未知フィールドは `x.<tool>` に名前空間化して保存する。同じツールへ `push` するときに復元されるため、pull → push の往復で失われない。
 
@@ -100,11 +100,11 @@ $ provsync undo
 }
 ```
 
-`version` は中央設定の形式バージョン(将来のマイグレーション用)。現行は `1`。
+`version` はセントラル設定の形式バージョン(将来のマイグレーション用)。現行は `1`。
 
 ## モデルエイリアス
 
-中央設定の `aliases` に、共通モデル名 → ツール名 → モデル ID の対応を書くと、`push` のときに各ツールが要求する ID 形式へ自動変換する。
+セントラル設定の `aliases` に、共通モデル名 → ツール名 → モデル ID の対応を書くと、`push` のときに各ツールが要求する ID 形式へ自動変換する。
 
 ```json
 {
@@ -130,7 +130,7 @@ $ provsync undo
 
 ## 経路別フォールバック(routes)
 
-中央設定の `routes` に、エイリアス名ごとに provider キーの優先順を書くと、`push` のときに「使える経路」(apiKeyEnv が設定済み、または apiKeyEnv 不要の provider)を先頭から選ぶ。選ばれなかった経路の provider は描画対象から除かれる。
+セントラル設定の `routes` に、エイリアス名ごとに provider キーの優先順を書くと、`push` のときに「使える経路」(apiKeyEnv が設定済み、または apiKeyEnv 不要の provider)を先頭から選ぶ。選ばれなかった経路の provider は描画対象から除かれる。
 
 ```json
 {
@@ -146,13 +146,13 @@ $ provsync undo
 
 経路の判定は環境変数の有無だけで行われる。通信は発生せず、値を読むことも出力することもない。`apiKeyEnv` が空の provider は環境変数不要として、常に使える経路になる。
 
-書ける経路が 1 つもないときは警告を出して、provider を変更せずに残す。どの経路も未設定のまま push しても設定が消えないのは、このためだ。`routes` 自体は pull で消えない（中央設定のトップレベルとして保持される）。
+書ける経路が 1 つもないときは警告を出して、provider を変更せずに残す。どの経路も未設定のまま push しても設定が消えないのは、このためだ。`routes` 自体は pull で消えない（セントラル設定のトップレベルとして保持される）。
 
 ツール別の上書きには対応していないため、経路の優先順は全ツール共通だ。
 
 ## API の疎通確認(check)
 
-`provsync check` は中央設定の各 provider について、`baseURL` の `/models` へ認証付きの GET を送り到達可否を表示する。
+`provsync check` はセントラル設定の各 provider について、`baseURL` の `/models` へ認証付きの GET を送り到達可否を表示する。
 
 通信するのは provsync の中で check だけだ。他のコマンドは同期対象のファイルと状態ディレクトリ以外にアクセスしない。キーの値は環境変数から読むが、出力にもログにも現れない。
 
@@ -160,7 +160,7 @@ $ provsync undo
 
 ## 環境の診断(doctor)
 
-`provsync doctor` はパス解決・中央設定と各ツール設定の存在と構文・`apiKeyEnv` の環境変数の設定有無・ファイル権限を一覧で診断する。通信せず、ファイルも書かない。NG があるときは終了コード 1 で終わる。
+`provsync doctor` はパス解決・セントラル設定と各ツール設定の存在と構文・`apiKeyEnv` の環境変数の設定有無・ファイル権限を一覧で診断する。通信せず、ファイルも書かない。NG があるときは終了コード 1 で終わる。
 
 ```console
 $ provsync doctor
@@ -188,9 +188,9 @@ TUI は provsync バイナリを子プロセスとして呼ぶ構成で、状態
 
 ## 秘密情報の扱い
 
-中央設定が持つのは `apiKeyEnv`(環境変数名)だけで、実キーは仲介しない。pull のときに秘密情報らしいフィールド(`apiKey` / `api_key` / `token` / `secret` / `password` / `accessToken` / `access_token`。`options` 内も含む)があると、警告を出したうえでそのフィールドを落とす。
+セントラル設定が持つのは `apiKeyEnv`(環境変数名)だけで、実キーは仲介しない。pull のときに秘密情報らしいフィールド(`apiKey` / `api_key` / `token` / `secret` / `password` / `accessToken` / `access_token`。`options` 内も含む)があると、警告を出したうえでそのフィールドを落とす。
 
-push では逆に、対象ツール設定にすでに存在する秘密フィールドをそのまま保持する。削除も、中央設定への持ち出しもしない。opencode には `apiKeyEnv` を書き出さない。秘密は opencode 側で `auth.json` が管理しているためだ。
+push では逆に、対象ツール設定にすでに存在する秘密フィールドをそのまま保持する。削除も、セントラル設定への持ち出しもしない。opencode には `apiKeyEnv` を書き出さない。秘密は opencode 側で `auth.json` が管理しているためだ。
 
 diff の出力では、秘密情報らしいキーの値を既定で `********` に伏せる。あくまで表示上のマスクで、書き込まれるファイルの内容には影響しない。手元で実値を確認したいときは `--show-secrets` を付ける。実値が表示され、先頭に警告が出る。status と list はキー名の警告だけを出し、値を出力しない。
 

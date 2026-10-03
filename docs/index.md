@@ -8,7 +8,7 @@ title: provsync
 
 # provsync
 
-**複数の LLM ツールの provider 設定を、ただ一つの中央設定に同期する**
+**複数の LLM ツールの provider 設定を、ただ一つのセントラル設定に同期する**
 
 `pull` でツールから中央へ取り込み、`push` で中央からツールへ反映する。書き込みの前には自動バックアップ、取り消しは `undo` で。
 
@@ -27,7 +27,7 @@ title: provsync
 
     プレビューが既定。書き込みの直前には影響する全ファイルが自動でバックアップされ、`undo` と redo で元に戻せる
 
-- :material-database-outline:{ .lg .middle } __中央設定を唯一の正に__
+- :material-database-outline:{ .lg .middle } __セントラル設定を唯一の正に__
 
     ---
 
@@ -50,7 +50,7 @@ macOS / Linux 対応。Windows は非対応。
 | kilocode(別名 `kilo`) | `~/.config/kilo/kilo.jsonc` | JSONC(行コメント・末尾カンマ対応) |
 | opencode | `~/.config/opencode/opencode.json` | JSON |
 
-- 中央設定: `~/.config/provsync/config.json`
+- セントラル設定: `~/.config/provsync/config.json`
 - 状態(バックアップと履歴): `~/.local/state/provsync/`
 - パスは `XDG_CONFIG_HOME` / `XDG_STATE_HOME` を尊重。
 
@@ -81,13 +81,13 @@ make build    # bin/provsync
 
 ## はじめに
 
-初めて使うときは `provsync init` で中央設定を作る。
+初めて使うときは `provsync init` でセントラル設定を作る。
 
 ```console
 # 取り込み元のツールを指定(まずはプレビュー)
 $ provsync init kilocode
 
-# --write で中央設定を作成
+# --write でセントラル設定を作成
 $ provsync init kilocode --write
 
 # 同期状態を確認して、他のツールへ反映する
@@ -95,7 +95,7 @@ $ provsync status
 $ provsync push opencode --write
 ```
 
-ツールを省略すると、設定ファイルが存在するツールを検出する。候補が複数ある場合は `provsync init <tool>` で指定する。中央設定が既にある場合は上書きしないため、日常の更新には `pull` を使う。
+ツールを省略すると、設定ファイルが存在するツールを検出する。候補が複数ある場合は `provsync init <tool>` で指定する。セントラル設定が既にある場合は上書きしないため、日常の更新には `pull` を使う。
 
 ## 次のステップ
 

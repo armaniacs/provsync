@@ -18,7 +18,7 @@
 - 「何が変わるか」を `internal/cli` で別計算しない。必ず `plan.Plan` を作って `applyOrPreview` に渡す。
 - ファイル書き込みは `fsutil.WriteFileAtomic` を通す（一時ファイル + rename）。`os.WriteFile` で設定ファイルを書かない。
 - 既定はプレビュー。`--write` が無いときにファイルを変更しない。
-- 秘密（`apiKey`, `token` など）の値を、出力・ログ・中央設定・エラーメッセージに出さない。
+- 秘密（`apiKey`, `token` など）の値を、出力・ログ・セントラル設定・エラーメッセージに出さない。
 - ユーザー向けメッセージは `internal/i18n` のカタログ経由で出す。ja が正、en を mirror し、新規の文言は両方のカタログに追加する。コメント・ドキュメントは日本語。識別子は英語。
 - コメントは「なぜ」だけを書く（「何をしているか」は書かない。変更履歴・PBI 番号も書かない）。
 - `git add -A` / `git add .` を使わない。ファイルを個別に指定する。
@@ -42,8 +42,8 @@
 | `internal/cli/platform.go` | 対応 OS の判定 | `Supported` |
 | `internal/adapter/adapter.go` | ツール設定の読み書き共通部 | `Root`, `NewRoot`, `ResolveRoot`, `Adapter` IF, `Names`, `Get`, `decodeProvider`, `encodeProvider`, `pullDocument`, `pushDocument`, `carryOverSecrets` |
 | `internal/adapter/kilocode.go` `opencode.go` | ツール別の薄い層 | `Pull` / `Push` / `Project` |
-| `internal/model/model.go` | 中央設定の型 | `Config`, `Provider`（`Models` は `map[string]any`）, `Version` |
-| `internal/store/store.go` | 中央設定の読み書き | `Load`, `Marshal` |
+| `internal/model/model.go` | セントラル設定の型 | `Config`, `Provider`（`Models` は `map[string]any`）, `Version` |
+| `internal/store/store.go` | セントラル設定の読み書き | `Load`, `Marshal` |
 | `internal/syncer/syncer.go` | provider 集合のマージ・絞り込み（純粋関数） | `MergeToolProviders`, `FilterProviders` |
 | `internal/syncer/aliases.go` | モデルエイリアスの解決 | `ResolveAliases` |
 | `internal/syncer/routes.go` | 経路の選択 | `SelectRoute` |
@@ -58,13 +58,13 @@
 | `internal/version/version.go` | バージョン文字列の解決 | `String` |
 | `tui/` | bubbletea TUI（独立モジュール。`tui/go.mod` が replace で親を参照し `status --json` をパース） | `listModel`, `selection`, `fetchStatus` |
 
-設定ファイルの実パス: kilocode は `<ConfigHome>/kilo/kilo.jsonc`、opencode は `<ConfigHome>/opencode/opencode.json`、中央設定は `<ConfigHome>/provsync/config.json`、バックアップは `<StateHome>/provsync/`。`ConfigHome` は `XDG_CONFIG_HOME` があればそれ、なければ `~/.config`。
+設定ファイルの実パス: kilocode は `<ConfigHome>/kilo/kilo.jsonc`、opencode は `<ConfigHome>/opencode/opencode.json`、セントラル設定は `<ConfigHome>/provsync/config.json`、バックアップは `<StateHome>/provsync/`。`ConfigHome` は `XDG_CONFIG_HOME` があればそれ、なければ `~/.config`。
 
 ## 4. cli のテストの書き方
 
 `internal/cli/cli_test.go` に補助関数がある。新しいテストは必ずこれを使う。
 
-- `setup(t)` : 一時ディレクトリに kilocode / opencode の設定を作り、`fixture{root, kilo, opencode, central}` を返す。中央設定はまだ無い。
+- `setup(t)` : 一時ディレクトリに kilocode / opencode の設定を作り、`fixture{root, kilo, opencode, central}` を返す。セントラル設定はまだ無い。
 - `mustRun(t, f.root, "pull", "kilocode", "--write")` : `--root` 付きで実行し、エラーならテスト失敗。出力文字列を返す。
 - `run(t, f.root, ...)` : エラーを自分で検査したいときに使う（戻り値 `(out, err)`）。
 - `read(t, path)` : ファイルを文字列で読む。 `write(t, path, content)` : ファイルを書く。

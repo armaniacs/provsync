@@ -1,6 +1,6 @@
 # provsync
 
-**複数の LLM ツールの provider 設定を、たった一つの中央設定に同期する**
+**複数の LLM ツールの provider 設定を、たった一つのセントラル設定に同期する**
 *Sync provider entries across your LLM tools into one central config.*
 
 [日本語](#日本語) | [English](#english)
@@ -11,7 +11,7 @@
 
 ### 概要
 
-provsync は、複数の LLM コーディングツールがそれぞれ独自の形式で持つ `provider` 設定を、中央設定を唯一の正(single source of truth)として同期する CLI ツール。`pull` でツールから中央へ取り込み、`push` で中央からツールへ反映する。Go 標準ライブラリのみで実装され、外部依存はない。
+provsync は、複数の LLM コーディングツールがそれぞれ独自の形式で持つ `provider` 設定を、セントラルカノニカル設定を唯一の正(single source of truth)として同期する CLI ツール。`pull` でツールから中央へ取り込み、`push` で中央からツールへ反映する。Go 標準ライブラリのみで実装され、外部依存はない。
 
 ### 安全設計
 
@@ -30,7 +30,7 @@ macOS / Linux 対応。Windows は非対応。
 | kilocode(別名 `kilo`) | `~/.config/kilo/kilo.jsonc` | JSONC(行コメント・末尾カンマ対応) |
 | opencode | `~/.config/opencode/opencode.json` | JSON |
 
-- 中央設定: `~/.config/provsync/config.json`
+- セントラル設定: `~/.config/provsync/config.json`
 - 状態(バックアップと履歴): `~/.local/state/provsync/`
 - パスは `XDG_CONFIG_HOME` / `XDG_STATE_HOME` を尊重。
 
@@ -61,13 +61,13 @@ make build    # bin/provsync
 
 ### はじめに
 
-初めて使うときは `provsync init` で中央設定を作る。
+初めて使うときは `provsync init` でセントラル設定を作る。
 
 ```console
 # 取り込み元のツールを指定(まずはプレビュー)
 $ provsync init kilocode
 
-# --write で中央設定を作成
+# --write でセントラル設定を作成
 $ provsync init kilocode --write
 
 # 同期状態を確認して、他のツールへ反映する
@@ -75,12 +75,12 @@ $ provsync status
 $ provsync push opencode --write
 ```
 
-ツールを省略すると、設定ファイルが存在するツールを検出する。候補が複数ある場合は `provsync init <tool>` で指定する。中央設定が既にある場合は上書きしないため、日常の更新には `pull` を使う。
+ツールを省略すると、設定ファイルが存在するツールを検出する。候補が複数ある場合は `provsync init <tool>` で指定する。セントラル設定が既にある場合は上書きしないため、日常の更新には `pull` を使う。
 
 ### クイックスタート
 
 ```console
-# kilocode の provider を中央設定へ取り込む(まずはプレビュー)
+# kilocode の provider をセントラル設定へ取り込む(まずはプレビュー)
 $ provsync pull kilocode
 central: /home/you/.config/provsync/config.json
   llm-01: 追加
@@ -95,7 +95,7 @@ central: /home/you/.config/provsync/config.json
 バックアップ: 20261002T093012-3fa1
 書き込み: /home/you/.config/provsync/config.json
 
-# 中央設定を opencode へ反映する
+# セントラル設定を opencode へ反映する
 $ provsync push opencode --write
 opencode: /home/you/.config/opencode/opencode.json
   llm-01: 追加
@@ -167,11 +167,11 @@ $ provsync undo
 | コマンド | 説明 |
 |---|---|
 | `list` | 対応ツールと設定パスを表示 |
-| `status [tool...]` | ツールと中央設定の同期状態を表示 |
-| `init [tool]` | 初回セットアップ(中央設定を作る)。既存の中央設定は上書きしない |
-| `pull <tool>` | ツール設定を中央設定へ取り込む |
-| `push <tool>` | 中央設定をツール設定へ反映する |
-| `sync --from <a> --to <b>` | a を取り込み b へ反映する(`--from` 省略時は中央設定をそのまま使う) |
+| `status [tool...]` | ツールとセントラル設定の同期状態を表示 |
+| `init [tool]` | 初回セットアップ(セントラル設定を作る)。既存のセントラル設定は上書きしない |
+| `pull <tool>` | ツール設定をセントラル設定へ取り込む |
+| `push <tool>` | セントラル設定をツール設定へ反映する |
+| `sync --from <a> --to <b>` | a を取り込み b へ反映する(`--from` 省略時はセントラル設定をそのまま使う) |
 | `diff <from> <to>` | from を to に適用した場合の差分(意味差分 + 統合 diff)を表示 |
 | `undo [id]` | 直前または指定操作を復元する(`--list` で履歴、`--prune --keep <n>` で掃除) |
 | `doctor` | 環境を診断する(存在・構文・`apiKeyEnv`・権限。通信しない) |
@@ -232,7 +232,7 @@ $ provsync undo
 - `diff --json`: `{"schemaVersion": 1, "changes": [{"tool", "path", "semantic": [...], "diff": "マスク済み unified diff"}]}`。
 - `status --exit-code`: 差分があるとき終了コード `3`、同期済みなら `0`。
 
-### 中央設定
+### セントラル設定
 
 既知フィールド(`name` / `npm` / `baseURL` / `apiKeyEnv` / `models`)は正規化して保持し、ツール固有の未知フィールドは `x.<tool>` に名前空間化して保存する。同じツールへ `push` するときに復元されるため、pull → push の往復で失われない。
 
@@ -263,11 +263,11 @@ $ provsync undo
 }
 ```
 
-`version` は中央設定の形式バージョン(将来のマイグレーション用)。現行は `1`。
+`version` はセントラル設定の形式バージョン(将来のマイグレーション用)。現行は `1`。
 
 ### モデルエイリアス
 
-中央設定の `aliases` に、共通モデル名 → ツール名 → モデル ID の対応を書くと、`push` のときに各ツールが要求する ID 形式へ自動変換する。
+セントラル設定の `aliases` に、共通モデル名 → ツール名 → モデル ID の対応を書くと、`push` のときに各ツールが要求する ID 形式へ自動変換する。
 
 ```json
 {
@@ -292,7 +292,7 @@ $ provsync undo
 
 ### 経路別フォールバック(routes)
 
-中央設定の `routes` に、エイリアス名ごとに provider キーの優先順を書くと、`push` のときに「使える経路」(apiKeyEnv が設定済み、または apiKeyEnv 不要の provider)を先頭から選び、選ばれなかった経路の provider は描画対象から除く。
+セントラル設定の `routes` に、エイリアス名ごとに provider キーの優先順を書くと、`push` のときに「使える経路」(apiKeyEnv が設定済み、または apiKeyEnv 不要の provider)を先頭から選び、選ばれなかった経路の provider は描画対象から除く。
 
 ```json
 {
@@ -313,7 +313,7 @@ $ provsync undo
 
 ### API の疎通確認(check)
 
-`provsync check` は中央設定の各 provider について、`baseURL` の `/models` へ認証付きの GET を送り到達可否を表示する。
+`provsync check` はセントラル設定の各 provider について、`baseURL` の `/models` へ認証付きの GET を送り到達可否を表示する。
 
 - 通信するのは `check` だけ。他のコマンドは同期対象のファイル以外に一切アクセスしない。
 - キーの値は環境変数から読むが、出力・ログには現れない。401/403 は `[認証失敗]`、タイムアウトや接続失敗は `[到達不可]` として分類表示する。
@@ -352,13 +352,13 @@ $ provsync undo --list
 - undo は復元前の現状を新しい操作として記録し、やり直し用の ID を表示する(`やり直し: provsync undo <id>`)。
 - `provsync undo --prune --keep <n>` で新しい n 件を残して履歴を掃除できる(削除件数が表示される)。
 - `--no-backup` での書き込みはマーカー操作として履歴に記録される。後続の `undo` では「直近の書き込みはバックアップなしで行われたため、この undo はそれより前の状態に戻します」と警告される。
-- 新規作成される中央設定と状態ディレクトリは 0600 / 0700 で作られる。既存ファイルの権限は変更されない。`status` は権限が緩い場合に `chmod` を案内する。
+- 新規作成されるセントラル設定と状態ディレクトリは 0600 / 0700 で作られる。既存ファイルの権限は変更されない。`status` は権限が緩い場合に `chmod` を案内する。
 - dotfiles 管理のシンボリックリンクは維持される。書き込みはリンク先の実体に対して行われ、リンク自体が通常ファイルに置き換わることはない。リンク切れは書き込み前にエラーになる。`list` はリンク先を ` (symlink → 実体)` で表示する。
 - `--write` と `undo` の復元区間は状態ディレクトリの排他ロック(flock)で保護される。並行実行は後発が待機し、タイムアウト(10 秒)すると「別の provsync が実行中」で終了する。プレビュー・`diff`・`status` はロックを取らない。プロセスが異常終了した場合、OS がロックを解放するため自動回復する。
 
 ### 秘密情報の扱い
 
-- 中央設定が持つのは `apiKeyEnv`(環境変数名)のみ。実キーは仲介しない。
+- セントラル設定が持つのは `apiKeyEnv`(環境変数名)のみ。実キーは仲介しない。
 - `pull` 時、秘密情報らしいフィールド(`apiKey` / `api_key` / `token` / `secret` / `password` / `accessToken` / `access_token`。`options` 内も含む)は警告のうえ取り込まない:
 
 ```console
@@ -387,7 +387,7 @@ make test-race  # データ競合検出付きテスト
 make docs-serve  # ドキュメントサイトのローカルプレビュー
 ```
 
-パッケージ構成: `main.go`(起動のみ)、`internal/cli`(サブコマンド。`cli.go`(ディスパッチと共通書き込み)、`sync.go`(同期系コマンドと前処理)、`status.go`(一覧・状態表示)、`history.go`(diff・undo)、`help.go`(コマンドレジストリ・ヘルプ・補完)、`doctor.go`(診断)、`check.go`(API 疎通確認)、`errors.go`(使い方エラー)、`render.go`(共通描画)、`platform.go`(対応 OS)、`version.go`(バージョン表示))、`internal/model`(カノニカル表現)、`internal/adapter`(kilocode / opencode 変換)、`internal/store`(中央設定)、`internal/syncer`(マージ・エイリアス・経路選択)、`internal/jsonc`(JSONC 前処理)、`internal/plan`(変更計画と意味差分)、`internal/diff`(統合 diff)、`internal/backup`(バックアップと復元)、`internal/lock`(flock 排他ロック)、`internal/secret`(秘密キー判定とマスク)、`internal/fsutil`(atomic write・JSON 整形)、`internal/version`(バージョン文字列解決)、`tui/`(bubbletea TUI・独立モジュール)。
+パッケージ構成: `main.go`(起動のみ)、`internal/cli`(サブコマンド。`cli.go`(ディスパッチと共通書き込み)、`sync.go`(同期系コマンドと前処理)、`status.go`(一覧・状態表示)、`history.go`(diff・undo)、`help.go`(コマンドレジストリ・ヘルプ・補完)、`doctor.go`(診断)、`check.go`(API 疎通確認)、`errors.go`(使い方エラー)、`render.go`(共通描画)、`platform.go`(対応 OS)、`version.go`(バージョン表示))、`internal/model`(カノニカル表現)、`internal/adapter`(kilocode / opencode 変換)、`internal/store`(セントラル設定)、`internal/syncer`(マージ・エイリアス・経路選択)、`internal/jsonc`(JSONC 前処理)、`internal/plan`(変更計画と意味差分)、`internal/diff`(統合 diff)、`internal/backup`(バックアップと復元)、`internal/lock`(flock 排他ロック)、`internal/secret`(秘密キー判定とマスク)、`internal/fsutil`(atomic write・JSON 整形)、`internal/version`(バージョン文字列解決)、`tui/`(bubbletea TUI・独立モジュール)。
 
 - [CHANGELOG.md](CHANGELOG.md)
 - [設計ドキュメント](docs/superpowers/specs/2026-10-02-provsync-multi-tool-sync-design.md)
@@ -399,7 +399,7 @@ make docs-serve  # ドキュメントサイトのローカルプレビュー
 
 ### Overview
 
-provsync is a CLI that syncs the `provider` entries your LLM coding tools each keep in their own format, using a central config as the single source of truth. `pull` imports from a tool into the central config; `push` reflects the central config back into a tool. Built on the Go standard library only, with no external dependencies.
+provsync is a CLI that syncs the `provider` entries your LLM coding tools each keep in their own format, using a central canonical config as the single source of truth. `pull` imports from a tool into the central config; `push` reflects the central config back into a tool. Built on the Go standard library only, with no external dependencies.
 
 ### Safety Design
 

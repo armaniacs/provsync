@@ -34,7 +34,7 @@ make fuzz     # StripJSONC の短時間ファズテスト
 
 秘密の値(`apiKey` / `token` など)を出力・ログ・エラーメッセージ・テストの期待値に書かない。テスト用のダミー文字列(`sk-test-...`)はこの限りでない。
 
-秘密の判定は `internal/secret` の 1 箇所に集約し、pull と出力層の両方がそこを参照する。判定を二重に持つと片方だけ更新漏れが起きるためだ。中央設定は `apiKeyEnv`(環境変数名)のみを保持し、値は中継しない。
+秘密の判定は `internal/secret` の 1 箇所に集約し、pull と出力層の両方がそこを参照する。判定を二重に持つと片方だけ更新漏れが起きるためだ。セントラル設定は `apiKeyEnv`(環境変数名)のみを保持し、値は中継しない。
 
 ファイルの書き込みは `fsutil.WriteFileAtomic` を通す(一時ファイル + rename)。「何が変わるか」を `internal/cli` で別計算せず、`plan.Plan` を作って再利用する。
 
@@ -53,7 +53,7 @@ provsync の価値は対応ツールの広がりにある。新しいツール�
 - `internal/cli` — サブコマンド(`cli.go`(ディスパッチと共通書き込み)、`sync.go`(同期系と前処理)、`status.go`(一覧・状態)、`history.go`(diff・undo)、`help.go`(コマンドレジストリ・ヘルプ・補完)、`doctor.go`(診断)、`check.go`(疎通確認)、`errors.go`(使い方エラー)、`render.go`(共通描画)、`platform.go`(対応 OS)、`version.go`(バージョン表示))
 - `internal/model` — カノニカル表現
 - `internal/adapter` — kilocode / opencode 変換
-- `internal/store` — 中央設定
+- `internal/store` — セントラル設定
 - `internal/syncer` — マージ・エイリアス・経路選択
 - `internal/jsonc` — JSONC 前処理
 - `internal/plan` — 変更計画と意味差分
