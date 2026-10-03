@@ -87,12 +87,13 @@ var jaCatalog = map[string]string{
 	"usage.summary.version":    "バージョンを表示",
 
 	// ---- cli: 使い方エラー ----
-	"err.usage.init":       "使い方: provsync init [tool]",
-	"err.usage.pull":       "使い方: provsync pull <tool>",
-	"err.usage.push":       "使い方: provsync push <tool>",
-	"err.usage.sync":       "使い方: provsync sync --from <a> --to <b>(--from は省略可)",
-	"err.usage.diff":       "使い方: provsync diff <from> <to>",
-	"err.usage.completion": "使い方: provsync completion <bash|zsh|fish>",
+	"err.usage.init":              "使い方: provsync init [tool]",
+	"err.usage.pull":              "使い方: provsync pull <tool>",
+	"err.usage.push":              "使い方: provsync push <tool>",
+	"err.usage.sync":              "使い方: provsync sync --from <a> --to <b>(--from は省略可)",
+	"err.usage.diff":              "使い方: provsync diff <from> <to>",
+	"err.usage.completion":        "使い方: provsync completion <bash|zsh|fish>",
+	"err.completion.unknownShell": "未知のシェル %q です(有効: bash / zsh / fish)",
 
 	// ---- cli: init ----
 	"err.init.alreadyInitialized": "すでに初期化されています: %s\n日常の更新には provsync pull <tool> を使ってください",
@@ -153,7 +154,6 @@ var jaCatalog = map[string]string{
 	"doctor.status.warn":           "警告",
 	"doctor.status.ng":             "NG",
 	"doctor.detail.centralMissing": "未作成です。provsync init <tool> --write を実行してください",
-	"doctor.detail.providers":      "%d providers",
 	"doctor.detail.envMissing":     "環境変数 %s が未設定です",
 	"doctor.detail.toolMissing":    "%s が未作成です",
 	"doctor.detail.toolWarnings":   "%s",

@@ -115,19 +115,26 @@ func (m *Message) Error() string {
 func (m *Message) Unwrap() error { return m.Err }
 
 // Localize は err チェーンを辿り、Message ノードは lang のカタログ訳、
-// それ以外のノードは err.Error() のまま ": " で連結する。
+// fmt.Errorf("…: %w") 相当のノードは自分の prefix だけ、末端のプレーンな
+// エラーは err.Error() のまま ": " で連結する。
 // fmt.Errorf の %w 連鎖の描画と同じ形になるため、ja 実行時の出力テキストは
-// 移行前と同一になる。errors.As でなく直接型アサートを使うのは、チェーンを
-// 逐次走査して各ノードを 1 回だけ翻訳するためである。
+// 移行前と同一になる。下位ノードの文言は各ノードで 1 回だけ載せるため、
+// wrapError の Error() をそのまま使うと起きる二重訳を避けている。
 func Localize(lang string, err error) string {
 	var parts []string
 	for err != nil {
 		if m, ok := err.(*Message); ok {
 			parts = append(parts, T(lang, m.ID, m.Args...))
-		} else {
-			parts = append(parts, err.Error())
+			err = errors.Unwrap(err)
+			continue
 		}
-		err = errors.Unwrap(err)
+		if wrapped := errors.Unwrap(err); wrapped != nil {
+			parts = append(parts, strings.TrimSuffix(err.Error(), ": "+wrapped.Error()))
+			err = wrapped
+			continue
+		}
+		parts = append(parts, err.Error())
+		break
 	}
 	return strings.Join(parts, ": ")
 }

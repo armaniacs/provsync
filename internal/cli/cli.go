@@ -242,11 +242,11 @@ func (o *options) applyOrPreview(label string, p plan.Plan) error {
 		}
 		op, err := st.Record(label, paths)
 		if err != nil {
-			return fmt.Errorf("%s: %w", o.T("err.backup.failed"), err)
+			return i18n.Wrap(err, "err.backup.failed")
 		}
 		o.msgf(o.out, "msg.backupID", op.ID)
 	} else if _, err := backup.New(root.StateDir()).RecordMarker(label); err != nil {
-		return fmt.Errorf("%s: %w", o.T("err.recordHistory.failed"), err)
+		return i18n.Wrap(err, "err.recordHistory.failed")
 	}
 	written := make([]string, 0, len(changed))
 	for _, c := range changed {
@@ -257,7 +257,7 @@ func (o *options) applyOrPreview(label string, p plan.Plan) error {
 					o.msgf(o.out, "msg.undoHint")
 				}
 			}
-			return fmt.Errorf("%s: %w", o.T("err.write.failed", c.Path), err)
+			return i18n.Wrap(err, "err.write.failed", c.Path)
 		}
 		written = append(written, c.Path)
 		o.msgf(o.out, "msg.written", c.Path)

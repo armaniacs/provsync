@@ -87,12 +87,13 @@ var enCatalog = map[string]string{
 	"usage.summary.version":    "show version",
 
 	// ---- cli: 使い方エラー ----
-	"err.usage.init":       "usage: provsync init [tool]",
-	"err.usage.pull":       "usage: provsync pull <tool>",
-	"err.usage.push":       "usage: provsync push <tool>",
-	"err.usage.sync":       "usage: provsync sync --from <a> --to <b> (--from optional)",
-	"err.usage.diff":       "usage: provsync diff <from> <to>",
-	"err.usage.completion": "usage: provsync completion <bash|zsh|fish>",
+	"err.usage.init":              "usage: provsync init [tool]",
+	"err.usage.pull":              "usage: provsync pull <tool>",
+	"err.usage.push":              "usage: provsync push <tool>",
+	"err.usage.sync":              "usage: provsync sync --from <a> --to <b> (--from optional)",
+	"err.usage.diff":              "usage: provsync diff <from> <to>",
+	"err.usage.completion":        "usage: provsync completion <bash|zsh|fish>",
+	"err.completion.unknownShell": "unknown shell %q (valid: bash / zsh / fish)",
 
 	// ---- cli: init ----
 	"err.init.alreadyInitialized": "already initialized: %s\nfor everyday updates, use provsync pull <tool>",
@@ -153,7 +154,6 @@ var enCatalog = map[string]string{
 	"doctor.status.warn":           "warning",
 	"doctor.status.ng":             "NG",
 	"doctor.detail.centralMissing": "not created. Run provsync init <tool> --write",
-	"doctor.detail.providers":      "%d providers",
 	"doctor.detail.envMissing":     "env var %s is not set",
 	"doctor.detail.toolMissing":    "%s is not created",
 	"doctor.detail.toolWarnings":   "%s",

@@ -49,7 +49,7 @@ func cmdDoctor(o *options, args []string) error {
 
 	ng := 0
 	for _, c := range checks {
-		name := o.T(c.nameID, c.nameArg)
+		name := o.checkName(c)
 		detail := ""
 		if c.detail != nil {
 			detail = i18n.Localize(o.lang, c.detail)
@@ -79,6 +79,15 @@ func countStatus(checks []diagnosisCheck, status checkStatus) int {
 		}
 	}
 	return n
+}
+
+// checkName は診断項目の表示名を実行時言語で返す。
+// nameArg が nil のときは引数なしの文言を使う(Sprintf の EXTRA を避けるため)。
+func (o *options) checkName(c diagnosisCheck) string {
+	if c.nameArg == nil {
+		return o.T(c.nameID)
+	}
+	return o.T(c.nameID, c.nameArg)
 }
 
 func doctorCheckPaths() []diagnosisCheck {

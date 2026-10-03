@@ -218,7 +218,7 @@ func cmdPush(o *options, args []string) error {
 	}
 	central, err := store.Load(root.CentralConfigPath())
 	if err != nil {
-		return fmt.Errorf("%s: %w", o.T("err.push.noCentral"), err)
+		return i18n.Wrap(err, "err.push.noCentral")
 	}
 	a, err := adapter.Get(args[0], root)
 	if err != nil {
@@ -311,7 +311,7 @@ func buildSyncPlan(o *options, root adapter.Root, from, to string) (plan.Plan, e
 	} else {
 		cfg, err := store.Load(root.CentralConfigPath())
 		if err != nil {
-			return plan.Plan{}, fmt.Errorf("%s: %w", o.T("err.sync.noCentral"), err)
+			return plan.Plan{}, i18n.Wrap(err, "err.sync.noCentral")
 		}
 		central = cfg
 	}

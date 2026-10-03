@@ -3,13 +3,13 @@ package cli
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/armaniacs/provsync/internal/i18n"
 	"github.com/armaniacs/provsync/internal/model"
 	"github.com/armaniacs/provsync/internal/store"
 	"github.com/armaniacs/provsync/internal/syncer"
@@ -29,7 +29,7 @@ func cmdCheck(o *options, args []string) error {
 	}
 	cfg, err := store.Load(root.CentralConfigPath())
 	if err != nil {
-		return fmt.Errorf("%s: %w", o.T("err.check.noCentral"), err)
+		return i18n.Wrap(err, "err.check.noCentral")
 	}
 	keys := make([]string, 0, len(cfg.Providers))
 	for k := range cfg.Providers {
