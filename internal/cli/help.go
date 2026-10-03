@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/armaniacs/provsync/internal/adapter"
-	"github.com/armaniacs/provsync/internal/version"
 )
 
 // command はサブコマンド 1 件の定義。コマンド一覧はこのレジストリに集約し、
@@ -77,7 +76,7 @@ func printUsage(o *options) {
 		fmt.Fprintf(&b, "  %-24s %s\n", c.usage, o.T(c.summaryKey))
 	}
 	b.WriteString(o.T("usage.commonFlags"))
-	fmt.Fprintln(o.out, "provsync "+version.String())
+	printVersion(o.out)
 	fmt.Fprintln(o.out, b.String())
 
 	root, err := o.root()
@@ -104,12 +103,6 @@ func printUsage(o *options) {
 		}
 	}
 	o.msgf(o.out, "usage.backupDir", root.StateDir())
-}
-
-// cmdVersion はバージョンを 1 行で表示する。
-func cmdVersion(o *options, args []string) error {
-	fmt.Fprintf(o.out, "provsync %s\n", version.String())
-	return nil
 }
 
 // cmdCompletion はシェル補完スクリプトを出力する。

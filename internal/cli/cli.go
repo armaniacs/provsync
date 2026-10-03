@@ -17,7 +17,6 @@ import (
 	"github.com/armaniacs/provsync/internal/i18n"
 	"github.com/armaniacs/provsync/internal/lock"
 	"github.com/armaniacs/provsync/internal/plan"
-	"github.com/armaniacs/provsync/internal/version"
 )
 
 type options struct {
@@ -94,7 +93,7 @@ func RunWith(args []string, out, errOut io.Writer) error {
 	}
 	pos := fs.Args()
 	if opts.version {
-		fmt.Fprintf(out, "provsync %s\n", version.String())
+		printVersion(out)
 		return nil
 	}
 	if opts.help && len(pos) > 0 {

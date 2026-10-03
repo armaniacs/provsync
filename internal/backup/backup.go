@@ -85,6 +85,17 @@ func (s *Store) save(idx *index) error {
 	return fsutil.WriteFileAtomic(s.indexPath(), append(data, '\n'))
 }
 
+// appendAndSave prepends op to the history and persists it via prune+save.
+// Record, RecordMarker and Restore share this single history-update path so a
+// future retention policy change lands in one place.
+func (s *Store) appendAndSave(idx *index, op Operation) error {
+	idx.Operations = append([]Operation{op}, idx.Operations...)
+	if err := s.prune(idx); err != nil {
+		return err
+	}
+	return s.save(idx)
+}
+
 // Record は paths の現在の内容を新しい操作としてバックアップする。
 func (s *Store) Record(command string, paths []string) (Operation, error) {
 	op := Operation{
@@ -108,11 +119,7 @@ func (s *Store) Record(command string, paths []string) (Operation, error) {
 	if err != nil {
 		return Operation{}, err
 	}
-	idx.Operations = append([]Operation{op}, idx.Operations...)
-	if err := s.prune(idx); err != nil {
-		return Operation{}, err
-	}
-	if err := s.save(idx); err != nil {
+	if err := s.appendAndSave(idx, op); err != nil {
 		return Operation{}, err
 	}
 	return op, nil
@@ -131,11 +138,7 @@ func (s *Store) RecordMarker(command string) (Operation, error) {
 	if err != nil {
 		return Operation{}, err
 	}
-	idx.Operations = append([]Operation{op}, idx.Operations...)
-	if err := s.prune(idx); err != nil {
-		return Operation{}, err
-	}
-	if err := s.save(idx); err != nil {
+	if err := s.appendAndSave(idx, op); err != nil {
 		return Operation{}, err
 	}
 	return op, nil
@@ -200,11 +203,7 @@ func (s *Store) Restore(op Operation) (Operation, error) {
 		undoOp.Files = append(undoOp.Files, ref)
 	}
 
-	idx.Operations = append([]Operation{undoOp}, idx.Operations...)
-	if err := s.prune(idx); err != nil {
-		return Operation{}, err
-	}
-	if err := s.save(idx); err != nil {
+	if err := s.appendAndSave(idx, undoOp); err != nil {
 		return Operation{}, err
 	}
 

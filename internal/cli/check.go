@@ -31,22 +31,18 @@ func cmdCheck(o *options, args []string) error {
 	if err != nil {
 		return i18n.Wrap(err, "err.check.noCentral")
 	}
-	keys := make([]string, 0, len(cfg.Providers))
-	for k := range cfg.Providers {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
+	// FilterProviders returns a full copy when no keys are given, so building
+	// the sorted key list once from the filtered set is behavior-identical
+	// with and without --provider.
 	filtered, err := syncer.FilterProviders(cfg.Providers, o.keys())
 	if err != nil {
 		return err
 	}
-	if o.keys() != nil {
-		keys = make([]string, 0, len(filtered))
-		for k := range filtered {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
+	keys := make([]string, 0, len(filtered))
+	for k := range filtered {
+		keys = append(keys, k)
 	}
+	sort.Strings(keys)
 
 	for _, k := range keys {
 		p := cfg.Providers[k]

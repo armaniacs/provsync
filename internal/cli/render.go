@@ -25,10 +25,7 @@ func encodeJSON(out io.Writer, v any) error {
 // warnLoosePerm は path が他ユーザーから読める権限なら chmod を案内する。
 func warnLoosePerm(o *options, path string, dir bool) {
 	info, err := os.Stat(path)
-	if err != nil {
-		return
-	}
-	if info.Mode().Perm()&0o077 == 0 {
+	if err != nil || !permLoose(info.Mode().Perm()) {
 		return
 	}
 	perm := info.Mode().Perm()

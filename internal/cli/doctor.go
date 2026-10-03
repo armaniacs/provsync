@@ -168,7 +168,7 @@ func doctorCheckTools(lang string, root adapter.Root) []diagnosisCheck {
 func doctorCheckPerms(root adapter.Root) []diagnosisCheck {
 	var checks []diagnosisCheck
 	centralPath := root.CentralConfigPath()
-	if info, err := os.Stat(centralPath); err == nil && info.Mode().Perm()&0o077 != 0 {
+	if info, err := os.Stat(centralPath); err == nil && permLoose(info.Mode().Perm()) {
 		checks = append(checks, diagnosisCheck{nameID: "doctor.name.perms", status: statusWarn, detail: i18n.New("doctor.detail.loosePerm", info.Mode().Perm(), centralPath, centralPath)})
 	}
 	if stateDir := root.StateDir(); filePermLoose(stateDir) {
@@ -177,7 +177,13 @@ func doctorCheckPerms(root adapter.Root) []diagnosisCheck {
 	return checks
 }
 
+// permLoose reports whether group/other permission bits are set.
+// Doctor and render share this single loose-permission judgment.
+func permLoose(perm os.FileMode) bool {
+	return perm&0o077 != 0
+}
+
 func filePermLoose(path string) bool {
 	info, err := os.Stat(path)
-	return err == nil && info.Mode().Perm()&0o077 != 0
+	return err == nil && permLoose(info.Mode().Perm())
 }
