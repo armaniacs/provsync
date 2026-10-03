@@ -4,7 +4,14 @@ PBI の進行状況と台帳を管理する。形式の詳細は [00-implementat
 
 ## 進行中
 
-（なし）
+### 2026-10-03 ラウンド c（大局的コード改善）
+
+| 順位 | PBI | RICE |
+|---|---|---|
+| 1 | [2026-10-03-30](2026-10-03-30-refactor-symlink-resolve.md) | 1.6 |
+| 2 | [2026-10-03-31](2026-10-03-31-fix-backup-record-hardening.md) | 1.5 |
+| 3 | [2026-10-03-32](2026-10-03-32-refactor-tool-state-collection.md) | 1.33 |
+| 4 | [2026-10-03-33](2026-10-03-33-test-tui-e2e-contract.md) | 0.8 |
 
 ## 統合台帳
 
@@ -13,6 +20,7 @@ PBI の進行状況と台帳を管理する。形式の詳細は [00-implementat
 | [2026-10-03-00-backlog.md](2026-10-03-00-backlog.md) | 2026-10-03 ラウンド（ユーザー要求 20 PBI） | 全 20 件アーカイブ済み |
 | [2026-10-03-00-backlog-holistic.md](2026-10-03-00-backlog-holistic.md) | 2026-10-03 ラウンド（大局的コード改善・4 PBI） | 全 4 件アーカイブ済み |
 | [2026-10-03-00-backlog-holisticb.md](2026-10-03-00-backlog-holisticb.md) | 2026-10-03 ラウンド b（大局的コード改善・4 PBI） | 全 4 件アーカイブ済み |
+| [2026-10-03-00-backlog-holisticc.md](2026-10-03-00-backlog-holisticc.md) | 2026-10-03 ラウンド c（大局的コード改善・4 PBI） | 4 件進行中 |
 
 ## アーカイブ履歴
 
