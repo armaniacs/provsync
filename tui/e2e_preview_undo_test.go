@@ -129,13 +129,11 @@ func TestE2EMenuPullFlow(t *testing.T) {
 	}
 	updated, _ = m2.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m3 := updated.(*listModel)
-	if m3.screen != screenMenuPrompt {
-		t.Fatalf("pull must open the prompt, got screen %d", m3.screen)
+	if m3.screen != screenMenuPick {
+		t.Fatalf("pull must open the picker, got screen %d", m3.screen)
 	}
-	// ツール名を入力して確定→プレビュー画面。ファイルは変わらない。
-	updated, _ = m3.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("kilocode")})
-	m4 := updated.(*listModel)
-	updated, _ = m4.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	// kilocode 行を選んで確定→プレビュー画面。ファイルは変わらない。
+	updated, _ = m3.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m5 := updated.(*listModel)
 	if m5.screen != screenMenuPreview {
 		t.Fatalf("pull must show the preview, got screen %d", m5.screen)
@@ -186,12 +184,11 @@ func TestE2EMenuInitCreatesCentral(t *testing.T) {
 	}
 	updated, _ = m2.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m3 := updated.(*listModel)
-	if m3.screen != screenMenuPrompt {
-		t.Fatalf("init must prompt for the tool, got screen %d", m3.screen)
+	if m3.screen != screenMenuPick {
+		t.Fatalf("init must open the picker, got screen %d", m3.screen)
 	}
-	updated, _ = m3.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("kilocode")})
-	m4 := updated.(*listModel)
-	updated, _ = m4.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	// kilocode 行(先頭)を選んで確定→プレビュー画面。
+	updated, _ = m3.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m5 := updated.(*listModel)
 	if m5.screen != screenMenuPreview {
 		t.Fatalf("init must show the preview, got screen %d", m5.screen)

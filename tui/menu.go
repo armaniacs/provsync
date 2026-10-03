@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/armaniacs/provsync/internal/i18n"
@@ -13,6 +14,11 @@ import (
 type menuPromptDef struct {
 	labelKey string
 	optional bool
+	// pick は既存ツールからの選択であることを示す。偽なら自由入力。
+	pick bool
+	// allowCentral は選択肢の先頭にセントラル設定を意味する空行を足す
+	// (sync の取り込み元など、空が有効な値の場合のみ真)。
+	allowCentral bool
 }
 
 // menuCmd はコマンドメニューの 1 項目。CLI のサブコマンドと 1 対 1 に対応する。
@@ -33,14 +39,14 @@ type menuCmd struct {
 var menuCommands = []menuCmd{
 	{name: "status", summaryKey: "usage.summary.status"},
 	{name: "list", summaryKey: "usage.summary.list"},
-	{name: "pull", prompts: []menuPromptDef{{labelKey: "msg.tui.promptTool", optional: false}}, mutating: true, previewFirst: true, summaryKey: "usage.summary.pull"},
-	{name: "push", prompts: []menuPromptDef{{labelKey: "msg.tui.promptTool", optional: false}}, mutating: true, previewFirst: true, summaryKey: "usage.summary.push"},
-	{name: "sync", prompts: []menuPromptDef{{labelKey: "msg.tui.promptFrom", optional: true}, {labelKey: "msg.tui.promptTo", optional: false}}, mutating: true, previewFirst: true, summaryKey: "usage.summary.sync"},
-	{name: "diff", prompts: []menuPromptDef{{labelKey: "msg.tui.promptFrom", optional: false}, {labelKey: "msg.tui.promptTo", optional: false}}, summaryKey: "usage.summary.diff"},
+	{name: "pull", prompts: []menuPromptDef{{labelKey: "msg.tui.promptTool", optional: false, pick: true}}, mutating: true, previewFirst: true, summaryKey: "usage.summary.pull"},
+	{name: "push", prompts: []menuPromptDef{{labelKey: "msg.tui.promptTool", optional: false, pick: true}}, mutating: true, previewFirst: true, summaryKey: "usage.summary.push"},
+	{name: "sync", prompts: []menuPromptDef{{labelKey: "msg.tui.promptFrom", optional: true, pick: true, allowCentral: true}, {labelKey: "msg.tui.promptTo", optional: false, pick: true}}, mutating: true, previewFirst: true, summaryKey: "usage.summary.sync"},
+	{name: "diff", prompts: []menuPromptDef{{labelKey: "msg.tui.promptFrom", optional: false, pick: true}, {labelKey: "msg.tui.promptTo", optional: false, pick: true}}, summaryKey: "usage.summary.diff"},
 	{name: "undo", prompts: []menuPromptDef{{labelKey: "msg.tui.promptId", optional: true}}, mutating: true, summaryKey: "usage.summary.undo"},
 	{name: "doctor", summaryKey: "usage.summary.doctor"},
 	{name: "check", prompts: []menuPromptDef{{labelKey: "msg.tui.promptProvider", optional: true}}, summaryKey: "usage.summary.check"},
-	{name: "init", prompts: []menuPromptDef{{labelKey: "msg.tui.promptTool", optional: true}}, mutating: true, previewFirst: true, summaryKey: "usage.summary.init"},
+	{name: "init", prompts: []menuPromptDef{{labelKey: "msg.tui.promptTool", optional: true, pick: true}}, mutating: true, previewFirst: true, summaryKey: "usage.summary.init"},
 	{name: "version", summaryKey: "usage.summary.version"},
 	{name: "completion", prompts: []menuPromptDef{{labelKey: "msg.tui.promptShell", optional: false}}, summaryKey: "usage.summary.completion"},
 }
@@ -142,6 +148,23 @@ func (m *listModel) activateMenuCmd() {
 		// 履歴の取得失敗は入力画面に空の文脈として出す(致命的ではない)。
 		m.menuContext, _ = m.runMenuCommand([]string{"undo", "--list"})
 	}
+	m.nextMenuStep()
+}
+
+// nextMenuStep は現在の入力項目の種類に応じて進む。
+// 選択項目なら選択画面、自由入力なら入力画面、無ければ確定処理へ。
+func (m *listModel) nextMenuStep() {
+	c := m.menuActive
+	if m.menuPrompt >= len(c.prompts) {
+		m.commitMenuValues()
+		return
+	}
+	if c.prompts[m.menuPrompt].pick {
+		m.buildMenuPick()
+		m.screen = screenMenuPick
+		return
+	}
+	m.menuInput = nil
 	m.screen = screenMenuPrompt
 }
 
@@ -164,12 +187,76 @@ func (m *listModel) activateMenuInit() bool {
 		} else {
 			m.menuValues = []string{""}
 		}
-		m.finishMenuPrompt()
+		m.commitMenuValues()
 		return true
 	default:
-		m.menuActive.prompts = []menuPromptDef{{labelKey: "msg.tui.promptTool", optional: false}}
+		m.menuActive.prompts = []menuPromptDef{{labelKey: "msg.tui.promptTool", optional: false, pick: true}}
 		return false
 	}
+}
+
+// pickItem はツール選択肢の 1 行。表示ラベルと確定値(ツール名または空)を分ける。
+type pickItem struct {
+	label string
+	value string
+}
+
+// buildMenuPick は既存ツールから選択肢を作る。allowCentral の項目は先頭に
+// セントラル設定を意味する空行を足す。ツール無しでは空リストになる。
+func (m *listModel) buildMenuPick() {
+	m.menuPickItems = nil
+	m.menuPickCursor = 0
+	def := m.menuActive.prompts[m.menuPrompt]
+	if def.allowCentral {
+		m.menuPickItems = append(m.menuPickItems, pickItem{
+			label: i18n.T(m.lang, "msg.tui.pickCentral"),
+			value: "",
+		})
+	}
+	for _, ts := range m.report.Tools {
+		if !ts.Exists {
+			continue
+		}
+		m.menuPickItems = append(m.menuPickItems, pickItem{
+			label: fmt.Sprintf("%s  %s (%d providers)", ts.Name, ts.Path, ts.Providers),
+			value: ts.Name,
+		})
+	}
+}
+
+// updateMenuPick はツール選択のキー操作を処理する。行が無いときの決定は無視する。
+func (m *listModel) updateMenuPick(key tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch key.String() {
+	case "q", "ctrl+c":
+		return m, tea.Quit
+	case "esc":
+		m.menuActive = nil
+		m.screen = screenMenu
+		return m, nil
+	case "up", "k":
+		if m.menuPickCursor > 0 {
+			m.menuPickCursor--
+		}
+	case "down", "j":
+		if m.menuPickCursor < len(m.menuPickItems)-1 {
+			m.menuPickCursor++
+		}
+	case "g":
+		m.menuPickCursor = 0
+	case "G":
+		if len(m.menuPickItems) > 0 {
+			m.menuPickCursor = len(m.menuPickItems) - 1
+		}
+	case "enter":
+		if len(m.menuPickItems) == 0 {
+			return m, nil
+		}
+		m.menuValues = append(m.menuValues, m.menuPickItems[m.menuPickCursor].value)
+		m.menuPrompt++
+		m.nextMenuStep()
+		return m, nil
+	}
+	return m, nil
 }
 
 // updateMenuPrompt は引数入力のキー操作を処理する。Enter で確定(必須項目の
@@ -188,10 +275,7 @@ func (m *listModel) updateMenuPrompt(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.menuValues = append(m.menuValues, string(m.menuInput))
 		m.menuInput = nil
 		m.menuPrompt++
-		if m.menuPrompt < len(c.prompts) {
-			return m, nil
-		}
-		m.finishMenuPrompt()
+		m.nextMenuStep()
 		return m, nil
 	case tea.KeyBackspace:
 		if len(m.menuInput) > 0 {
@@ -205,8 +289,8 @@ func (m *listModel) updateMenuPrompt(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// finishMenuPrompt は全入力の確定後にプレビューまたは実行へ進む。
-func (m *listModel) finishMenuPrompt() {
+// commitMenuValues は全入力の確定後にプレビューまたは実行へ進む。
+func (m *listModel) commitMenuValues() {
 	c := *m.menuActive
 	if !c.mutating {
 		m.menuOutput, _ = m.runMenuCommand(c.previewArgs(m.menuValues))
@@ -335,5 +419,24 @@ func (m *listModel) menuPromptView() string {
 	}
 	c := m.menuActive
 	b.WriteString(i18n.T(m.lang, c.prompts[m.menuPrompt].labelKey) + string(m.menuInput) + "\n")
+	return b.String()
+}
+
+// menuPickView はツール選択画面を描画する。候補が無いときはその旨だけ出す。
+func (m *listModel) menuPickView() string {
+	var b strings.Builder
+	c := m.menuActive
+	b.WriteString(i18n.T(m.lang, c.prompts[m.menuPrompt].labelKey) + "\n\n")
+	if len(m.menuPickItems) == 0 {
+		b.WriteString(i18n.T(m.lang, "msg.tui.pickEmpty") + "\n")
+		return b.String()
+	}
+	for i, item := range m.menuPickItems {
+		cursor := "  "
+		if i == m.menuPickCursor {
+			cursor = "> "
+		}
+		b.WriteString(cursor + item.label + "\n")
+	}
 	return b.String()
 }

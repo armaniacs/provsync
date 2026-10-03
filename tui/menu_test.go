@@ -116,38 +116,46 @@ func TestMenuStatusRunsAndReturns(t *testing.T) {
 }
 
 // TestMenuPullPreviewAndApply は pull の入力→プレビュー→適用の全路を pin する。
+// openMenuAt はメニューを開いて idx 項目へ移動する。
+func openMenuAt(m *listModel, idx int) *listModel {
+	cur, _ := press(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'m'}})
+	for i := 0; i < idx; i++ {
+		cur, _ = press(cur, downKey())
+	}
+	return cur
+}
+
 func TestMenuPullPreviewAndApply(t *testing.T) {
 	m, log := menuTestModel(t)
-	m2, _ := press(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'m'}})
 	// pull は 3 項目目(status, list, pull)。
-	m3, _ := press(m2, downKey())
+	m2 := openMenuAt(m, 2)
+	updated, _ := m2.Update(enterKey())
+	m3 := updated.(*listModel)
+	if m3.screen != screenMenuPick {
+		t.Fatalf("pull must open the tool picker, got screen %d", m3.screen)
+	}
+	if !strings.Contains(m3.View(), "kilocode") || !strings.Contains(m3.View(), "opencode") {
+		t.Errorf("picker must list existing tools:\n%s", m3.View())
+	}
+	// opencode(2 行目)を選ぶ。
 	m4, _ := press(m3, downKey())
-	updated, _ := m4.Update(enterKey())
+	updated, _ = m4.Update(enterKey())
 	m5 := updated.(*listModel)
-	if m5.screen != screenMenuPrompt {
-		t.Fatalf("pull must open the prompt, got screen %d", m5.screen)
+	if m5.screen != screenMenuPreview {
+		t.Fatalf("pull must show the preview, got screen %d", m5.screen)
 	}
-	if !strings.Contains(m5.View(), "tool:") {
-		t.Errorf("prompt must ask for the tool:\n%s", m5.View())
-	}
-	m6 := typeText(m5, "opencode")
-	updated, _ = m6.Update(enterKey())
-	m7 := updated.(*listModel)
-	if m7.screen != screenMenuPreview {
-		t.Fatalf("pull must show the preview, got screen %d", m7.screen)
-	}
-	if !strings.Contains(strings.Join(m7.menuPreview, "\n"), "preview line") {
-		t.Errorf("preview must show the push preview output: %v", m7.menuPreview)
+	if !strings.Contains(strings.Join(m5.menuPreview, "\n"), "preview line") {
+		t.Errorf("preview must show the push preview output: %v", m5.menuPreview)
 	}
 	for _, line := range loggedArgs(t, log) {
 		if strings.Contains(line, "--write") {
 			t.Fatalf("preview must not use --write: %v", loggedArgs(t, log))
 		}
 	}
-	updated, _ = m7.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
-	m8 := updated.(*listModel)
-	if m8.screen != screenMenuResult {
-		t.Fatalf("y must run and show the result, got screen %d", m8.screen)
+	updated, _ = m5.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	m6 := updated.(*listModel)
+	if m6.screen != screenMenuResult {
+		t.Fatalf("y must run and show the result, got screen %d", m6.screen)
 	}
 	calls := loggedArgs(t, log)
 	if len(calls) != 2 || calls[0] != "pull opencode" || calls[1] != "pull opencode --write" {
@@ -155,21 +163,55 @@ func TestMenuPullPreviewAndApply(t *testing.T) {
 	}
 }
 
-// TestMenuRequiredPromptRejectsEmpty は必須入力の空送信が無視されることを pin する。
+// TestMenuRequiredPromptRejectsEmpty は必須の自由入力の空送信が
+// 無視されることを pin する(completion のシェル名)。
 func TestMenuRequiredPromptRejectsEmpty(t *testing.T) {
 	m, log := menuTestModel(t)
+	// completion は 12 項目目。
+	m2 := openMenuAt(m, 11)
+	updated, _ := m2.Update(enterKey())
+	m3 := updated.(*listModel)
+	if m3.screen != screenMenuPrompt {
+		t.Fatalf("completion must open the prompt, got screen %d", m3.screen)
+	}
+	updated, _ = m3.Update(enterKey())
+	m4 := updated.(*listModel)
+	if m4.screen != screenMenuPrompt {
+		t.Errorf("empty required input must stay on the prompt, got screen %d", m4.screen)
+	}
+	if calls := loggedArgs(t, log); len(calls) != 0 {
+		t.Errorf("empty submit must run nothing: %v", calls)
+	}
+}
+
+// TestMenuPickEmpty はツール無しで選択肢が空のとき決定が無視されることを pin する。
+func TestMenuPickEmpty(t *testing.T) {
+	log := stubLog(t)
+	t.Setenv("TUI_TEST_LOG", log)
+	r := testReport()
+	for i := range r.Tools {
+		r.Tools[i].Exists = false
+	}
+	m := newListModel(menuStubBin(t), r, "en")
+	// 選択肢なしでもメニューは開く。
 	m2, _ := press(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'m'}})
 	m3, _ := press(m2, downKey())
 	m4, _ := press(m3, downKey())
 	updated, _ := m4.Update(enterKey())
 	m5 := updated.(*listModel)
+	if m5.screen != screenMenuPick {
+		t.Fatalf("pull must open the picker, got screen %d", m5.screen)
+	}
+	if !strings.Contains(m5.View(), "no tools") {
+		t.Errorf("empty picker must say so:\n%s", m5.View())
+	}
 	updated, _ = m5.Update(enterKey())
 	m6 := updated.(*listModel)
-	if m6.screen != screenMenuPrompt {
-		t.Errorf("empty required input must stay on the prompt, got screen %d", m6.screen)
+	if m6.screen != screenMenuPick {
+		t.Errorf("enter on empty picker must stay, got screen %d", m6.screen)
 	}
 	if calls := loggedArgs(t, log); len(calls) != 0 {
-		t.Errorf("empty submit must run nothing: %v", calls)
+		t.Errorf("empty pick must run nothing: %v", calls)
 	}
 }
 
@@ -209,37 +251,40 @@ func TestMenuUndoShowsHistoryAndRuns(t *testing.T) {
 	}
 }
 
-// TestMenuSyncBuildsFromTo は sync の 2 段階入力と引数組み立てを pin する。
+// TestMenuSyncBuildsFromTo は sync の 2 段階選択と引数組み立てを pin する。
+// from の先頭行(セントラル設定)=空、to の opencode 行を選ぶ。
 func TestMenuSyncBuildsFromTo(t *testing.T) {
 	m, log := menuTestModel(t)
-	m2, _ := press(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'m'}})
 	// sync は 5 項目目。
-	m3, _ := press(m2, downKey())
-	m4, _ := press(m3, downKey())
+	m2 := openMenuAt(m, 4)
+	updated, _ := m2.Update(enterKey())
+	m3 := updated.(*listModel)
+	if m3.screen != screenMenuPick {
+		t.Fatalf("sync must open the picker, got screen %d", m3.screen)
+	}
+	if !strings.Contains(m3.View(), "source") {
+		t.Fatalf("sync must ask for source first:\n%s", m3.View())
+	}
+	// from の先頭行(セントラル設定=空)を選ぶ→ to の選択へ。
+	updated, _ = m3.Update(enterKey())
+	m4 := updated.(*listModel)
+	if m4.screen != screenMenuPick {
+		t.Fatalf("sync must ask for target second, got screen %d", m4.screen)
+	}
+	if !strings.Contains(m4.View(), "target") {
+		t.Fatalf("sync second pick must ask for target:\n%s", m4.View())
+	}
+	// to の opencode 行(先頭セントラル行の次)を選ぶ。
 	m5, _ := press(m4, downKey())
-	m6, _ := press(m5, downKey())
-	updated, _ := m6.Update(enterKey())
+	updated, _ = m5.Update(enterKey())
+	m6 := updated.(*listModel)
+	if m6.screen != screenMenuPreview {
+		t.Fatalf("sync must show the preview, got screen %d", m6.screen)
+	}
+	updated, _ = m6.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
 	m7 := updated.(*listModel)
-	if !strings.Contains(m7.View(), "source") {
-		t.Fatalf("sync must ask for source first:\n%s", m7.View())
-	}
-	// from を空で確定(任意項目)→ to の入力へ。
-	m8 := typeText(m7, "")
-	updated, _ = m8.Update(enterKey())
-	m9 := updated.(*listModel)
-	if !strings.Contains(m9.View(), "target") {
-		t.Fatalf("sync must ask for target second:\n%s", m9.View())
-	}
-	m10 := typeText(m9, "opencode")
-	updated, _ = m10.Update(enterKey())
-	m11 := updated.(*listModel)
-	if m11.screen != screenMenuPreview {
-		t.Fatalf("sync must show the preview, got screen %d", m11.screen)
-	}
-	updated, _ = m11.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
-	m12 := updated.(*listModel)
-	if m12.screen != screenMenuResult {
-		t.Fatalf("y must run and show the result, got screen %d", m12.screen)
+	if m7.screen != screenMenuResult {
+		t.Fatalf("y must run and show the result, got screen %d", m7.screen)
 	}
 	calls := loggedArgs(t, log)
 	if len(calls) != 2 || calls[0] != "sync --to opencode" || calls[1] != "sync --to opencode --write" {
@@ -247,19 +292,19 @@ func TestMenuSyncBuildsFromTo(t *testing.T) {
 	}
 }
 
-// TestMenuPromptEscCancels は入力中の esc が適用せずメニューに戻ることを pin する。
-func TestMenuPromptEscCancels(t *testing.T) {
+// TestMenuPickEscCancels は選択中の esc が適用せずメニューに戻ることを pin する。
+func TestMenuPickEscCancels(t *testing.T) {
 	m, log := menuTestModel(t)
-	m2, _ := press(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'m'}})
-	m3, _ := press(m2, downKey())
-	m4, _ := press(m3, downKey())
-	updated, _ := m4.Update(enterKey())
-	m5 := updated.(*listModel)
-	m6 := typeText(m5, "opencode")
-	updated, _ = m6.Update(tea.KeyMsg{Type: tea.KeyEsc})
-	m7 := updated.(*listModel)
-	if m7.screen != screenMenu {
-		t.Errorf("esc must cancel back to the menu, got screen %d", m7.screen)
+	m2 := openMenuAt(m, 2)
+	updated, _ := m2.Update(enterKey())
+	m3 := updated.(*listModel)
+	if m3.screen != screenMenuPick {
+		t.Fatalf("pull must open the picker, got screen %d", m3.screen)
+	}
+	updated, _ = m3.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m4 := updated.(*listModel)
+	if m4.screen != screenMenu {
+		t.Errorf("esc must cancel back to the menu, got screen %d", m4.screen)
 	}
 	if calls := loggedArgs(t, log); len(calls) != 0 {
 		t.Errorf("cancel must run nothing: %v", calls)
@@ -429,37 +474,28 @@ func TestMenuInitNoToolsRunsBareInit(t *testing.T) {
 	}
 }
 
-// TestMenuInitMultipleToolsRequiresTool は複数ツールで init の入力が
-// 必須になること(空送信の no-op を防ぐ)を pin する。
+// TestMenuInitMultipleToolsRequiresTool は複数ツールで init が選択式になり、
+// 選ばずに進めないこと(空送信の no-op を防ぐ)を pin する。
 func TestMenuInitMultipleToolsRequiresTool(t *testing.T) {
 	m, log := menuTestModel(t)
-	m0, _ := press(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'m'}})
-	m2 := m0
-	for i := 0; i < 9; i++ {
-		m2, _ = press(m2, downKey())
-	}
+	// init は 10 項目目。
+	m2 := openMenuAt(m, 9)
 	updated, _ := m2.Update(enterKey())
 	m3 := updated.(*listModel)
-	if m3.screen != screenMenuPrompt {
-		t.Fatalf("multi-tool init must prompt, got screen %d", m3.screen)
+	if m3.screen != screenMenuPick {
+		t.Fatalf("multi-tool init must open the picker, got screen %d", m3.screen)
+	}
+	if !strings.Contains(m3.View(), "kilocode") || !strings.Contains(m3.View(), "opencode") {
+		t.Fatalf("init picker must list tools:\n%s", m3.View())
 	}
 	updated, _ = m3.Update(enterKey())
 	m4 := updated.(*listModel)
-	if m4.screen != screenMenuPrompt {
-		t.Errorf("empty submit must stay on the required prompt, got screen %d", m4.screen)
-	}
-	if calls := loggedArgs(t, log); len(calls) != 0 {
-		t.Errorf("empty submit must run nothing: %v", calls)
-	}
-	m5 := typeText(m4, "kilocode")
-	updated, _ = m5.Update(enterKey())
-	m6 := updated.(*listModel)
-	if m6.screen != screenMenuPreview {
-		t.Fatalf("init with tool must show the preview, got screen %d", m6.screen)
+	if m4.screen != screenMenuPreview {
+		t.Fatalf("init with picked tool must show the preview, got screen %d", m4.screen)
 	}
 	calls := loggedArgs(t, log)
 	if len(calls) != 1 || calls[0] != "init kilocode" {
-		t.Errorf("init must preview with the typed tool: %v", calls)
+		t.Errorf("init must preview with the picked tool: %v", calls)
 	}
 }
 
@@ -494,15 +530,15 @@ func TestMenuResultCreateHint(t *testing.T) {
 	}
 	updated, _ = m3.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}})
 	m4 := updated.(*listModel)
-	// ツール2件のため init は必須入力になる。
-	if m4.screen != screenMenuPrompt {
+	// ツール2件のため init は選択式になる。
+	if m4.screen != screenMenuPick {
 		t.Fatalf("i must start the init flow, got screen %d", m4.screen)
 	}
-	m5 := typeText(m4, "kilocode")
-	updated, _ = m5.Update(enterKey())
+	// kilocode 行(先頭)を選ぶ。
+	updated, _ = m4.Update(enterKey())
 	m6 := updated.(*listModel)
 	if m6.screen != screenMenuPreview {
-		t.Fatalf("init with tool must show the preview, got screen %d", m6.screen)
+		t.Fatalf("init with picked tool must show the preview, got screen %d", m6.screen)
 	}
 	calls := loggedArgs(t, log)
 	found := false
@@ -512,7 +548,7 @@ func TestMenuResultCreateHint(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Errorf("i flow must preview init with the typed tool: %v", calls)
+		t.Errorf("i flow must preview init with the picked tool: %v", calls)
 	}
 }
 

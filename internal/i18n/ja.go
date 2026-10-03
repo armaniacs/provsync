@@ -194,9 +194,13 @@ var jaCatalog = map[string]string{
 	"msg.tui.footerConfirm":      "y/Enter 実行 · n/esc 戻る · ? ヘルプ",
 	"msg.tui.footerDone":         "u 取り消し · q 終了 · ? ヘルプ",
 	"msg.tui.helpTitle":          "ショートカット",
+	"msg.tui.pickCentral":        "(セントラル設定)",
+	"msg.tui.pickEmpty":          "(ツールがありません)",
+	"msg.tui.footerPick":         "↑↓ 選択 · Enter 決定 · esc 戻る · ? ヘルプ",
 	"msg.tui.resultCreateHint":   "セントラル設定が未作成です — i で今すぐ作成",
 	"msg.tui.helpBody": `一覧: ↑↓/jk 移動 · スペース 選択 · Enter 確認 · m メニュー · g/G 先頭/末尾
 メニュー: ↑↓ 選択 · Enter 実行 · esc 戻る · g/G 先頭/末尾
+選択: ↑↓ 選択 · Enter 決定 · esc 戻る
 入力: 文字入力 + Enter 確定 · esc 戻る
 プレビュー: y/Enter 実行 · n/esc 戻る(失敗時は実行不可)
 結果: q/Enter でメニューに戻る

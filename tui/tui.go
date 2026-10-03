@@ -16,6 +16,7 @@ const (
 	screenConfirmUndo
 	screenMenu
 	screenMenuPrompt
+	screenMenuPick
 	screenMenuPreview
 	screenMenuResult
 )
@@ -54,6 +55,8 @@ type listModel struct {
 	menuPreview    []string
 	menuPreviewErr bool
 	menuOutput     []string
+	menuPickItems  []pickItem
+	menuPickCursor int
 	// menuLastCmd は結果画面を表示中のコマンド名。status/list 実行直後で
 	// セントラル設定が未作成のときに i での作成案内を出すために使う。
 	menuLastCmd string
@@ -123,6 +126,8 @@ func (m *listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateMenu(key)
 	case screenMenuPrompt:
 		return m.updateMenuPrompt(key)
+	case screenMenuPick:
+		return m.updateMenuPick(key)
 	case screenMenuPreview:
 		return m.updateMenuPreview(key)
 	case screenMenuResult:
@@ -303,6 +308,8 @@ func (m *listModel) View() string {
 		b.WriteString(m.menuView())
 	case screenMenuPrompt:
 		b.WriteString(m.menuPromptView())
+	case screenMenuPick:
+		b.WriteString(m.menuPickView())
 	case screenMenuPreview:
 		b.WriteString(i18n.T(m.lang, "msg.tui.menuPreviewHeader") + "\n\n")
 		for _, line := range m.menuPreview {
@@ -335,6 +342,8 @@ func (m *listModel) footerText() string {
 		return i18n.T(m.lang, "msg.tui.footerMenu")
 	case screenMenuPrompt:
 		return i18n.T(m.lang, "msg.tui.footerPrompt")
+	case screenMenuPick:
+		return i18n.T(m.lang, "msg.tui.footerPick")
 	case screenMenuPreview:
 		if m.menuPreviewErr {
 			return i18n.T(m.lang, "msg.tui.footerPreviewError")
