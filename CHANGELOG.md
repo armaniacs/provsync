@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-03
+
+CLI・TUI のメッセージの日英対応と、ドキュメントサイトの追加。
+
 ### Added
 
 - CLI のメッセージを日英対応にした（新規パッケージ `internal/i18n` のカタログ経由）。既定は日本語のまま。`PROVSYNC_LANG` > `LC_ALL` > `LC_MESSAGES` > `LANG` の優先順位で言語を判定し、`en` で始まるロケールなら英語、未対応・空のロケールは日本語にフォールバックする。`provsync-tui` も同じカタログを共用し（`tui/go.mod` の replace 指令）、子プロセスと表示言語が混在しない。`status --json` のキー構造はロケール間で不変だが、`drift` 行と `warnings` の値はロケールに連動する。機械可読な drift は従来どおり `driftEntries` を使う。
