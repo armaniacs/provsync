@@ -8,7 +8,7 @@ LDFLAGS := -X github.com/armaniacs/provsync/internal/version.Version=$(VERSION)
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build test test-v test-race fuzz fmt fmt-check vet lint vuln check install tui-build tui-check docs docs-serve clean
+.PHONY: help all build test test-all tui-test test-v test-race fuzz fmt fmt-check vet lint vuln check install tui-build tui-check docs docs-serve clean
 
 ## help: このヘルプを表示
 help:
@@ -18,9 +18,19 @@ help:
 build:
 	$(GO) build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/$(BINARY) .
 
+## all: CLI と TUI の両方をビルド
+all: build tui-build
+
 ## test: テストを実行
 test:
 	$(GO) test $(GOFLAGS) $(PKG)
+
+## tui-test: TUI モジュールのテストを実行
+tui-test:
+	cd tui && $(GO) test $(GOFLAGS) ./...
+
+## test-all: CLI と TUI の両方のテストを実行
+test-all: test tui-test
 
 ## test-v: テストを詳細表示
 test-v:
