@@ -33,20 +33,24 @@ CI runs `make check`, `make test-race`, `make lint`, and `make vuln` on push to 
 
 ## Layout
 
-- `main.go` — dispatch only; `cli.Run(args, out)` is the testable entrypoint.
-- `internal/cli/` — flag parsing (`reorder` allows flags after positional args) and command handlers.
+- `main.go` — entry only; `cli.Supported(runtime.GOOS)` guards the OS, then `cli.RunWith(args, out, errOut)` runs and maps `ExitError`/`UsageError` to exit codes.
+- `internal/cli/` — one file per command group plus shared plumbing: `cli.go` (flag parsing with `reorder` allowing flags after positional args, shared `options`, `applyOrPreview`), `sync.go` (init/pull/push/sync), `status.go` (list/status), `history.go` (diff/undo), `help.go` (command registry — dispatch, usage, help, and completion are all generated from `commandRegistry()`), `doctor.go`, `check.go` (the only path that makes network calls), `errors.go`, `render.go`, `platform.go`.
 - `internal/model/` — canonical `Config`/`Provider` (known fields + per-tool `Extras`).
 - `internal/adapter/` — `Adapter` IF, registry/aliases, shared document decode/encode, kilocode/opencode.
 - `internal/store/` — central config load/marshal/save.
-- `internal/syncer/` — provider set merge and filter (pure).
+- `internal/syncer/` — provider set merge and filter (pure); `aliases.go` for model alias resolution, `routes.go` for route selection.
 - `internal/jsonc/` — `StripJSONC` (line comments + trailing commas).
 - `internal/plan/` — `Plan`/`FileChange`/`ProviderChange` and provider diff.
 - `internal/diff/` — unified diff renderer.
 - `internal/backup/` — timestamped backups, manifest index, restore, retention.
+- `internal/lock/` — flock-based exclusive lock around the write/undo windows.
+- `internal/secret/` — secret-like key detection (`IsKey`) and output masking (`MaskLines`).
+- `internal/version/` — version string resolved from build info / `-ldflags -X`.
 - `internal/fsutil/` — atomic write and sorted JSON marshal.
 - `internal/i18n/` — language resolution (`PROVSYNC_LANG` > `LC_ALL` > `LC_MESSAGES` > `LANG` > en fallback) and the en/ja message catalog. Internal packages return language-neutral `*i18n.Message` values; `cli.RunWith`/`main.go` localize at the boundary.
+- `tui/` — optional bubbletea TUI as a separate Go module (`tui/go.mod` with `replace` to the parent). It shells out to the `provsync` binary and parses `status --json`.
 
-Integration tests for `cli.Run` use `--root <tmpdir>` and real files under `t.TempDir()`.
+Integration tests for `cli.RunWith` use `--root <tmpdir>` and real files under `t.TempDir()`.
 
 ## Conventions
 

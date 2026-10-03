@@ -29,19 +29,34 @@
 
 | 場所 | 役割 | 主な関数・型 |
 |---|---|---|
-| `main.go` | 起動のみ。`cli.Run(os.Args[1:], os.Stdout)` を呼びエラーなら終了コード 1 | |
-| `internal/cli/cli.go` | サブコマンドの解析と実行 | `Run`, `options`, `registerFlags`, `reorder`, `usage`, `cmdList/Status/Pull/Push/Sync/Diff/Undo`, `applyOrPreview`, `buildCentralChange`, `buildToolChange`, `buildSyncPlan` |
-| `internal/adapter/adapter.go` | ツール設定の読み書き共通部 | `Root`, `NewRoot`, `ResolveRoot`, `Adapter` IF, `Names`, `Get`, `secretLike`, `decodeProvider`, `encodeProvider`, `pullDocument`, `pushDocument`, `carryOverSecrets` |
+| `main.go` | 起動のみ。`cli.Supported` で OS 判定し、`cli.RunWith(os.Args[1:], os.Stdout, os.Stderr)` を呼びエラーなら終了コード 1（使い方の誤りは 2） | |
+| `internal/cli/cli.go` | フラグ解析・共通 option・適用（Plan の書き出し） | `Run`, `RunWith`, `options`, `registerFlags`, `reorder`, `applyOrPreview`, `newBackupStore` |
+| `internal/cli/sync.go` | init / pull / push / sync | `cmdInit`, `cmdPull`, `cmdPush`, `cmdSync`, `pullFromTool`, `toolChangeForPush`, `buildCentralChange`, `buildToolChange`, `buildSyncPlan` |
+| `internal/cli/status.go` | list / status | `cmdList`, `cmdStatus`, `buildStatusReport`, `driftEntries` |
+| `internal/cli/history.go` | diff / undo | `cmdDiff`, `cmdUndo` |
+| `internal/cli/help.go` | コマンドレジストリ・ヘルプ・補完 | `commandRegistry`, `lookupCommand`, `printUsage`, `cmdVersion`, `cmdCompletion` |
+| `internal/cli/doctor.go` | doctor 診断 | `cmdDoctor`, `doctorCheck*` |
+| `internal/cli/check.go` | check 疎通確認（唯一の通信経路） | `cmdCheck`, `checkProvider` |
+| `internal/cli/errors.go` | エラー型と使い方エラー | `UsageError`, `ExitError`, `usageErr` |
+| `internal/cli/render.go` | 出力の描画 | `renderPreview`, `renderSemantic`, `encodeJSON`, `warnLoosePerm` |
+| `internal/cli/platform.go` | 対応 OS の判定 | `Supported` |
+| `internal/adapter/adapter.go` | ツール設定の読み書き共通部 | `Root`, `NewRoot`, `ResolveRoot`, `Adapter` IF, `Names`, `Get`, `decodeProvider`, `encodeProvider`, `pullDocument`, `pushDocument`, `carryOverSecrets` |
 | `internal/adapter/kilocode.go` `opencode.go` | ツール別の薄い層 | `Pull` / `Push` / `Project` |
 | `internal/model/model.go` | 中央設定の型 | `Config`, `Provider`（`Models` は `map[string]any`）, `Version` |
 | `internal/store/store.go` | 中央設定の読み書き | `Load`, `Marshal` |
 | `internal/syncer/syncer.go` | provider 集合のマージ・絞り込み（純粋関数） | `MergeToolProviders`, `FilterProviders` |
+| `internal/syncer/aliases.go` | モデルエイリアスの解決 | `ResolveAliases` |
+| `internal/syncer/routes.go` | 経路の選択 | `SelectRoute` |
 | `internal/plan/plan.go` | 変更計画 | `Plan`, `FileChange`, `ProviderChange`, `ProvidersDiff`, `ChangedFields` |
 | `internal/diff/diff.go` | unified diff | `Unified(path, before, after, context)` |
-| `internal/backup/backup.go` | バックアップ・undo | `Store`, `Record`, `RecordMarker`, `Restore`, `List`, `Find`, `MaxOperations` |
+| `internal/backup/backup.go` | バックアップ・undo | `Store`, `Record`, `RecordMarker`, `Restore`, `List`, `Find`, `Prune`, `MaxOperations` |
+| `internal/lock/lock.go` | 状態ディレクトリの flock 排他 | `Acquire` |
+| `internal/secret/secret.go` | 秘密キー判定とマスク | `IsKey`, `MaskLines` |
 | `internal/fsutil/fsutil.go` | atomic 書き込み・ソート JSON | `WriteFileAtomic`, `MarshalIndentSorted` |
 | `internal/i18n/` | 言語判定と ja/en メッセージカタログ | `Resolve`, `ResolveFromEnv`, `T`, `Message`, `Localize` |
 | `internal/jsonc/jsonc.go` | JSONC → JSON | `StripJSONC`（行コメントと末尾カンマのみ。ブロックコメントは非対応） |
+| `internal/version/version.go` | バージョン文字列の解決 | `String` |
+| `tui/` | bubbletea TUI（独立モジュール。`tui/go.mod` が replace で親を参照し `status --json` をパース） | `listModel`, `selection`, `fetchStatus` |
 
 設定ファイルの実パス: kilocode は `<ConfigHome>/kilo/kilo.jsonc`、opencode は `<ConfigHome>/opencode/opencode.json`、中央設定は `<ConfigHome>/provsync/config.json`、バックアップは `<StateHome>/provsync/`。`ConfigHome` は `XDG_CONFIG_HOME` があればそれ、なければ `~/.config`。
 
@@ -59,10 +74,10 @@
 
 ## 5. 新しいサブコマンドを足す手順
 
-1. `internal/cli/cli.go` の `Run` の `switch cmd` に `case "名前": return cmdXxx(opts, rest)` を足す。
-2. `cmdXxx(o *options, args []string) error` を書く。パスは `o.root()` で得る（`os.UserHomeDir` を直接呼ばない）。
+1. `internal/cli/help.go` の `commandRegistry()` に 1 エントリ足す（`name` / `usage` / `summaryKey` / `helpKey` / `handler` / `inUsage`）。dispatch・ヘルプ・usage・補完はこのレジストリから生成される。
+2. `cmdXxx(o *options, args []string) error` を責務ごとのファイルに書く（sync なら `sync.go`、status なら `status.go`）。新しい責務なら新ファイルを作る。パスは `o.root()` で得る（`os.UserHomeDir` を直接呼ばない）。
 3. 位置引数の数が合わないときは `o.usageErr("err.usage.<cmd>")` を返す（文言は internal/i18n のカタログに追加する）。
-4. `usage` の「コマンド:」一覧に 1 行足す。
+4. `internal/i18n` の ja / en 両カタログに `usage.summary.<cmd>`（usage のコマンド一覧の説明）と `help.<cmd>`（`provsync <cmd> --help` の本文）を追加する（ja が正）。
 5. README の「コマンドリファレンス」に足す。
 6. テストを書く（上記の補助関数を使う）。
 
