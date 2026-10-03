@@ -5,6 +5,8 @@
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-03
+
 ### Fixed
 
 - `provsync-tui` が適用 Cmd の完了結果をイベントループ外でモデルに書き込む競合を解消。結果を Msg で Update に返す形にし、画面遷移（confirm→done→quit、confirm→list）をテストで固定した。外部挙動は不変。
