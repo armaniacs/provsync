@@ -157,3 +157,55 @@ func TestE2EMenuPullFlow(t *testing.T) {
 		t.Errorf("after menu apply, central must contain the provider:\n%s", raw)
 	}
 }
+
+// TestE2EMenuInitCreatesCentral はメニュー経由の init(ツール指定→プレビュー→適用)で
+// セントラル設定が作成されることを実バイナリ相手に検証する。
+// 空ツール送信の no-op(複数検出で何も起きない)の回帰テストを兼ねる。
+func TestE2EMenuInitCreatesCentral(t *testing.T) {
+	home := isolateHomeEnv(t)
+	bin := buildRealProvsync(t)
+
+	toolPath := filepath.Join(home, ".config", "kilo", "kilo.jsonc")
+	writeE2EFile(t, toolPath, `{"provider": {"e2e-init": {"name": "E2E Init", "npm": "@ai-sdk/x",
+"options": {"baseURL": "https://tool.example/v1"}, "models": {}}}}`)
+	writeE2EFile(t, filepath.Join(home, ".config", "opencode", "opencode.json"),
+		`{"provider": {}}`)
+	central := filepath.Join(home, ".config", "provsync", "config.json")
+
+	rep, err := fetchStatus(bin)
+	if err != nil {
+		t.Fatalf("fetchStatus: %v", err)
+	}
+	m := newListModel(bin, rep, "en")
+	// メニューを開き、init(10 項目目)へ進む。
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'m'}})
+	m2 := updated.(*listModel)
+	for i := 0; i < 9; i++ {
+		updated, _ = m2.Update(tea.KeyMsg{Type: tea.KeyDown})
+		m2 = updated.(*listModel)
+	}
+	updated, _ = m2.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m3 := updated.(*listModel)
+	if m3.screen != screenMenuPrompt {
+		t.Fatalf("init must prompt for the tool, got screen %d", m3.screen)
+	}
+	updated, _ = m3.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("kilocode")})
+	m4 := updated.(*listModel)
+	updated, _ = m4.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m5 := updated.(*listModel)
+	if m5.screen != screenMenuPreview {
+		t.Fatalf("init must show the preview, got screen %d", m5.screen)
+	}
+	updated, _ = m5.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	m6 := updated.(*listModel)
+	if m6.screen != screenMenuResult {
+		t.Fatalf("y must run and show the result, got screen %d", m6.screen)
+	}
+	raw, err := os.ReadFile(central)
+	if err != nil {
+		t.Fatalf("menu init must create the central config: %v", err)
+	}
+	if !strings.Contains(string(raw), "e2e-init") {
+		t.Errorf("central must contain the imported provider:\n%s", raw)
+	}
+}
