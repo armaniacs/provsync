@@ -14,6 +14,7 @@ import (
 	"github.com/armaniacs/provsync/internal/adapter"
 	"github.com/armaniacs/provsync/internal/backup"
 	"github.com/armaniacs/provsync/internal/fsutil"
+	"github.com/armaniacs/provsync/internal/i18n"
 	"github.com/armaniacs/provsync/internal/lock"
 	"github.com/armaniacs/provsync/internal/plan"
 	"github.com/armaniacs/provsync/internal/version"
@@ -22,6 +23,7 @@ import (
 type options struct {
 	out         io.Writer
 	errOut      io.Writer
+	lang        string
 	write       bool
 	noBackup    bool
 	rootFlag    string
@@ -37,6 +39,24 @@ type options struct {
 	jsonOut     bool
 	exitCode    bool
 	strict      bool
+}
+
+// T は実行時の言語でカタログ文言を返す。
+func (o *options) T(id string, a ...any) string { return i18n.T(o.lang, id, a...) }
+
+// msgf はカタログ文言を 1 行として writer へ出す。
+func (o *options) msgf(w io.Writer, id string, a ...any) {
+	fmt.Fprintln(w, o.T(id, a...))
+}
+
+// warnf は警告を "警告: <本文>" の形で errOut へ出す。
+func (o *options) warnf(id string, a ...any) {
+	fmt.Fprintf(o.errOut, "%s: %s\n", o.T("label.warning"), o.T(id, a...))
+}
+
+// warnm は内部パッケージの Message を "警告: <訳>" の形で errOut へ出す。
+func (o *options) warnm(m *i18n.Message) {
+	fmt.Fprintf(o.errOut, "%s: %s\n", o.T("label.warning"), i18n.Localize(o.lang, m))
 }
 
 // stringList は --provider の繰り返し指定(カンマ区切り併用可)を蓄積する。
@@ -62,7 +82,7 @@ func Run(args []string, out io.Writer) error {
 // RunWith は stdout / stderr を分けて注入できるエントリポイント。
 // 通常出力は out、警告とフラグ解析エラーは errOut へ出す。
 func RunWith(args []string, out, errOut io.Writer) error {
-	opts := &options{out: out, errOut: errOut, keep: backup.MaxOperations}
+	opts := &options{out: out, errOut: errOut, keep: backup.MaxOperations, lang: i18n.ResolveFromEnv()}
 	fs := flag.NewFlagSet("provsync", flag.ContinueOnError)
 	fs.SetOutput(errOut)
 	registerFlags(fs, opts)
@@ -79,7 +99,7 @@ func RunWith(args []string, out, errOut io.Writer) error {
 	}
 	if opts.help && len(pos) > 0 {
 		if c, ok := lookupCommand(pos[0]); ok {
-			fmt.Fprint(out, c.help)
+			fmt.Fprint(out, i18n.T(opts.lang, c.helpKey))
 			return nil
 		}
 	}
@@ -92,26 +112,26 @@ func RunWith(args []string, out, errOut io.Writer) error {
 	if c, ok := lookupCommand(cmd); ok {
 		return c.handler(opts, rest)
 	}
-	return usageErr("未知のコマンド %q です(--help を参照)", cmd)
+	return opts.usageErr("err.unknownCommand", cmd)
 }
 
 func registerFlags(fs *flag.FlagSet, o *options) {
-	fs.StringVar(&o.rootFlag, "root", o.rootFlag, "パス解決の基準ディレクトリ(テスト用)")
-	fs.BoolVar(&o.write, "write", o.write, "変更をファイルへ書き込む(既定はプレビュー)")
-	fs.BoolVar(&o.noBackup, "no-backup", o.noBackup, "バックアップを記録しない(非推奨)")
-	fs.Var(&o.providers, "provider", "対象 provider(カンマ区切り・繰り返し可)")
-	fs.StringVar(&o.from, "from", o.from, "sync の取り込み元ツール")
-	fs.StringVar(&o.to, "to", o.to, "sync の反映先ツール")
-	fs.BoolVar(&o.list, "list", o.list, "undo の履歴を表示")
-	fs.BoolVar(&o.prune, "prune", o.prune, "undo の履歴を掃除する")
-	fs.IntVar(&o.keep, "keep", o.keep, "残す履歴数(--prune 用)")
-	fs.BoolVar(&o.jsonOut, "json", o.jsonOut, "JSON で出力する(list / status / diff)")
-	fs.BoolVar(&o.exitCode, "exit-code", o.exitCode, "差分があるとき終了コード 3 で終了する(status)")
-	fs.BoolVar(&o.strict, "strict", o.strict, "エイリアス未定義のモデル名があるときエラーにする(push)")
-	fs.BoolVar(&o.version, "version", o.version, "バージョンを表示")
-	fs.BoolVar(&o.showSecrets, "show-secrets", o.showSecrets, "diff の出力で秘密の値をそのまま表示する(非推奨)")
-	fs.BoolVar(&o.help, "help", o.help, "ヘルプを表示")
-	fs.BoolVar(&o.help, "h", o.help, "ヘルプを表示")
+	fs.StringVar(&o.rootFlag, "root", o.rootFlag, o.T("flag.root"))
+	fs.BoolVar(&o.write, "write", o.write, o.T("flag.write"))
+	fs.BoolVar(&o.noBackup, "no-backup", o.noBackup, o.T("flag.noBackup"))
+	fs.Var(&o.providers, "provider", o.T("flag.provider"))
+	fs.StringVar(&o.from, "from", o.from, o.T("flag.from"))
+	fs.StringVar(&o.to, "to", o.to, o.T("flag.to"))
+	fs.BoolVar(&o.list, "list", o.list, o.T("flag.list"))
+	fs.BoolVar(&o.prune, "prune", o.prune, o.T("flag.prune"))
+	fs.IntVar(&o.keep, "keep", o.keep, o.T("flag.keep"))
+	fs.BoolVar(&o.jsonOut, "json", o.jsonOut, o.T("flag.json"))
+	fs.BoolVar(&o.exitCode, "exit-code", o.exitCode, o.T("flag.exitCode"))
+	fs.BoolVar(&o.strict, "strict", o.strict, o.T("flag.strict"))
+	fs.BoolVar(&o.version, "version", o.version, o.T("flag.version"))
+	fs.BoolVar(&o.showSecrets, "show-secrets", o.showSecrets, o.T("flag.showSecrets"))
+	fs.BoolVar(&o.help, "help", o.help, o.T("flag.help"))
+	fs.BoolVar(&o.help, "h", o.help, o.T("flag.help"))
 }
 
 // reorder はフラグと位置引数を分離し、フラグを前に寄せる。
@@ -160,6 +180,7 @@ func (o *options) keys() []string {
 
 // keepFromEnv はバックアップ保持数を環境変数 PROVSYNC_KEEP から読む。
 // 未設定は backup.Store の既定値を使う。1 未満・非数はエラー。
+// エラーは言語中立の Message で返し、描画(main の Localize)が言語を決める。
 func keepFromEnv() (int, error) {
 	v := os.Getenv("PROVSYNC_KEEP")
 	if v == "" {
@@ -167,7 +188,7 @@ func keepFromEnv() (int, error) {
 	}
 	n, err := strconv.Atoi(v)
 	if err != nil || n < 1 {
-		return 0, fmt.Errorf("PROVSYNC_KEEP は 1 以上の整数で指定してください (値: %s)", v)
+		return 0, i18n.New("err.keepEnv.invalid", v)
 	}
 	return n, nil
 }
@@ -189,13 +210,13 @@ func (o *options) applyOrPreview(label string, p plan.Plan) error {
 	if err != nil {
 		return err
 	}
-	renderPreview(o.out, p)
+	renderPreview(o, p)
 	if !p.Changed() {
-		fmt.Fprintln(o.out, "変更はありません")
+		o.msgf(o.out, "msg.noChanges")
 		return nil
 	}
 	if !o.write {
-		fmt.Fprintln(o.out, "(プレビューのみ; 適用するには --write)")
+		o.msgf(o.out, "msg.previewOnly")
 		return nil
 	}
 	changed := make([]plan.FileChange, 0, len(p.Changes))
@@ -221,25 +242,25 @@ func (o *options) applyOrPreview(label string, p plan.Plan) error {
 		}
 		op, err := st.Record(label, paths)
 		if err != nil {
-			return fmt.Errorf("バックアップに失敗しました: %w", err)
+			return fmt.Errorf("%s: %w", o.T("err.backup.failed"), err)
 		}
-		fmt.Fprintf(o.out, "バックアップ: %s\n", op.ID)
+		o.msgf(o.out, "msg.backupID", op.ID)
 	} else if _, err := backup.New(root.StateDir()).RecordMarker(label); err != nil {
-		return fmt.Errorf("履歴の記録に失敗しました: %w", err)
+		return fmt.Errorf("%s: %w", o.T("err.recordHistory.failed"), err)
 	}
 	written := make([]string, 0, len(changed))
 	for _, c := range changed {
 		if err := fsutil.WriteFileAtomic(c.Path, c.After); err != nil {
 			if len(written) > 0 {
-				fmt.Fprintf(o.errOut, "警告: この操作で既に書き込み済みのファイル: %s\n", strings.Join(written, ", "))
+				fmt.Fprintf(o.errOut, "%s: %s\n", o.T("label.warning"), o.T("msg.writtenFiles", strings.Join(written, ", ")))
 				if !o.noBackup {
-					fmt.Fprintln(o.out, "ヒント: provsync undo でこの操作をまとめて復元できます")
+					o.msgf(o.out, "msg.undoHint")
 				}
 			}
-			return fmt.Errorf("書き込みに失敗しました (%s): %w", c.Path, err)
+			return fmt.Errorf("%s: %w", o.T("err.write.failed", c.Path), err)
 		}
 		written = append(written, c.Path)
-		fmt.Fprintf(o.out, "書き込み: %s\n", c.Path)
+		o.msgf(o.out, "msg.written", c.Path)
 	}
 	return nil
 }

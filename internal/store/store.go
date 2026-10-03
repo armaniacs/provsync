@@ -3,22 +3,23 @@ package store
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 
 	"github.com/armaniacs/provsync/internal/fsutil"
+	"github.com/armaniacs/provsync/internal/i18n"
 	"github.com/armaniacs/provsync/internal/model"
 )
 
 // Load は中央設定を読み込む。ファイルが無い場合はエラー。
+// エラーは言語中立の Message で返し、描画(cli / main の Localize)が言語を決める。
 func Load(path string) (*model.Config, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("中央設定を読めません: %w", err)
+		return nil, i18n.Wrap(err, "err.central.read")
 	}
 	var cfg model.Config
 	if err := json.Unmarshal(raw, &cfg); err != nil {
-		return nil, fmt.Errorf("中央設定の JSON が不正です: %w", err)
+		return nil, i18n.Wrap(err, "err.central.invalid")
 	}
 	if cfg.Version == 0 {
 		cfg.Version = model.Version

@@ -93,7 +93,7 @@ func TestKilocodePullDecodesExtrasAndWarns(t *testing.T) {
 	if _, leaked := opts["apiKey"]; leaked {
 		t.Error("plaintext apiKey must not be stored in extras")
 	}
-	if len(warnings) != 1 || !strings.Contains(warnings[0], "options.apiKey") {
+	if len(warnings) != 1 || !strings.Contains(warnings[0].Error(), "options.apiKey") {
 		t.Errorf("warnings = %v, want one mentioning options.apiKey", warnings)
 	}
 }
@@ -120,7 +120,7 @@ func TestPullWarnsAndDropsEntryLevelSecret(t *testing.T) {
 	if _, leaked := p.Extra("kilocode")["token"]; leaked {
 		t.Error("entry-level secret must not be stored in extras")
 	}
-	if len(warnings) != 1 || !strings.Contains(warnings[0], `"token"`) {
+	if len(warnings) != 1 || !strings.Contains(warnings[0].Error(), `"token"`) {
 		t.Errorf("warnings = %v, want one mentioning token", warnings)
 	}
 }

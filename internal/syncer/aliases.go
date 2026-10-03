@@ -1,8 +1,7 @@
 package syncer
 
 import (
-	"fmt"
-
+	"github.com/armaniacs/provsync/internal/i18n"
 	"github.com/armaniacs/provsync/internal/model"
 )
 
@@ -10,8 +9,9 @@ import (
 // 置き換えたコピーを返す。aliases のキーと一致するモデル名だけを変換し、
 // 一致しないキーは通常のモデル ID として素通しする。対応が定義されていない
 // ツール向けのエイリアスは warnings に積み、キーはそのまま残す。
+// warnings は言語中立の Message で返し、描画側が言語を決める。
 // 入力の managed と Models は破壊しない。
-func ResolveAliases(managed map[string]model.Provider, aliases map[string]map[string]string, tool string) (map[string]model.Provider, []string) {
+func ResolveAliases(managed map[string]model.Provider, aliases map[string]map[string]string, tool string) (map[string]model.Provider, []*i18n.Message) {
 	if len(aliases) == 0 {
 		out := make(map[string]model.Provider, len(managed))
 		for k, p := range managed {
@@ -20,7 +20,7 @@ func ResolveAliases(managed map[string]model.Provider, aliases map[string]map[st
 		return out, nil
 	}
 
-	var warnings []string
+	var warnings []*i18n.Message
 	out := make(map[string]model.Provider, len(managed))
 	for key, p := range managed {
 		models := make(map[string]any, len(p.Models))
@@ -32,7 +32,7 @@ func ResolveAliases(managed map[string]model.Provider, aliases map[string]map[st
 			}
 			id, ok := mapping[tool]
 			if !ok || id == "" {
-				warnings = append(warnings, fmt.Sprintf("エイリアス %q はツール %q 向けのモデル ID が未定義のため素通しします", mk, tool))
+				warnings = append(warnings, i18n.New("warn.alias.undefined", mk, tool))
 				models[mk] = mv
 				continue
 			}

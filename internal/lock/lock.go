@@ -2,11 +2,12 @@
 package lock
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"syscall"
 	"time"
+
+	"github.com/armaniacs/provsync/internal/i18n"
 )
 
 // Acquire は dir/lock を排他ロックし、解放関数を返す。
@@ -31,7 +32,7 @@ func Acquire(dir string, timeout time.Duration) (func(), error) {
 		}
 		if time.Now().After(deadline) {
 			f.Close()
-			return nil, fmt.Errorf("別の provsync が実行中です (%s)", dir)
+			return nil, i18n.New("err.lock.busy", dir)
 		}
 		time.Sleep(100 * time.Millisecond)
 	}

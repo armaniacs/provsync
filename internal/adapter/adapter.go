@@ -3,12 +3,12 @@ package adapter
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 
 	"github.com/armaniacs/provsync/internal/fsutil"
+	"github.com/armaniacs/provsync/internal/i18n"
 	"github.com/armaniacs/provsync/internal/jsonc"
 	"github.com/armaniacs/provsync/internal/model"
 	"github.com/armaniacs/provsync/internal/secret"
@@ -62,8 +62,9 @@ type Adapter interface {
 	// Path はツール設定ファイルの絶対パスを返す。
 	Path() string
 	// Pull はツール設定を読み、カノニカル表現へ変換する。
-	// 2 つ目の戻り値は警告メッセージ(取り込まなかった秘密など)。
-	Pull() (map[string]model.Provider, []string, error)
+	// 2 つ目の戻り値は警告(取り込まなかった秘密など)。言語中立の Message で
+	// 返し、描画側が言語を決める。
+	Pull() (map[string]model.Provider, []*i18n.Message, error)
 	// Push は managed をツール設定へマージしたファイル全文を返す。
 	// provider 以外の設定と managed 外の provider は保持する。
 	Push(managed map[string]model.Provider) ([]byte, error)
@@ -91,7 +92,7 @@ func Get(name string, root Root) (Adapter, error) {
 	case "opencode":
 		return &opencode{path: filepath.Join(root.ConfigHome, "opencode", "opencode.json")}, nil
 	default:
-		return nil, fmt.Errorf("未知のツール %q です(有効: %s)", name, joinNames())
+		return nil, i18n.New("err.adapter.unknownTool", name, joinNames())
 	}
 }
 
@@ -117,10 +118,11 @@ func secretLike(key string) bool {
 // decodeProvider はツールの provider エントリをカノニカル表現へ変換する。
 // tool は Extras の名前空間に使う。戻り値の 2 番目は警告。
 // 秘密情報らしいキーは値を読み込まず警告して取り込まない。
-func decodeProvider(tool string, entry map[string]any) (model.Provider, []string) {
-	var warnings []string
+// warnings は言語中立の Message で返す。
+func decodeProvider(tool string, entry map[string]any) (model.Provider, []*i18n.Message) {
+	var warnings []*i18n.Message
 	secretWarning := func(key string) {
-		warnings = append(warnings, fmt.Sprintf("秘密情報らしいフィールド %q を検出しました。秘密は仲介しないため取り込みません", key))
+		warnings = append(warnings, i18n.New("warn.secret.field", key))
 	}
 	p := model.Provider{}
 	if v, ok := entry["name"].(string); ok {
@@ -223,9 +225,9 @@ func extractProviders(doc map[string]any) map[string]any {
 }
 
 // decodeProviders は provider セクション全体を変換する。
-func decodeProviders(tool string, section map[string]any) (map[string]model.Provider, []string) {
+func decodeProviders(tool string, section map[string]any) (map[string]model.Provider, []*i18n.Message) {
 	out := make(map[string]model.Provider, len(section))
-	var warnings []string
+	var warnings []*i18n.Message
 	for key, raw := range section {
 		entry, ok := raw.(map[string]any)
 		if !ok {
@@ -255,7 +257,7 @@ func decodeDocument(path string, raw []byte, stripComments bool) (map[string]any
 		if stripComments {
 			kind = "JSONC"
 		}
-		return nil, fmt.Errorf("設定の %s が不正です (%s): %w", kind, path, err)
+		return nil, i18n.Wrap(err, "err.config.invalid", kind, path)
 	}
 	if doc == nil {
 		doc = map[string]any{}
@@ -266,17 +268,17 @@ func decodeDocument(path string, raw []byte, stripComments bool) (map[string]any
 // readDocument はツール設定ファイルを読んで map へ変換する。
 func readDocument(path string, stripComments bool) (map[string]any, error) {
 	if !fileExists(path) {
-		return nil, fmt.Errorf("設定ファイルがありません: %s", path)
+		return nil, i18n.New("err.config.missing", path)
 	}
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("設定を読めません: %w", err)
+		return nil, i18n.Wrap(err, "err.config.read")
 	}
 	return decodeDocument(path, raw, stripComments)
 }
 
 // pullDocument はツール設定をカノニカル provider 集合へ変換する。
-func pullDocument(tool, path string, stripComments bool) (map[string]model.Provider, []string, error) {
+func pullDocument(tool, path string, stripComments bool) (map[string]model.Provider, []*i18n.Message, error) {
 	doc, err := readDocument(path, stripComments)
 	if err != nil {
 		return nil, nil, err

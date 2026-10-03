@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/armaniacs/provsync/internal/fsutil"
+	"github.com/armaniacs/provsync/internal/i18n"
 )
 
 // MaxOperations は保持する操作履歴の最大数。
@@ -71,7 +72,7 @@ func (s *Store) load() (*index, error) {
 	}
 	var idx index
 	if err := json.Unmarshal(raw, &idx); err != nil {
-		return nil, fmt.Errorf("バックアップマニフェストの JSON が不正です: %w", err)
+		return nil, i18n.Wrap(err, "err.manifest.invalid")
 	}
 	return &idx, nil
 }
@@ -162,14 +163,14 @@ func (s *Store) Find(id string) (Operation, error) {
 				return op, nil
 			}
 		}
-		return Operation{}, fmt.Errorf("undo できる操作がありません")
+		return Operation{}, i18n.New("err.undo.none")
 	}
 	for _, op := range ops {
 		if op.ID == id {
 			return op, nil
 		}
 	}
-	return Operation{}, fmt.Errorf("操作 %q が見つかりません", id)
+	return Operation{}, i18n.New("err.undo.notFound", id)
 }
 
 // Restore は指定操作を復元する。復元前の現状を新しい操作として記録し、
@@ -299,11 +300,11 @@ func restoreFile(f FileRef) error {
 	}
 	data, err := os.ReadFile(f.BackupPath)
 	if err != nil {
-		return fmt.Errorf("バックアップを読めません (%s): %w", f.BackupPath, err)
+		return i18n.Wrap(err, "err.backup.read", f.BackupPath)
 	}
 	sum := sha256.Sum256(data)
 	if f.SHA256 != "" && hex.EncodeToString(sum[:]) != f.SHA256 {
-		return fmt.Errorf("バックアップのハッシュが一致しません (%s)", f.BackupPath)
+		return i18n.New("err.backup.hashMismatch", f.BackupPath)
 	}
 	if err := fsutil.WriteFileAtomic(f.Path, data); err != nil {
 		return err

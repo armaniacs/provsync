@@ -2,9 +2,9 @@
 package syncer
 
 import (
-	"fmt"
 	"sort"
 
+	"github.com/armaniacs/provsync/internal/i18n"
 	"github.com/armaniacs/provsync/internal/model"
 )
 
@@ -63,7 +63,7 @@ func FilterProviders(providers map[string]model.Provider, keys []string) (map[st
 	}
 	if len(missing) > 0 {
 		sort.Strings(missing)
-		return nil, fmt.Errorf("provider が見つかりません: %v", missing)
+		return nil, i18n.New("err.providers.notFound", missing)
 	}
 	return out, nil
 }

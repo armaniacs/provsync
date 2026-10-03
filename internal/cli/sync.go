@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/armaniacs/provsync/internal/adapter"
+	"github.com/armaniacs/provsync/internal/i18n"
 	"github.com/armaniacs/provsync/internal/model"
 	"github.com/armaniacs/provsync/internal/plan"
 	"github.com/armaniacs/provsync/internal/store"
@@ -24,7 +25,7 @@ type pullResult struct {
 	Change   plan.FileChange
 	Central  *model.Config
 	Pulled   map[string]model.Provider
-	Warnings []string
+	Warnings []*i18n.Message
 }
 
 // pullFromTool は「ツール設定を読み、provider を絞り込み、中央設定の変更計画を
@@ -41,7 +42,7 @@ func (o *options) pullFromTool(root adapter.Root, toolName string) (pullResult, 
 		return pullResult{}, err
 	}
 	for _, w := range warnings {
-		fmt.Fprintf(o.errOut, "警告: %s\n", w)
+		o.warnm(w)
 	}
 	pulled, err = syncer.FilterProviders(pulled, o.keys())
 	if err != nil {
@@ -58,7 +59,7 @@ func (o *options) pullFromTool(root adapter.Root, toolName string) (pullResult, 
 // 既存の中央設定は上書きしない。
 func cmdInit(o *options, args []string) error {
 	if len(args) > 1 {
-		return usageErr("使い方: provsync init [tool]")
+		return o.usageErr("err.usage.init")
 	}
 	root, err := o.root()
 	if err != nil {
@@ -66,7 +67,7 @@ func cmdInit(o *options, args []string) error {
 	}
 	central := root.CentralConfigPath()
 	if _, err := os.Stat(central); err == nil {
-		return fmt.Errorf("すでに初期化されています: %s\n日常の更新には provsync pull <tool> を使ってください", central)
+		return i18n.New("err.init.alreadyInitialized", central)
 	}
 
 	tool := ""
@@ -84,16 +85,16 @@ func cmdInit(o *options, args []string) error {
 				}
 				paths = append(paths, a.Path())
 			}
-			return fmt.Errorf("対応ツールの設定ファイルが見つかりません。探した場所:\n%s\nツールを先に設定してから再実行してください", strings.Join(paths, "\n"))
+			return i18n.New("err.init.noToolConfig", strings.Join(paths, "\n"))
 		case 1:
 			tool = found[0]
-			fmt.Fprintf(o.out, "検出したツール: %s\n", tool)
+			o.msgf(o.out, "msg.init.detected", tool)
 		default:
-			fmt.Fprintln(o.out, "複数のツール設定が見つかりました:")
+			o.msgf(o.out, "msg.init.multiple")
 			for _, name := range found {
 				fmt.Fprintf(o.out, "  %s\n", name)
 			}
-			fmt.Fprintln(o.out, "provsync init <tool> でツールを指定してください")
+			o.msgf(o.out, "msg.init.specifyTool")
 			return nil
 		}
 	}
@@ -103,7 +104,7 @@ func cmdInit(o *options, args []string) error {
 		return err
 	}
 	if len(res.Pulled) == 0 {
-		fmt.Fprintln(o.out, "取り込める provider がありません")
+		o.msgf(o.out, "msg.init.noProviders")
 	}
 	p := plan.Plan{Changes: []plan.FileChange{res.Change}}
 	err = o.applyOrPreview("init "+res.Tool, p)
@@ -111,16 +112,13 @@ func cmdInit(o *options, args []string) error {
 		return err
 	}
 	if len(res.Warnings) > 0 {
-		fmt.Fprintln(o.errOut, "秘密は中央設定に保存されません。環境変数名を中央設定の apiKeyEnv に設定してください")
+		o.msgf(o.errOut, "msg.init.secretHint")
 	}
 	if p.Changed() {
 		if !o.write {
-			fmt.Fprintf(o.out, "次に: provsync init %s --write で中央設定を作成します\n", res.Tool)
+			o.msgf(o.out, "msg.init.next", res.Tool)
 		} else {
-			fmt.Fprintln(o.out, "次の手順:")
-			fmt.Fprintln(o.out, "  1. provsync status              同期状態を確認する")
-			fmt.Fprintln(o.out, "  2. provsync push <他のツール>    他のツールへ反映する(まずプレビュー)")
-			fmt.Fprintln(o.out, "  3. 問題があれば provsync undo で元に戻せます")
+			o.msgf(o.out, "msg.init.nextSteps")
 		}
 	}
 	return nil
@@ -145,7 +143,7 @@ func detectTools(root adapter.Root) []string {
 
 func cmdPull(o *options, args []string) error {
 	if len(args) != 1 {
-		return usageErr("使い方: provsync pull <tool>")
+		return o.usageErr("err.usage.pull")
 	}
 	root, err := o.root()
 	if err != nil {
@@ -212,7 +210,7 @@ func (o *options) toolChangeForPush(central *model.Config, a adapter.Adapter) (p
 
 func cmdPush(o *options, args []string) error {
 	if len(args) != 1 {
-		return usageErr("使い方: provsync push <tool>")
+		return o.usageErr("err.usage.push")
 	}
 	root, err := o.root()
 	if err != nil {
@@ -220,7 +218,7 @@ func cmdPush(o *options, args []string) error {
 	}
 	central, err := store.Load(root.CentralConfigPath())
 	if err != nil {
-		return fmt.Errorf("中央設定がありません。先に pull / sync を実行してください: %w", err)
+		return fmt.Errorf("%s: %w", o.T("err.push.noCentral"), err)
 	}
 	a, err := adapter.Get(args[0], root)
 	if err != nil {
@@ -252,7 +250,7 @@ func (o *options) applyRoutes(managed map[string]model.Provider, central *model.
 	for _, alias := range aliases {
 		key, ok := syncer.SelectRoute(central.Routes[alias], managed, lookup)
 		if !ok {
-			fmt.Fprintf(o.errOut, "警告: エイリアス %q の経路で使える provider がありません(apiKeyEnv が未設定)。変更せず残します\n", alias)
+			o.warnf("warn.route.unused", alias)
 			continue
 		}
 		for _, cand := range central.Routes[alias] {
@@ -270,10 +268,10 @@ func (o *options) applyRoutes(managed map[string]model.Provider, central *model.
 func (o *options) applyAliases(managed map[string]model.Provider, central *model.Config, a adapter.Adapter) (map[string]model.Provider, error) {
 	resolved, warns := syncer.ResolveAliases(managed, central.Aliases, a.Name())
 	for _, w := range warns {
-		fmt.Fprintf(o.errOut, "警告: %s\n", w)
+		o.warnm(w)
 	}
 	if o.strict && len(warns) > 0 {
-		return nil, fmt.Errorf("エイリアス未定義のモデル名があります (--strict): %d 件", len(warns))
+		return nil, i18n.New("err.alias.strict", len(warns))
 	}
 	return resolved, nil
 }
@@ -282,7 +280,7 @@ func (o *options) applyAliases(managed map[string]model.Provider, central *model
 
 func cmdSync(o *options, args []string) error {
 	if o.to == "" {
-		return usageErr("使い方: provsync sync --from <a> --to <b>(--from は省略可)")
+		return o.usageErr("err.usage.sync")
 	}
 	root, err := o.root()
 	if err != nil {
@@ -313,7 +311,7 @@ func buildSyncPlan(o *options, root adapter.Root, from, to string) (plan.Plan, e
 	} else {
 		cfg, err := store.Load(root.CentralConfigPath())
 		if err != nil {
-			return plan.Plan{}, fmt.Errorf("中央設定がありません。--from を指定するか先に pull してください: %w", err)
+			return plan.Plan{}, fmt.Errorf("%s: %w", o.T("err.sync.noCentral"), err)
 		}
 		central = cfg
 	}
@@ -336,7 +334,7 @@ func buildToolChange(a adapter.Adapter, managed map[string]model.Provider) (plan
 	}
 	before, err := os.ReadFile(a.Path())
 	if err != nil {
-		return plan.FileChange{}, fmt.Errorf("ツール設定を読めません (%s): %w", a.Path(), err)
+		return plan.FileChange{}, i18n.Wrap(err, "err.readTool.failed", a.Path())
 	}
 	after, err := a.Push(managed)
 	if err != nil {
@@ -360,17 +358,18 @@ func buildToolChange(a adapter.Adapter, managed map[string]model.Provider) (plan
 
 // checkReadable は壊れたシンボリックリンクを明確なエラーにする。
 // os.ReadFile だけではリンク切れと欠落を区別できない。
+// エラーは言語中立の Message で返し、描画(main の Localize)が言語を決める。
 func checkReadable(path string) error {
 	li, err := os.Lstat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("ツール設定がありません: %s", path)
+			return i18n.New("err.tool.missing", path)
 		}
 		return err
 	}
 	if li.Mode()&os.ModeSymlink != 0 {
 		if _, err := filepath.EvalSymlinks(path); err != nil {
-			return fmt.Errorf("シンボリックリンクのリンク先を解決できません (%s): %w", path, err)
+			return i18n.Wrap(err, "err.symlink.resolve", path)
 		}
 	}
 	return nil

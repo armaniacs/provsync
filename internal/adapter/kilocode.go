@@ -1,6 +1,9 @@
 package adapter
 
-import "github.com/armaniacs/provsync/internal/model"
+import (
+	"github.com/armaniacs/provsync/internal/i18n"
+	"github.com/armaniacs/provsync/internal/model"
+)
 
 // kilocode は kilocode/kilo の JSONC 設定を扱うアダプタ。
 type kilocode struct {
@@ -11,7 +14,7 @@ func (a *kilocode) Name() string { return "kilocode" }
 
 func (a *kilocode) Path() string { return a.path }
 
-func (a *kilocode) Pull() (map[string]model.Provider, []string, error) {
+func (a *kilocode) Pull() (map[string]model.Provider, []*i18n.Message, error) {
 	return pullDocument(a.Name(), a.path, true)
 }
 

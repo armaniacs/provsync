@@ -1,6 +1,9 @@
 package adapter
 
-import "github.com/armaniacs/provsync/internal/model"
+import (
+	"github.com/armaniacs/provsync/internal/i18n"
+	"github.com/armaniacs/provsync/internal/model"
+)
 
 // opencode は opencode の JSON 設定を扱うアダプタ。
 type opencode struct {
@@ -11,7 +14,7 @@ func (a *opencode) Name() string { return "opencode" }
 
 func (a *opencode) Path() string { return a.path }
 
-func (a *opencode) Pull() (map[string]model.Provider, []string, error) {
+func (a *opencode) Pull() (map[string]model.Provider, []*i18n.Message, error) {
 	return pullDocument(a.Name(), a.path, false)
 }
 

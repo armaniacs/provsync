@@ -3,9 +3,10 @@ package fsutil
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/armaniacs/provsync/internal/i18n"
 )
 
 // MarshalIndentSorted は v を JSON 化し、map 経由でキーをソートして
@@ -78,7 +79,7 @@ func resolveWritePath(path string) (string, error) {
 	}
 	resolved, err := filepath.EvalSymlinks(path)
 	if err != nil {
-		return "", fmt.Errorf("シンボリックリンクのリンク先を解決できません (%s): %w", path, err)
+		return "", i18n.Wrap(err, "err.symlink.resolve", path)
 	}
 	return resolved, nil
 }
