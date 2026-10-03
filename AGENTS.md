@@ -8,10 +8,13 @@ the central config lives at `~/.config/provsync/config.json`.
 
 - `make check` — fmt-check → vet → test; run this before finishing. Order matters (fmt-check fails fast on unformatted code).
 - `make test` / `make test-v` — `go test ./...`
+- `make test-all` — core module tests + TUI module tests (`make test` + `make tui-test`)
 - `make test-race` — `go test -race -cover ./...`
 - `make lint` — staticcheck (downloaded via `go run`, does not touch go.mod)
 - `make vuln` — govulncheck (downloaded via `go run`, does not touch go.mod)
 - `make build` — outputs to `bin/provsync` (gitignored)
+- `make all` — builds both CLI (`bin/provsync`) and TUI (`tui/provsync-tui`)
+- `make tui-build` / `make tui-check` — TUI binary build / TUI module build+test (separate module under `tui/`)
 - `make fmt` — `gofmt -w .`
 
 CI runs `make check`, `make test-race`, `make lint`, and `make vuln` on push to main and on PRs (`.github/workflows/ci.yml`, macOS / Linux matrix). Keep local and CI commands identical via make. No module dependencies in `go.mod`: standard library only; linters are pulled at runtime with `go run pkg@version`. Do not add a module dependency without reason.
@@ -41,13 +44,13 @@ CI runs `make check`, `make test-race`, `make lint`, and `make vuln` on push to 
 - `internal/diff/` — unified diff renderer.
 - `internal/backup/` — timestamped backups, manifest index, restore, retention.
 - `internal/fsutil/` — atomic write and sorted JSON marshal.
-- `internal/i18n/` — language resolution (`PROVSYNC_LANG` > `LC_ALL` > `LC_MESSAGES` > `LANG` > ja) and the ja/en message catalog. Internal packages return language-neutral `*i18n.Message` values; `cli.RunWith`/`main.go` localize at the boundary.
+- `internal/i18n/` — language resolution (`PROVSYNC_LANG` > `LC_ALL` > `LC_MESSAGES` > `LANG` > en fallback) and the en/ja message catalog. Internal packages return language-neutral `*i18n.Message` values; `cli.RunWith`/`main.go` localize at the boundary.
 
 Integration tests for `cli.Run` use `--root <tmpdir>` and real files under `t.TempDir()`.
 
 ## Conventions
 
-- Docs and code comments are in Japanese. CLI messages live in the `internal/i18n` catalog: ja is the source of truth and en mirrors it. Add every new user-facing string to both catalogs. Catalog IDs are dotted `<type>.<area>.<what>` (err/warn/msg/label + area, camelCase what); `help.<cmd>` / `flag.<name>` / `usage.<part>` for help and flags; `status.op.<op>` for the fixed drift op set.
+- Docs and code comments are in Japanese. CLI messages live in the `internal/i18n` catalog: en is the source of truth (default and fallback) and ja is the additional language (`ja*` locales). Add every new user-facing string to both catalogs. Catalog IDs are dotted `<type>.<area>.<what>` (err/warn/msg/label + area, camelCase what); `help.<cmd>` / `flag.<name>` / `usage.<part>` for help and flags; `status.op.<op>` for the fixed drift op set.
 - Commit messages use English Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `chore:`).
 - `CHANGELOG.md` follows Keep a Changelog / SemVer; update it for user-visible changes.
 - Design/plan docs live in `docs/superpowers/{specs,plans}/`.

@@ -27,13 +27,13 @@ func TestResolve(t *testing.T) {
 		{"en_US", LangEn},
 		{"EN_US.UTF-8", LangEn},
 		{"english", LangEn},
-		{"fr", LangJa},
-		{"fr_FR.UTF-8", LangJa},
-		{"C", LangJa},
-		{"POSIX", LangJa},
-		{"", LangJa},
-		{"  ", LangJa},
-		{"undetermined", LangJa},
+		{"fr", LangEn},
+		{"fr_FR.UTF-8", LangEn},
+		{"C", LangEn},
+		{"POSIX", LangEn},
+		{"", LangEn},
+		{"  ", LangEn},
+		{"undetermined", LangEn},
 	}
 	for _, tt := range tests {
 		if got := Resolve(tt.in); got != tt.want {
@@ -43,17 +43,20 @@ func TestResolve(t *testing.T) {
 }
 
 func TestResolvePriority(t *testing.T) {
-	if got := ResolvePriority("", "  ", "fr", "en_US"); got != LangJa {
+	if got := ResolvePriority("", "  ", "fr", "en_US"); got != LangEn {
 		t.Errorf("empty values must be skipped: ResolvePriority = %q", got)
 	}
 	if got := ResolvePriority("en_US", "ja_JP"); got != LangEn {
 		t.Errorf("first non-empty wins: ResolvePriority = %q", got)
 	}
-	if got := ResolvePriority("", "", ""); got != LangJa {
-		t.Errorf("all empty falls back to ja: ResolvePriority = %q", got)
+	if got := ResolvePriority("ja_JP", "en_US"); got != LangJa {
+		t.Errorf("first non-empty wins: ResolvePriority = %q", got)
 	}
-	if got := ResolvePriority(); got != LangJa {
-		t.Errorf("no values falls back to ja: ResolvePriority = %q", got)
+	if got := ResolvePriority("", "", ""); got != LangEn {
+		t.Errorf("all empty falls back to en: ResolvePriority = %q", got)
+	}
+	if got := ResolvePriority(); got != LangEn {
+		t.Errorf("no values falls back to en: ResolvePriority = %q", got)
 	}
 }
 
@@ -120,15 +123,15 @@ func TestT(t *testing.T) {
 	if got := T(LangEn, "no.such.id"); got != "no.such.id" {
 		t.Errorf("unknown ID must return the ID itself: %q", got)
 	}
-	if got := T("fr", "msg.noChanges"); got != jaCatalog["msg.noChanges"] {
-		t.Errorf("unsupported lang must fall back to ja: %q", got)
+	if got := T("fr", "msg.noChanges"); got != enCatalog["msg.noChanges"] {
+		t.Errorf("unsupported lang must fall back to en: %q", got)
 	}
 }
 
-func TestMessageErrorIsJa(t *testing.T) {
+func TestMessageErrorIsEn(t *testing.T) {
 	cause := errors.New("underlying")
 	m := Wrap(cause, "err.write.failed", "/tmp/x")
-	want := "書き込みに失敗しました (/tmp/x): underlying"
+	want := "failed to write (/tmp/x): underlying"
 	if got := m.Error(); got != want {
 		t.Errorf("Message.Error() = %q, want %q", got, want)
 	}
@@ -159,9 +162,9 @@ func TestLocalize(t *testing.T) {
 }
 
 func TestLocalizeMatchesFmtErrorf(t *testing.T) {
-	// 移行前の fmt.Errorf("…: %w") の描画とバイト等価であること(ja)
+	// fmt.Errorf("…: %w") の描画とバイト等価であること(en = 既定言語)
 	cause := fmt.Errorf("underlying: %w", errors.New("inner"))
-	old := fmt.Errorf("書き込みに失敗しました (%s): %w", "/tmp/x", cause).Error()
+	old := fmt.Errorf("failed to write (%s): %w", "/tmp/x", cause).Error()
 	neo := MessageErrorForTest(Wrap(cause, "err.write.failed", "/tmp/x"))
 	if old != neo {
 		t.Errorf("rendering must match fmt.Errorf %%w:\nold: %q\nnew: %q", old, neo)
@@ -174,7 +177,7 @@ func MessageErrorForTest(m *Message) string { return m.Error() }
 func TestMessageArgsAreSafe(t *testing.T) {
 	// args 側に % が含まれても展開されない(fmt.Sprintf の値は安全)
 	m := New("err.write.failed", "/tmp/100%s")
-	if got := m.Error(); got != "書き込みに失敗しました (/tmp/100%s)" {
+	if got := m.Error(); got != "failed to write (/tmp/100%s)" {
 		t.Errorf("args must not be format-expanded: %q", got)
 	}
 }
@@ -312,8 +315,8 @@ func TestLocalizeMixedMessageChain(t *testing.T) {
 	if got := Localize(LangEn, outer); got != wantEn {
 		t.Errorf("Localize en mixed chain = %q, want %q", got, wantEn)
 	}
-	if got := outer.Error(); got != wantJa {
-		t.Errorf("Message.Error() mixed chain = %q, want %q (ja runtime parity)", got, wantJa)
+	if got := outer.Error(); got != wantEn {
+		t.Errorf("Message.Error() mixed chain = %q, want %q (en runtime parity)", got, wantEn)
 	}
 }
 
@@ -338,7 +341,7 @@ func TestTMultipleArgs(t *testing.T) {
 // TestMessageNilArgs は nil Args と単独 Message の描画を検証する。
 func TestMessageNilArgs(t *testing.T) {
 	m := New("msg.noChanges")
-	if got := m.Error(); got != "変更はありません" {
+	if got := m.Error(); got != "no changes" {
 		t.Errorf("Message with nil Args: Error() = %q", got)
 	}
 	if got := Localize(LangEn, m); got != "no changes" {
@@ -347,8 +350,8 @@ func TestMessageNilArgs(t *testing.T) {
 	if err := errors.Unwrap(m); err != nil {
 		t.Errorf("Unwrap of New() must be nil: %v", err)
 	}
-	if Localize(LangJa, m) != m.Error() {
-		t.Error("single Message must render identically in Error() and Localize(ja)")
+	if Localize(LangEn, m) != m.Error() {
+		t.Error("single Message must render identically in Error() and Localize(en)")
 	}
 }
 
@@ -378,7 +381,7 @@ func TestResolveExtraLocaleVariants(t *testing.T) {
 		{"en ", LangEn},
 		{"ja-JP", LangJa},
 		{"en-GB", LangEn},
-		{"e", LangJa},
+		{"e", LangEn},
 		{"eng", LangEn},
 	}
 	for _, tt := range tests {

@@ -266,7 +266,7 @@ func TestEnglishErrorFlows(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error for broken symlink")
 		}
-		// 実行時エラーは *i18n.Message で、err.Error() は ja(正)を返す。
+		// 実行時エラーは *i18n.Message で、err.Error() は en(正)を返す。
 		// en の描画は main と同じ i18n.Localize 経由で検証する。
 		got := i18n.Localize("en", err)
 		if !strings.Contains(got, "cannot resolve the symlink target") {
@@ -392,9 +392,9 @@ func TestCompletionScriptNotLocalized(t *testing.T) {
 	}
 }
 
-// TestUnsupportedLocaleFRStatusJSONFallsBackToJa は未対応ロケール(fr)での
-// status --json の drift 値が ja にフォールバックすることを検証する。
-func TestUnsupportedLocaleFRStatusJSONFallsBackToJa(t *testing.T) {
+// TestUnsupportedLocaleFRStatusJSONFallsBackToEn は未対応ロケール(fr)での
+// status --json の drift 値が en にフォールバックすることを検証する。
+func TestUnsupportedLocaleFRStatusJSONFallsBackToEn(t *testing.T) {
 	f := setup(t)
 	t.Setenv("PROVSYNC_LANG", "fr")
 	mustRun(t, f.root, "pull", "kilocode", "--write")
@@ -418,20 +418,22 @@ func TestUnsupportedLocaleFRStatusJSONFallsBackToJa(t *testing.T) {
 	if rep.SchemaVersion != 1 || !rep.Central.Exists || rep.Central.Providers != 2 {
 		t.Errorf("key structure must be locale independent: %+v", rep)
 	}
-	// fr は未対応 → drift 値は ja にフォールバックする
+	// fr は未対応 → drift 値は en にフォールバックする
 	driftFound := false
 	for _, ts := range rep.Tools {
 		for _, line := range ts.Drift {
 			driftFound = true
-			if !cjkRe.MatchString(line) {
-				t.Errorf("fr drift line must fall back to ja: %q", line)
+			if cjkRe.MatchString(line) {
+				t.Errorf("fr drift line must fall back to en: %q", line)
 			}
 		}
 	}
 	if !driftFound {
 		t.Fatal("setup must produce drift")
 	}
-	if strings.Contains(out, "not in tool") {
-		t.Errorf("fr drift must not use the en label:\n%s", out)
+	for _, jaLabel := range []string{"ツールに無い", "中央に無い", "差分あり"} {
+		if strings.Contains(out, jaLabel) {
+			t.Errorf("fr drift must not use the ja label %q:\n%s", jaLabel, out)
+		}
 	}
 }

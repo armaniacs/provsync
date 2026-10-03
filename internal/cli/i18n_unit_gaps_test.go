@@ -228,7 +228,7 @@ func TestDoctorCentralNG(t *testing.T) {
 	if err == nil {
 		t.Fatal("doctor must error when the central config is invalid")
 	}
-	if !strings.Contains(err.Error(), "診断で問題が見つかりました") {
+	if !strings.Contains(err.Error(), "diagnosis found problems") {
 		t.Errorf("doctor error must summarize: %v", err)
 	}
 	if !strings.Contains(out, "[NG] 中央設定: 中央設定の JSON が不正です") {

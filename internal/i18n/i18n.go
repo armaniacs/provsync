@@ -1,5 +1,5 @@
 // Package i18n はユーザー向けメッセージの言語判定とカタログ参照を提供する。
-// ja が正で、en は mirror。未対応のロケールは ja にフォールバックする。
+// en が正で、ja は追加言語。未対応のロケールは en にフォールバックする。
 package i18n
 
 import (
@@ -16,21 +16,17 @@ const (
 )
 
 // Resolve はロケール値 1 件を判定する純粋関数。
-// 前方一致で ja* → ja、en* → en。それ以外・空は ja にフォールバックし、エラーにしない。
+// 前方一致で ja* → ja。それ以外(en* を含む)・空は en にフォールバックし、エラーにしない。
 func Resolve(value string) string {
 	v := strings.ToLower(strings.TrimSpace(value))
-	switch {
-	case strings.HasPrefix(v, "ja"):
-		return LangJa
-	case strings.HasPrefix(v, "en"):
-		return LangEn
-	default:
+	if strings.HasPrefix(v, "ja") {
 		return LangJa
 	}
+	return LangEn
 }
 
 // ResolvePriority は優先順に並んだロケール値から判定する純粋関数。
-// 空文字列は読み飛ばし、すべて空なら ja を返す。
+// 空文字列は読み飛ばし、すべて空なら en を返す。
 func ResolvePriority(values ...string) string {
 	for _, v := range values {
 		if strings.TrimSpace(v) == "" {
@@ -38,7 +34,7 @@ func ResolvePriority(values ...string) string {
 		}
 		return Resolve(v)
 	}
-	return LangJa
+	return LangEn
 }
 
 // ResolveFromEnv は言語系環境変数から実行時の言語を判定する。
@@ -71,12 +67,12 @@ func T(lang, id string, a ...any) string {
 }
 
 func lookup(lang, id string) string {
-	if lang == LangEn {
-		if v, ok := enCatalog[id]; ok {
+	if lang == LangJa {
+		if v, ok := jaCatalog[id]; ok {
 			return v
 		}
 	}
-	return jaCatalog[id]
+	return enCatalog[id]
 }
 
 // Message は内部パッケージから cli 境界へ運ぶ言語中立のメッセージ値。
@@ -99,12 +95,12 @@ func Wrap(err error, id string, args ...any) *Message {
 	return &Message{ID: id, Args: args, Err: err}
 }
 
-// Error は ja(正)で描画する。cli 境界を通らない呼び出し元(既存テストの
-// 部分文字列アサート、失敗時のフォールバック)が現行どおり日本語で
+// Error は en(正)で描画する。cli 境界を通らない呼び出し元(既存テストの
+// 部分文字列アサート、失敗時のフォールバック)が既定言語の英語で
 // 受け取れるようにするため。原因がある場合は fmt.Errorf の %w と同じ
 // "本文: 原因" の形で連結する。
 func (m *Message) Error() string {
-	s := T(LangJa, m.ID, m.Args...)
+	s := T(LangEn, m.ID, m.Args...)
 	if m.Err != nil {
 		return s + ": " + m.Err.Error()
 	}
@@ -117,8 +113,8 @@ func (m *Message) Unwrap() error { return m.Err }
 // Localize は err チェーンを辿り、Message ノードは lang のカタログ訳、
 // fmt.Errorf("…: %w") 相当のノードは自分の prefix だけ、末端のプレーンな
 // エラーは err.Error() のまま ": " で連結する。
-// fmt.Errorf の %w 連鎖の描画と同じ形になるため、ja 実行時の出力テキストは
-// 移行前と同一になる。下位ノードの文言は各ノードで 1 回だけ載せるため、
+// fmt.Errorf の %w 連鎖の描画と同じ形になるため、出力テキストの構造は
+// 言語によらず同一になる。下位ノードの文言は各ノードで 1 回だけ載せるため、
 // wrapError の Error() をそのまま使うと起きる二重訳を避けている。
 func Localize(lang string, err error) string {
 	var parts []string

@@ -158,25 +158,25 @@ func TestStatusJSONStructureLocaleIndependent(t *testing.T) {
 	}
 }
 
-// TestUnsupportedLocaleFallsBackToJa は BDD「未対応ロケールはエラーにならず日本語で動く」。
-func TestUnsupportedLocaleFallsBackToJa(t *testing.T) {
+// TestUnsupportedLocaleFallsBackToEn は BDD「未対応ロケールはエラーにならず英語で動く」。
+func TestUnsupportedLocaleFallsBackToEn(t *testing.T) {
 	f := setup(t)
 	t.Setenv("PROVSYNC_LANG", "fr")
 	out := mustRun(t, f.root, "list")
-	if !strings.Contains(out, "未作成") {
-		t.Errorf("fr must fall back to ja without an error:\n%s", out)
+	if !strings.Contains(out, "not created") {
+		t.Errorf("fr must fall back to en without an error:\n%s", out)
 	}
 }
 
-// TestUnsetEnvIsJapanese は BDD「既定では現在と同じ日本語で表示される」。
-func TestUnsetEnvIsJapanese(t *testing.T) {
+// TestUnsetEnvIsEnglish は BDD「既定では英語で表示される」。
+func TestUnsetEnvIsEnglish(t *testing.T) {
 	f := setup(t)
 	t.Setenv("PROVSYNC_LANG", "")
 	t.Setenv("LC_ALL", "")
 	t.Setenv("LC_MESSAGES", "")
 	t.Setenv("LANG", "")
 	out := mustRun(t, f.root, "list")
-	if !strings.Contains(out, "未作成") {
-		t.Errorf("unset env vars must keep the legacy ja output:\n%s", out)
+	if !strings.Contains(out, "not created") {
+		t.Errorf("unset env vars must fall back to the en output:\n%s", out)
 	}
 }

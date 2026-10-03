@@ -3,7 +3,7 @@
 The everyday sync flow and details of each feature.
 
 !!! note
-    CLI messages are Japanese by default. Set `PROVSYNC_LANG` (or `LC_ALL` / `LC_MESSAGES` / `LANG`) to a locale starting with `en` for English output; unsupported locales fall back to Japanese.
+    CLI messages are English by default. Set `PROVSYNC_LANG` (or `LC_ALL` / `LC_MESSAGES` / `LANG`) to a locale starting with `ja` for Japanese output; unsupported locales fall back to English.
 
 ## Quick Start
 

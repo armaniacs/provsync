@@ -17,7 +17,7 @@ func TestAcquireAndRelease(t *testing.T) {
 	// 保持中は 2 つ目が取れない
 	if _, err := Acquire(dir, 200*time.Millisecond); err == nil {
 		t.Error("second acquire must fail while held")
-	} else if !strings.Contains(err.Error(), "実行中") {
+	} else if !strings.Contains(err.Error(), "running") {
 		t.Errorf("error must mention a running process: %v", err)
 	}
 

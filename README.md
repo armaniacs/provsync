@@ -330,7 +330,7 @@ go build -o provsync-tui .
 
 - TUI は `provsync` バイナリを子プロセスとして呼ぶ(`provsync status --json` で状態取得、`provsync push <tool> --provider <p> --write` で適用)。変更内容を自前で計算しない。
 - 確認画面で承認するまで、ファイルは一切変わらない。
-- 標準入力が端末でないときは「対話が必要です」でエラー終了する。エラー文言の言語は PROVSYNC_LANG / LANG に従う(英語ロケールでは英語になる)。
+- 標準入力が端末でないときは「interaction required」でエラー終了する。エラー文言の言語は PROVSYNC_LANG / LANG に従う(既定は英語、`ja` で始まるロケールでは日本語)。
 - `PROVSYNC_BIN` 環境変数で provsync バイナリのパスを指定できる(既定は PATH の `provsync`)。
 
 ### バックアップと undo
@@ -466,7 +466,7 @@ With the tool omitted, provsync detects tools whose config files exist. With mul
 
 ### Quick Start
 
-Note: CLI messages are Japanese by default. Set `PROVSYNC_LANG` (or `LC_ALL` / `LC_MESSAGES` / `LANG`) to a locale starting with `en` for English output; unsupported locales fall back to Japanese. `status --json` keeps its key structure across locales, while the `drift` lines and `warnings` values follow the locale.
+Note: CLI messages are English by default. Set `PROVSYNC_LANG` (or `LC_ALL` / `LC_MESSAGES` / `LANG`) to a locale starting with `ja` for Japanese output; unsupported locales fall back to English. `status --json` keeps its key structure across locales, while the `drift` lines and `warnings` values follow the locale.
 
 ```console
 # Import kilocode providers into the central config (preview first)

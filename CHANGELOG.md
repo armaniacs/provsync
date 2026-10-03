@@ -5,6 +5,14 @@
 
 ## [Unreleased]
 
+### Changed
+
+- CLI・TUI のメッセージの既定言語を日本語から英語に変更(**表示の既定が変わる破壊的変更**)。`ja` で始まるロケール(`PROVSYNC_LANG` / `LC_ALL` / `LC_MESSAGES` / `LANG` の優先順位)でのみ日本語になり、未対応・空のロケールは英語にフォールバックする。`Message.Error()` の非ローカライズ描画も英語になる。`PROVSYNC_LANG=ja` を設定すれば従来どおり日本語で使える。
+
+### Added (CI)
+
+- Makefile に `all`(CLI と TUI の両方をビルド)/ `tui-test`(TUI モジュールのテスト)/ `test-all`(コアと TUI の両モジュールのテスト)を追加。
+
 ## [0.3.0] - 2026-10-03
 
 CLI・TUI のメッセージの日英対応と、ドキュメントサイトの追加。

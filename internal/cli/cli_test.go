@@ -494,7 +494,7 @@ func TestPushBrokenSymlinkErrors(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for broken symlink")
 	}
-	if !strings.Contains(err.Error(), "リンク先") {
+	if !strings.Contains(err.Error(), "symlink") {
 		t.Errorf("error must mention the broken symlink: %v", err)
 	}
 }
@@ -831,7 +831,7 @@ func TestDoctorReportsSyntaxError(t *testing.T) {
 	if err == nil {
 		t.Error("doctor must error when a syntax problem is found")
 	}
-	if !strings.Contains(err.Error(), "診断で問題が見つかりました") {
+	if !strings.Contains(err.Error(), "diagnosis found problems") {
 		t.Errorf("doctor error must summarize: %v", err)
 	}
 }

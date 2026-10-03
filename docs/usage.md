@@ -3,7 +3,7 @@
 日常の同期の流れと、各機能の詳細。最初に通読するのは[クイックスタート](#クイックスタート)から[差分の確認と取り消し](#差分の確認と取り消し)までで、中央設定以降の節は必要になったときに引けば足りる。
 
 !!! note
-    CLI のメッセージは日本語が既定。`PROVSYNC_LANG`(または `LC_ALL` / `LC_MESSAGES` / `LANG`)が `en` で始まるロケールなら英語で出力される。未対応のロケールは日本語にフォールバックする。
+    CLI のメッセージは英語が既定。`PROVSYNC_LANG`(または `LC_ALL` / `LC_MESSAGES` / `LANG`)が `ja` で始まるロケールなら日本語で出力される。未対応のロケールは英語にフォールバックする。
 
 ## クイックスタート
 
@@ -183,7 +183,7 @@ go build -o provsync-tui .
 
 TUI は provsync バイナリを子プロセスとして呼ぶ構成で、状態の取得は `provsync status --json`、適用は `provsync push <tool> --provider <p> --write` で行う。変更内容の計算を TUI 側で持たないため、画面に見えたものと実際に書かれるものの整合は CLI 側の Plan に一任される。
 
-確認画面で承認するまで、ファイルは一切変わらない。標準入力が端末でない場合(CI 実行など)は「対話が必要です」で終了する。エラー文言の言語は PROVSYNC_LANG / LANG に従う(英語ロケールでは英語になる)。provsync バイナリの場所は `PROVSYNC_BIN` 環境変数で指定でき、既定では PATH にある `provsync` を使う。
+確認画面で承認するまで、ファイルは一切変わらない。標準入力が端末でない場合(CI 実行など)は「interaction required」で終了する。エラー文言の言語は PROVSYNC_LANG / LANG に従う(既定は英語、`ja` で始まるロケールでは日本語)。provsync バイナリの場所は `PROVSYNC_BIN` 環境変数で指定でき、既定では PATH にある `provsync` を使う。
 
 ## 秘密情報の扱い
 

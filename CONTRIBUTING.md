@@ -22,7 +22,7 @@ make fuzz     # StripJSONC の短時間ファズテスト
 ## コミット規約
 
 - コミットメッセージは英語の Conventional Commits(`feat:` / `fix:` / `docs:` / `test:` / `chore:`)。
-- ドキュメント・コード内コメントは日本語。CLI メッセージは `internal/i18n` のカタログ経由（ja が正、en を mirror し、新規の文言は両方のカタログに追加）。識別子は英語。
+- ドキュメント・コード内コメントは日本語。CLI メッセージは `internal/i18n` のカタログ経由（en が正・既定とフォールバック、ja は追加言語(`ja*` ロケール)。新規の文言は両方のカタログに追加）。識別子は英語。
 - カタログ ID は「種別.領域.内容」のドット区切り。種別は `err` / `warn` / `msg` / `label`、領域は `cli` / `store` / `tui` など、内容は camelCase(`err.tui.interactive`)。ヘルプ・フラグは `help.<cmd>` / `flag.<name>`、usage は `usage.<part>` と `usage.summary.<cmd>`。drift の表示は `status.op.<op>`(op は固定集合 `not-in-tool` / `not-in-central` / `drift`)。
 - コメントは「なぜ」だけを書く(「何をしているか」は書かない。変更履歴・issue 番号も書かない)。
 - `git add -A` / `git add .` は使わず、対象ファイルを個別に指定する。
