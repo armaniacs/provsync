@@ -47,9 +47,10 @@ macOS / Linux 対応。Windows は非対応。
 
 | ツール | 設定ファイル | 形式 |
 |---|---|---|
-| kilocode(別名 `kilo`) | `~/.config/kilo/kilo.jsonc` | JSONC(行コメント・末尾カンマ対応) |
-| opencode | `~/.config/opencode/opencode.json` | JSON |
+| kilocode(別名 `kilo`) | `~/.config/kilo/kilo.json[c]` | JSONC(行コメント・末尾カンマ対応) |
+| opencode | `~/.config/opencode/opencode.json[c]` | JSON / JSONC(どちらも JSONC として読む) |
 
+- 複数候補があるときは `.jsonc` を優先し、先に見つかった1ファイルだけを管理する(ツール本体のような deep-merge はしない)。
 - セントラル設定: `~/.config/provsync/config.json`
 - 状態(バックアップと履歴): `~/.local/state/provsync/`
 - パスは `XDG_CONFIG_HOME` / `XDG_STATE_HOME` を尊重。

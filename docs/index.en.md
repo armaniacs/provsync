@@ -47,9 +47,10 @@ macOS / Linux only. Windows is unsupported.
 
 | Tool | Config file | Format |
 |---|---|---|
-| kilocode (alias `kilo`) | `~/.config/kilo/kilo.jsonc` | JSONC (line comments, trailing commas) |
-| opencode | `~/.config/opencode/opencode.json` | JSON |
+| kilocode (alias `kilo`) | `~/.config/kilo/kilo.json[c]` | JSONC (line comments, trailing commas) |
+| opencode | `~/.config/opencode/opencode.json[c]` | JSON / JSONC (both parsed as JSONC) |
 
+- With multiple candidates, `.jsonc` wins and only the first file found is managed (no deep-merge like the tools themselves do).
 - Central config: `~/.config/provsync/config.json`
 - State (backups and history): `~/.local/state/provsync/`
 - `XDG_CONFIG_HOME` / `XDG_STATE_HOME` are respected.

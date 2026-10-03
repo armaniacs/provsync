@@ -19,6 +19,10 @@
 - CLI の日本語表示を「セントラル設定」の表記に統一した（single source of truth の概念は「セントラルカノニカル設定」）。終了コード・JSON 出力は不変。
 - ツール設定が1つも無いときの `init` エラーに、最小構成例を含めるようにした。
 
+### Added
+
+- ツール設定ファイルの候補に対応した。kilocode は `kilo.jsonc` → `kilo.json` → `config.json`、opencode は `opencode.jsonc` → `opencode.json` → `config.json` の順に探す（オフィシャルの読み順に準拠）。複数あるときは先に見つかった1ファイルだけを管理する。opencode の両拡張子はどちらも JSONC として読む。
+
 ### Removed
 
 - 英語版 CHANGELOG(`CHANGELOG.en.md`)を廃止した。メンテナンスを継続できないため。以降はこの日本語版を正とする。ドキュメントサイトの英語版 CHANGELOG ページは廃止の案内に置き換えた。

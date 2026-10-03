@@ -27,9 +27,10 @@ macOS / Linux 対応。Windows は非対応。
 
 | ツール | 設定ファイル | 形式 |
 |---|---|---|
-| kilocode(別名 `kilo`) | `~/.config/kilo/kilo.jsonc` | JSONC(行コメント・末尾カンマ対応) |
-| opencode | `~/.config/opencode/opencode.json` | JSON |
+| kilocode(別名 `kilo`) | `~/.config/kilo/kilo.json[c]` | JSONC(行コメント・末尾カンマ対応) |
+| opencode | `~/.config/opencode/opencode.json[c]` | JSON / JSONC(どちらも JSONC として読む) |
 
+- 複数候補があるときは `.jsonc` を優先し、先に見つかった1ファイルだけを管理する(ツール本体のような deep-merge はしない)。
 - セントラル設定: `~/.config/provsync/config.json`
 - 状態(バックアップと履歴): `~/.local/state/provsync/`
 - パスは `XDG_CONFIG_HOME` / `XDG_STATE_HOME` を尊重。
@@ -417,9 +418,10 @@ macOS / Linux only. Windows is unsupported.
 
 | Tool | Config file | Format |
 |---|---|---|
-| kilocode (alias `kilo`) | `~/.config/kilo/kilo.jsonc` | JSONC (line comments, trailing commas) |
-| opencode | `~/.config/opencode/opencode.json` | JSON |
+| kilocode (alias `kilo`) | `~/.config/kilo/kilo.json[c]` | JSONC (line comments, trailing commas) |
+| opencode | `~/.config/opencode/opencode.json[c]` | JSON / JSONC (both parsed as JSONC) |
 
+- With multiple candidates, `.jsonc` wins and only the first file found is managed (no deep-merge like the tools themselves do).
 - Central config: `~/.config/provsync/config.json`
 - State (backups and history): `~/.local/state/provsync/`
 - `XDG_CONFIG_HOME` / `XDG_STATE_HOME` are respected.

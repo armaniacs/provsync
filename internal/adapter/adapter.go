@@ -81,6 +81,36 @@ func Names() []string {
 }
 
 // Get は名前からアダプタを生成する。別名も受理する。
+// toolCandidates はツールごとの設定ファイル候補(ConfigHome からの相対パス、優先順)。
+// オフィシャルの読み順に準拠する:
+//   - kilocode: kilo.jsonc を正とし、kilo.json も読む
+//     (https://kilo.ai/docs/getting-started/settings は kilo.jsonc を正とし、
+//     同位置の kilo.json も deep-merge 対象としている)。
+//   - opencode: opencode.jsonc → opencode.json → config.json の順に読む
+//     (opencode の globalConfigFile と同じ優先順。両拡張子とも JSONC として解釈する)。
+//
+// 複数候補が存在するとき provsync が管理するのは先頭の 1 ファイルだけである。
+// ツール本体のような deep-merge は行わない(単一ファイル管理の設計)。
+var toolCandidates = map[string][]string{
+	"kilocode": {"kilo/kilo.jsonc", "kilo/kilo.json", "kilo/config.json"},
+	"opencode": {"opencode/opencode.jsonc", "opencode/opencode.json", "opencode/config.json"},
+}
+
+// resolveToolPath は存在する最初の候補を返す。どれも無いときは先頭候補を返す
+// (作成時の置き場所と、エラーメッセージの表示用)。
+// 判定は Lstat で行う。リンク切れのシンボリックリンクは候補として採用し、
+// 後段の checkReadable / resolveWritePath が正確なリンクエラーを出す。
+// Stat でリンク先まで辿ると、壊れリンクが黙って読み飛ばされてしまう。
+func resolveToolPath(root Root, tool string) string {
+	for _, rel := range toolCandidates[tool] {
+		p := filepath.Join(root.ConfigHome, rel)
+		if _, err := os.Lstat(p); err == nil {
+			return p
+		}
+	}
+	return filepath.Join(root.ConfigHome, toolCandidates[tool][0])
+}
+
 func Get(name string, root Root) (Adapter, error) {
 	canonical := name
 	if a, ok := aliases[name]; ok {
@@ -88,9 +118,9 @@ func Get(name string, root Root) (Adapter, error) {
 	}
 	switch canonical {
 	case "kilocode":
-		return &kilocode{path: filepath.Join(root.ConfigHome, "kilo", "kilo.jsonc")}, nil
+		return &kilocode{path: resolveToolPath(root, "kilocode")}, nil
 	case "opencode":
-		return &opencode{path: filepath.Join(root.ConfigHome, "opencode", "opencode.json")}, nil
+		return &opencode{path: resolveToolPath(root, "opencode")}, nil
 	default:
 		return nil, i18n.New("err.adapter.unknownTool", name, joinNames())
 	}
