@@ -61,6 +61,10 @@ type fixture struct {
 
 func setup(t *testing.T) fixture {
 	t.Helper()
+	// 言語を pin する。CI の LANG 差異で既存の ja アサーションが
+	// 言語を変えて失敗しないようにする。en テストは setup 後に
+	// t.Setenv("PROVSYNC_LANG", "en") で上書きする。
+	t.Setenv("PROVSYNC_LANG", "ja")
 	root := t.TempDir()
 	f := fixture{
 		root:     root,
