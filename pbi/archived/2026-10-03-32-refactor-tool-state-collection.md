@@ -64,12 +64,12 @@ Scenario: 壊れたツール設定で doctor が NG を出す
 3 SP
 
 ## Definition of Done
-- [ ] `ToolState` + `CollectToolStates` が adapter パッケージにある
-- [ ] 3 経路がコレクタを通り、各々のエラー方針が維持されている
-- [ ] 軽量版 3 箇所が不変である（理由の記録あり）
-- [ ] 全テストが変更なしでパスする
-- [ ] 出力が byte-identical である
-- [ ] `make check` がパスする
+- [x] `ToolState` + `CollectToolStates` が adapter パッケージにある
+- [x] 3 経路がコレクタを通り、各々のエラー方針が維持されている
+- [x] 軽量版 3 箇所が不変である（理由の記録あり）
+- [x] 全テストが変更なしでパスする
+- [x] 出力が byte-identical である
+- [x] `make check` がパスする
 
 ## 実装ガイド（この順に実施。先に /Users/yaar/Playground/provsync/pbi/00-implementation-guide.md を読む）
 

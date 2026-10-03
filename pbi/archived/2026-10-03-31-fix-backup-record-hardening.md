@@ -62,12 +62,12 @@ Scenario: 保持ポリシー変更が 1 箇所で済む
 2 SP
 
 ## Definition of Done
-- [ ] `prune`/`Prune` が単一ヘルパーを通る
-- [ ] `newID` のランダム部が 8 バイトになっている
-- [ ] `Record` 失敗時に orphan が残らない
-- [ ] 新規テスト（ID 一意性・orphan 不在）がパスする
-- [ ] 既存テストが変更なしでパスする
-- [ ] `make check` がパスする
+- [x] `prune`/`Prune` が単一ヘルパーを通る
+- [x] `newID` のランダム部が 8 バイトになっている
+- [x] `Record` 失敗時に orphan が残らない
+- [x] 新規テスト（ID 一意性・orphan 不在）がパスする
+- [x] 既存テストが変更なしでパスする
+- [x] `make check` がパスする
 
 ## 実装ガイド（この順に実施。先に /Users/yaar/Playground/provsync/pbi/00-implementation-guide.md を読む）
 

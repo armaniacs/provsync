@@ -54,11 +54,11 @@ Scenario: symlink 経由の書き込みが維持される
 1 SP
 
 ## Definition of Done
-- [ ] fsutil に symlink 解決の共有ヘルパーがある
-- [ ] `checkReadable` がヘルパーへ委譲している（欠落判定は維持）
-- [ ] `resolveWritePath` がヘルパーを使っている（パススルー動作は維持）
-- [ ] 全テストが変更なしでパスする
-- [ ] `make check` がパスする
+- [x] fsutil に symlink 解決の共有ヘルパーがある
+- [x] `checkReadable` がヘルパーへ委譲している（欠落判定は維持）
+- [x] `resolveWritePath` がヘルパーを使っている（パススルー動作は維持）
+- [x] 全テストが変更なしでパスする
+- [x] `make check` がパスする
 
 ## 実装ガイド（この順に実施。先に /Users/yaar/Playground/provsync/pbi/00-implementation-guide.md を読む）
 

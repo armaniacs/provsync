@@ -58,12 +58,12 @@ Scenario: push の引数体系が変わったら検出できる
 3 SP
 
 ## Definition of Done
-- [ ] 実連携テストが存在しパスする
-- [ ] temp + Setenv のみで実環境に触れない
-- [ ] 既存テストが変更なしでパスする
-- [ ] `make tui-check` がパスする
-- [ ] `go test -race`（tui モジュール）がパスする
-- [ ] 本番コード・go.mod に差分がない
+- [x] 実連携テストが存在しパスする
+- [x] temp + Setenv のみで実環境に触れない
+- [x] 既存テストが変更なしでパスする
+- [x] `make tui-check` がパスする
+- [x] `go test -race`（tui モジュール）がパスする
+- [x] 本番コード・go.mod に差分がない
 
 ## 実装ガイド（この順に実施。先に /Users/yaar/Playground/provsync/pbi/00-implementation-guide.md を読む）
 
