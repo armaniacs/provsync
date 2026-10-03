@@ -116,7 +116,7 @@ var jaCatalog = map[string]string{
 
 	// ---- cli: list / status ----
 	"msg.central":            "セントラル設定: %s (%d providers)",
-	"msg.centralMissing":     "セントラル設定: %s (未作成)",
+	"msg.centralMissing":     "セントラル設定: %s (未作成)\nprovsync init <tool> --write で作成してください",
 	"msg.toolMissing":        "%-9s %s (未作成)",
 	"msg.tool":               "%-9s %s%s (%d providers)",
 	"msg.noDrift":            "  差分なし",

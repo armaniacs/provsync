@@ -123,6 +123,9 @@ func TestList(t *testing.T) {
 			t.Errorf("list missing %q:\n%s", want, out)
 		}
 	}
+	if !strings.Contains(out, "provsync init <tool> --write") {
+		t.Errorf("list must guide central creation when missing:\n%s", out)
+	}
 }
 
 func TestVersionFlag(t *testing.T) {

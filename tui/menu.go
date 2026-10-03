@@ -129,6 +129,9 @@ func (m *listModel) activateMenuCmd() {
 	m.menuPrompt = 0
 	m.menuInput = nil
 	m.menuContext = nil
+	if c.name == "init" && m.activateMenuInit() {
+		return
+	}
 	if len(c.prompts) == 0 {
 		m.menuOutput, _ = m.runMenuCommand(c.previewArgs(nil))
 		m.screen = screenMenuResult
@@ -139,6 +142,33 @@ func (m *listModel) activateMenuCmd() {
 		m.menuContext, _ = m.runMenuCommand([]string{"undo", "--list"})
 	}
 	m.screen = screenMenuPrompt
+}
+
+// activateMenuInit は init 開始時の既存ツール数に応じた分岐を行う。
+// 空送信では複数検出時に何も起きない no-op になるため避ける:
+// 1 つだけなら指定を省略して進み、存在しなければ空指定で進む
+// (最小例つきエラーが表示される)。複数なら必須入力させる。
+// 戻り値はプロンプトを出さずに進んだかどうか。
+func (m *listModel) activateMenuInit() bool {
+	var existing []string
+	for _, ts := range m.report.Tools {
+		if ts.Exists {
+			existing = append(existing, ts.Name)
+		}
+	}
+	switch len(existing) {
+	case 0, 1:
+		if len(existing) == 1 {
+			m.menuValues = []string{existing[0]}
+		} else {
+			m.menuValues = []string{""}
+		}
+		m.finishMenuPrompt()
+		return true
+	default:
+		m.menuActive.prompts = []menuPromptDef{{labelKey: "msg.tui.promptTool", optional: false}}
+		return false
+	}
 }
 
 // updateMenuPrompt は引数入力のキー操作を処理する。Enter で確定(必須項目の

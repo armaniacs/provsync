@@ -116,7 +116,7 @@ var enCatalog = map[string]string{
 
 	// ---- cli: list / status ----
 	"msg.central":            "central config: %s (%d providers)",
-	"msg.centralMissing":     "central config: %s (not created)",
+	"msg.centralMissing":     "central config: %s (not created)\nrun provsync init <tool> --write to create it",
 	"msg.toolMissing":        "%-9s %s (not created)",
 	"msg.tool":               "%-9s %s%s (%d providers)",
 	"msg.noDrift":            "  no drift",

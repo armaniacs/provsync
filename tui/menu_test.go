@@ -378,3 +378,87 @@ func TestPreviewErrorBlocksApply(t *testing.T) {
 		t.Errorf("esc must return to the menu, got screen %d", m12.screen)
 	}
 }
+
+// TestMenuInitSingleToolSkipsPrompt はツール1つのときに init が入力を
+// 求めず、そのツールでプレビューへ進むことを pin する。
+func TestMenuInitSingleToolSkipsPrompt(t *testing.T) {
+	log := stubLog(t)
+	t.Setenv("TUI_TEST_LOG", log)
+	r := testReport()
+	r.Tools = r.Tools[:1]
+	m := newListModel(menuStubBin(t), r, "en")
+	m0, _ := press(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'m'}})
+	// init は 10 項目目。
+	m2 := m0
+	for i := 0; i < 9; i++ {
+		m2, _ = press(m2, downKey())
+	}
+	updated, _ := m2.Update(enterKey())
+	m3 := updated.(*listModel)
+	if m3.screen != screenMenuPreview {
+		t.Fatalf("single-tool init must skip the prompt, got screen %d", m3.screen)
+	}
+	calls := loggedArgs(t, log)
+	if len(calls) != 1 || calls[0] != "init kilocode" {
+		t.Errorf("single-tool init must preview with the tool: %v", calls)
+	}
+}
+
+// TestMenuInitNoToolsRunsBareInit はツール無しで init が空指定のまま進み、
+// 最小例つきエラーのプレビューになることを pin する。
+func TestMenuInitNoToolsRunsBareInit(t *testing.T) {
+	log := stubLog(t)
+	t.Setenv("TUI_TEST_LOG", log)
+	r := testReport()
+	for i := range r.Tools {
+		r.Tools[i].Exists = false
+	}
+	m := newListModel(menuStubBin(t), r, "en")
+	m2 := m
+	for i := 0; i < 9; i++ {
+		m2, _ = press(m2, downKey())
+	}
+	updated, _ := m2.Update(enterKey())
+	m3 := updated.(*listModel)
+	if m3.screen != screenMenuPreview {
+		t.Fatalf("tool-less init must skip the prompt, got screen %d", m3.screen)
+	}
+	calls := loggedArgs(t, log)
+	if len(calls) != 1 || calls[0] != "init" {
+		t.Errorf("tool-less init must preview bare init: %v", calls)
+	}
+}
+
+// TestMenuInitMultipleToolsRequiresTool は複数ツールで init の入力が
+// 必須になること(空送信の no-op を防ぐ)を pin する。
+func TestMenuInitMultipleToolsRequiresTool(t *testing.T) {
+	m, log := menuTestModel(t)
+	m0, _ := press(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'m'}})
+	m2 := m0
+	for i := 0; i < 9; i++ {
+		m2, _ = press(m2, downKey())
+	}
+	updated, _ := m2.Update(enterKey())
+	m3 := updated.(*listModel)
+	if m3.screen != screenMenuPrompt {
+		t.Fatalf("multi-tool init must prompt, got screen %d", m3.screen)
+	}
+	updated, _ = m3.Update(enterKey())
+	m4 := updated.(*listModel)
+	if m4.screen != screenMenuPrompt {
+		t.Errorf("empty submit must stay on the required prompt, got screen %d", m4.screen)
+	}
+	if calls := loggedArgs(t, log); len(calls) != 0 {
+		t.Errorf("empty submit must run nothing: %v", calls)
+	}
+	m5 := typeText(m4, "kilocode")
+	updated, _ = m5.Update(enterKey())
+	m6 := updated.(*listModel)
+	if m6.screen != screenMenuPreview {
+		t.Fatalf("init with tool must show the preview, got screen %d", m6.screen)
+	}
+	calls := loggedArgs(t, log)
+	if len(calls) != 1 || calls[0] != "init kilocode" {
+		t.Errorf("init must preview with the typed tool: %v", calls)
+	}
+}
