@@ -179,7 +179,8 @@ provsync-tui
 To build manually, run `go build -o provsync-tui .` inside `tui/`.
 
 - The TUI calls the `provsync` binary as a child process (`provsync status --json` to build the view, `provsync push <tool> --provider <p> --write` to apply). It never computes changes itself.
-- Nothing is written until you approve on the confirmation screen.
+- Nothing is written until you approve on the confirmation screen. The confirmation screen shows a push preview (semantic diff, without `--write`) under each command, so you can see what will change before approving.
+- On the done screen, `u` reverts the last operation (runs `undo` after its own confirmation).
 - With a non-terminal stdin it errors out with an "interaction required" message. The message language follows `PROVSYNC_LANG` / `LANG` (English by default, Japanese for locales starting with `ja`).
 - `PROVSYNC_BIN` overrides the provsync binary path (default: `provsync` from PATH).
 

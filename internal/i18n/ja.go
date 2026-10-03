@@ -174,18 +174,21 @@ var jaCatalog = map[string]string{
 	"check.badStatus":        "[応答異常] %s: HTTP %d",
 
 	// ---- tui ----
-	"err.tui.interactive":   "対話が必要です(標準入力が端末ではありません)",
-	"err.tui.fetch":         "provsync status --json を実行できません (%s)",
-	"err.tui.invalidOutput": "provsync status --json の出力が不正です",
-	"err.tui.schema":        "対応していない schemaVersion です: %d",
-	"msg.tui.central":       "セントラル設定: %s",
-	"msg.tui.noDrift":       "適用候補となる差分がありません(同期済み)",
-	"msg.tui.quit":          "q で終了",
-	"msg.tui.listHint":      "スペースで選択、Enter で確認、q で終了",
-	"msg.tui.confirmHeader": "次のコマンドを実行します(--write 付き):",
-	"msg.tui.confirmPrompt": "実行しますか? y / n",
-	"msg.tui.apply":         "適用: provsync %s\n%s",
-	"msg.tui.failed":        "失敗: provsync %s: %s",
+	"err.tui.interactive":    "対話が必要です(標準入力が端末ではありません)",
+	"err.tui.fetch":          "provsync status --json を実行できません (%s)",
+	"err.tui.invalidOutput":  "provsync status --json の出力が不正です",
+	"err.tui.schema":         "対応していない schemaVersion です: %d",
+	"msg.tui.central":        "セントラル設定: %s",
+	"msg.tui.noDrift":        "適用候補となる差分がありません(同期済み)",
+	"msg.tui.quit":           "q で終了",
+	"msg.tui.listHint":       "スペースで選択、Enter で確認、q で終了",
+	"msg.tui.confirmHeader":  "次のコマンドを実行します(--write 付き):",
+	"msg.tui.confirmPrompt":  "実行しますか? y / n",
+	"msg.tui.previewLoading": "変更内容を取得しています...",
+	"msg.tui.doneHint":       "u で直前の操作を取り消し、q で終了",
+	"msg.tui.confirmUndo":    "直前の操作を取り消しますか? y / n",
+	"msg.tui.apply":          "適用: provsync %s\n%s",
+	"msg.tui.failed":         "失敗: provsync %s: %s",
 
 	// ---- cli: 詳細ヘルプ ----
 	"help.list": `list - 対応ツールと設定パスを表示

@@ -174,18 +174,21 @@ var enCatalog = map[string]string{
 	"check.badStatus":        "[bad response] %s: HTTP %d",
 
 	// ---- tui ----
-	"err.tui.interactive":   "interaction required (stdin is not a terminal)",
-	"err.tui.fetch":         "cannot run provsync status --json (%s)",
-	"err.tui.invalidOutput": "invalid output from provsync status --json",
-	"err.tui.schema":        "unsupported schemaVersion: %d",
-	"msg.tui.central":       "central config: %s",
-	"msg.tui.noDrift":       "no applicable drift (already synced)",
-	"msg.tui.quit":          "press q to quit",
-	"msg.tui.listHint":      "space to select, enter to confirm, q to quit",
-	"msg.tui.confirmHeader": "the following commands will run (with --write):",
-	"msg.tui.confirmPrompt": "run them? y / n",
-	"msg.tui.apply":         "applied: provsync %s\n%s",
-	"msg.tui.failed":        "failed: provsync %s: %s",
+	"err.tui.interactive":    "interaction required (stdin is not a terminal)",
+	"err.tui.fetch":          "cannot run provsync status --json (%s)",
+	"err.tui.invalidOutput":  "invalid output from provsync status --json",
+	"err.tui.schema":         "unsupported schemaVersion: %d",
+	"msg.tui.central":        "central config: %s",
+	"msg.tui.noDrift":        "no applicable drift (already synced)",
+	"msg.tui.quit":           "press q to quit",
+	"msg.tui.listHint":       "space to select, enter to confirm, q to quit",
+	"msg.tui.confirmHeader":  "the following commands will run (with --write):",
+	"msg.tui.confirmPrompt":  "run them? y / n",
+	"msg.tui.previewLoading": "loading change previews...",
+	"msg.tui.doneHint":       "u to undo the last operation, q to quit",
+	"msg.tui.confirmUndo":    "revert the last operation? y / n",
+	"msg.tui.apply":          "applied: provsync %s\n%s",
+	"msg.tui.failed":         "failed: provsync %s: %s",
 
 	// ---- cli: 詳細ヘルプ ----
 	"help.list": `list - show supported tools and config paths

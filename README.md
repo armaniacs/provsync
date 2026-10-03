@@ -331,7 +331,7 @@ provsync-tui
 手動でビルドする場合は `tui/` で `go build -o provsync-tui .` を実行する。
 
 - TUI は `provsync` バイナリを子プロセスとして呼ぶ(`provsync status --json` で状態取得、`provsync push <tool> --provider <p> --write` で適用)。変更内容を自前で計算しない。
-- 確認画面で承認するまで、ファイルは一切変わらない。
+- 確認画面には実行コマンドごとに `--write` なし push のプレビュー(意味差分)が表示されるため、何が変わるかを見てから承認できる。確認画面で承認するまで、ファイルは一切変わらない。適用後の完了画面では `u` で直前の操作を取り消せる。
 - 標準入力が端末でないときは「interaction required」でエラー終了する。エラー文言の言語は PROVSYNC_LANG / LANG に従う(既定は英語、`ja` で始まるロケールでは日本語)。
 - `PROVSYNC_BIN` 環境変数で provsync バイナリのパスを指定できる(既定は PATH の `provsync`)。
 
@@ -722,7 +722,7 @@ provsync-tui
 To build manually, run `go build -o provsync-tui .` inside `tui/`.
 
 - The TUI calls the `provsync` binary as a child process (`provsync status --json` to build the view, `provsync push <tool> --provider <p> --write` to apply). It never computes changes itself.
-- Nothing is written until you approve on the confirmation screen.
+- Nothing is written until you approve on the confirmation screen. The confirmation screen shows a push preview (semantic diff, without `--write`) under each command, so you can see what will change before approving. On the done screen, `u` reverts the last operation.
 - With a non-terminal stdin it errors out with an "interaction required" message. The message language follows `PROVSYNC_LANG` / `LANG` (default English; Japanese for locales starting with `ja`).
 - `PROVSYNC_BIN` overrides the provsync binary path (default: `provsync` from PATH).
 

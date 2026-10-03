@@ -8,6 +8,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/), version
 ### Added
 
 - `make install` now installs both the CLI (`provsync`) and the TUI (`provsync-tui`).
+- The TUI confirmation screen now shows a push preview (semantic diff, without `--write`) under each command, and the done screen offers `u` to revert the last operation.
 
 ### Changed
 

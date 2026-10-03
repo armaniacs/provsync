@@ -13,18 +13,33 @@ const (
 	screenList screen = iota
 	screenConfirm
 	screenDone
+	screenConfirmUndo
 )
+
+// previewResult は 1 ペア分の push プレビュー(--write なし)の結果。
+// lines は子プロセスの標準出力行で、失敗時は errText に標準エラーが入る。
+type previewResult struct {
+	args    []string
+	lines   []string
+	errText string
+}
+
+// previewDoneMsg はプレビュー取得 Cmd の完了結果。
+type previewDoneMsg struct {
+	results []previewResult
+}
 
 // listModel は bubbletea のモデル。選択状態(selection)を操作する薄い層で、
 // 変更内容の計算は provsync 子プロセスに任せる。
 type listModel struct {
-	bin     string
-	lang    string
-	report  statusReport
-	sel     *selection
-	cursor  int
-	screen  screen
-	message []string
+	bin      string
+	lang     string
+	report   statusReport
+	sel      *selection
+	cursor   int
+	screen   screen
+	message  []string
+	previews []previewResult
 }
 
 func newListModel(bin string, report statusReport, lang string) *listModel {
@@ -51,6 +66,10 @@ func (m *listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.screen = screenDone
 		return m, tea.Quit
 	}
+	if done, ok := msg.(previewDoneMsg); ok {
+		m.previews = done.results
+		return m, nil
+	}
 	key, ok := msg.(tea.KeyMsg)
 	if !ok {
 		return m, nil
@@ -60,9 +79,15 @@ func (m *listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateList(key)
 	case screenConfirm:
 		return m.updateConfirm(key)
+	case screenConfirmUndo:
+		return m.updateConfirmUndo(key)
 	default:
-		if key.String() == "q" || key.String() == "ctrl+c" {
+		switch key.String() {
+		case "q", "ctrl+c":
 			return m, tea.Quit
+		case "u":
+			m.screen = screenConfirmUndo
+			return m, nil
 		}
 		return m, nil
 	}
@@ -85,6 +110,8 @@ func (m *listModel) updateList(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "enter":
 		if len(m.sel.SelectedPairs()) > 0 {
 			m.screen = screenConfirm
+			m.previews = nil
+			return m, m.fetchPreviews()
 		}
 	}
 	return m, nil
@@ -101,6 +128,66 @@ func (m *listModel) updateConfirm(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	}
 	return m, nil
+}
+
+func (m *listModel) updateConfirmUndo(key tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch key.String() {
+	case "y", "enter":
+		return m, m.applyUndo()
+	case "n", "esc", "q", "ctrl+c":
+		m.screen = screenDone
+		return m, nil
+	}
+	return m, nil
+}
+
+// fetchPreviews は選択済みペアの push プレビュー(--write なし)を非同期で取得する。
+// Cmd は別 goroutine で動くため、モデルは Msg 経由でのみ更新する。
+func (m *listModel) fetchPreviews() tea.Cmd {
+	bin := m.bin
+	argsList := m.sel.previewArgs()
+	return func() tea.Msg {
+		var out []previewResult
+		for _, args := range argsList {
+			stdout, stderr, err := runProvsync(bin, args...)
+			r := previewResult{args: args}
+			if err != nil {
+				r.errText = strings.TrimSpace(stderr)
+			} else {
+				r.lines = splitLines(stdout)
+			}
+			out = append(out, r)
+		}
+		return previewDoneMsg{results: out}
+	}
+}
+
+// applyUndo は直前の操作を取り消す undo(引数なし)を非同期で実行する。
+// 結果は applyDoneMsg 経由で done 画面に表示され、u の繰り返しが効く。
+func (m *listModel) applyUndo() tea.Cmd {
+	bin := m.bin
+	lang := m.lang
+	return func() tea.Msg {
+		stdout, stderr, err := runProvsync(bin, "undo")
+		var out []string
+		if err != nil {
+			out = append(out, i18n.T(lang, "msg.tui.failed", "undo", stderr))
+		} else {
+			out = append(out, i18n.T(lang, "msg.tui.apply", "undo", stdout))
+		}
+		return applyDoneMsg{messages: out}
+	}
+}
+
+// splitLines は出力を空行を除いた行列に分ける。
+func splitLines(s string) []string {
+	var out []string
+	for _, line := range strings.Split(s, "\n") {
+		if line != "" {
+			out = append(out, line)
+		}
+	}
+	return out
 }
 
 // applySelected は承認されたときだけ --write 付きで provsync 子プロセスを実行する。
@@ -152,13 +239,33 @@ func (m *listModel) View() string {
 		}
 	case screenConfirm:
 		b.WriteString(i18n.T(m.lang, "msg.tui.confirmHeader") + "\n\n")
-		for _, args := range m.sel.applyArgs() {
+		for i, args := range m.sel.applyArgs() {
 			b.WriteString("  provsync " + strings.Join(args, " ") + "\n")
+			b.WriteString(m.previewText(i))
 		}
 		b.WriteString("\n" + i18n.T(m.lang, "msg.tui.confirmPrompt") + "\n")
+	case screenConfirmUndo:
+		b.WriteString(i18n.T(m.lang, "msg.tui.confirmUndo") + "\n")
 	case screenDone:
 		b.WriteString(strings.Join(m.message, "\n"))
-		b.WriteString("\n\n" + i18n.T(m.lang, "msg.tui.quit") + "\n")
+		b.WriteString("\n\n" + i18n.T(m.lang, "msg.tui.doneHint") + "\n")
+	}
+	return b.String()
+}
+
+// previewText は i 番目の適用コマンドに対応するプレビュー表示を返す。
+// 取得前は読み込み中、失敗時はエラーを表示する。
+func (m *listModel) previewText(i int) string {
+	if i < 0 || i >= len(m.previews) {
+		return "    " + i18n.T(m.lang, "msg.tui.previewLoading") + "\n"
+	}
+	r := m.previews[i]
+	if r.errText != "" {
+		return "    " + i18n.T(m.lang, "msg.tui.failed", strings.Join(r.args, " "), r.errText) + "\n"
+	}
+	var b strings.Builder
+	for _, line := range r.lines {
+		b.WriteString("    " + line + "\n")
 	}
 	return b.String()
 }

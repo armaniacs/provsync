@@ -8,6 +8,7 @@
 ### Added
 
 - `make install` で CLI(`provsync`)と TUI(`provsync-tui`)の両方をインストールできるようにした。
+- TUI の確認画面に `--write` なし push のプレビュー(意味差分)を表示し、適用後の完了画面で `u` による直前操作の取り消しができるようにした。
 
 ### Changed
 

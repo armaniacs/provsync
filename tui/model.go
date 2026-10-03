@@ -129,6 +129,16 @@ func (s *selection) applyArgs() [][]string {
 	return out
 }
 
+// previewArgs は確認画面の差分表示用に、--write を付けない push プレビュー用の
+// 引数列を返す。プレビューは読み取り専用で、ファイルを変更しない。
+func (s *selection) previewArgs() [][]string {
+	var out [][]string
+	for _, p := range s.SelectedPairs() {
+		out = append(out, []string{"push", p.Tool, "--provider", p.Provider})
+	}
+	return out
+}
+
 // fetchStatus は provsync 子プロセスから status --json を取得してパースする。
 // エラーは言語中立の Message で返し、描画(main の Localize)が言語を決める。
 func fetchStatus(bin string) (statusReport, error) {
