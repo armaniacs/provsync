@@ -181,7 +181,8 @@ To build manually, run `go build -o provsync-tui .` inside `tui/`.
 - The TUI calls the `provsync` binary as a child process (`provsync status --json` to build the view, `provsync push <tool> --provider <p> --write` to apply). It never computes changes itself.
 - Nothing is written until you approve on the confirmation screen. The confirmation screen shows a push preview (semantic diff, without `--write`) under each command, so you can see what will change before approving.
 - On the done screen, `u` reverts the last operation (runs `undo` after its own confirmation).
-- With no drift, the command menu opens instead of the list (also reachable with `m` from the list). The menu lists every subcommand (`status` / `list` / `pull` / `push` / `sync` / `diff` / `undo` / `doctor` / `check` / `init` / `version` / `completion`); pick one, fill in its arguments, and run it. Writes go through a confirmation, and `pull` / `push` / `sync` / `init` show a preview before the `--write` run.
+- With no drift, the command menu opens instead of the list (also reachable with `m` from the list). The menu lists every subcommand (`status` / `list` / `pull` / `push` / `sync` / `diff` / `undo` / `doctor` / `check` / `init` / `version` / `completion`); pick one, fill in its arguments, and run it. Writes go through a confirmation, and `pull` / `push` / `sync` / `init` show a preview before the `--write` run. When the preview itself fails, applying is blocked and only going back is available.
+- Every screen shows a footer with the available keys at all times. `?` opens the shortcut help. `g` / `G` jump to the top / bottom in the list and the menu.
 - With a non-terminal stdin it errors out with an "interaction required" message. The message language follows `PROVSYNC_LANG` / `LANG` (English by default, Japanese for locales starting with `ja`).
 - `PROVSYNC_BIN` overrides the provsync binary path (default: `provsync` from PATH).
 

@@ -25,8 +25,8 @@ func TestViewLocalizedInEn(t *testing.T) {
 	if !strings.Contains(enView, "central config:") {
 		t.Errorf("en view must use the en label:\n%s", enView)
 	}
-	if !strings.Contains(enView, "space to select, enter to confirm, m for commands, q to quit") {
-		t.Errorf("en view must use the en hint:\n%s", enView)
+	if !strings.Contains(enView, "↑↓/jk move · space select · enter confirm · m menu · q quit · ? help") {
+		t.Errorf("en view must show the footer guide:\n%s", enView)
 	}
 	if cjkRe.MatchString(enView) {
 		t.Errorf("en view must not contain CJK:\n%s", enView)

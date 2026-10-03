@@ -265,3 +265,116 @@ func TestMenuPromptEscCancels(t *testing.T) {
 		t.Errorf("cancel must run nothing: %v", calls)
 	}
 }
+
+// TestFooterOnListAndMenu は一覧とメニューにフッターが出ることを pin する。
+func TestFooterOnListAndMenu(t *testing.T) {
+	m, _ := menuTestModel(t)
+	if !strings.Contains(m.View(), "? help") {
+		t.Errorf("list view must show the footer:\n%s", m.View())
+	}
+	m2, _ := press(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'m'}})
+	if !strings.Contains(m2.View(), "enter run") {
+		t.Errorf("menu view must show the menu footer:\n%s", m2.View())
+	}
+}
+
+// TestHelpOverlay は ? でヘルプが開き esc/? で閉じることを pin する。
+func TestHelpOverlay(t *testing.T) {
+	m, _ := menuTestModel(t)
+	m2, _ := press(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	if !m2.showHelp {
+		t.Fatal("? must open the help overlay")
+	}
+	if !strings.Contains(m2.View(), "shortcuts") {
+		t.Errorf("help view must show the title:\n%s", m2.View())
+	}
+	// ヘルプ表示中は一覧操作が効かない。
+	m3, _ := press(m2, downKey())
+	if m3.cursor != 0 {
+		t.Error("cursor must not move while help is open")
+	}
+	m4, _ := press(m3, tea.KeyMsg{Type: tea.KeyEsc})
+	if m4.showHelp {
+		t.Error("esc must close the help overlay")
+	}
+	m5, _ := press(m4, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	m6, _ := press(m5, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	if m6.showHelp {
+		t.Error("? must toggle the help overlay closed")
+	}
+}
+
+// TestGTopBottomJump は g/G で先頭・末尾へ飛ぶことを pin する。
+func TestGTopBottomJump(t *testing.T) {
+	m, _ := menuTestModel(t)
+	m2, _ := press(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'m'}})
+	m3, _ := press(m2, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'G'}})
+	if m3.menuCursor != len(menuCommands)-1 {
+		t.Errorf("G must jump to the last item, got %d", m3.menuCursor)
+	}
+	m4, _ := press(m3, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'g'}})
+	if m4.menuCursor != 0 {
+		t.Errorf("g must jump to the first item, got %d", m4.menuCursor)
+	}
+}
+
+// TestPreviewErrorBlocksApply はプレビュー失敗時に y/enter が無視され、
+// 戻りガイドが出ることを pin する(スクリーンショットの混乱の再発防止)。
+func TestPreviewErrorBlocksApply(t *testing.T) {
+	dir := t.TempDir()
+	bin := filepath.Join(dir, "fail-provsync")
+	// status --json には空レポート、push プレビューには失敗を返す。
+	report := `{"schemaVersion":1,"central":{"path":"/c","exists":true,"providers":0},"tools":[]}`
+	script := "#!/bin/sh\n" +
+		"echo \"$@\" >> \"$TUI_TEST_LOG\"\n" +
+		"case \" $* \" in\n" +
+		"*\"status --json\"*) printf '" + report + "'; exit 1;;\n" +
+		"*) printf 'provsync: no supported tool config was found' >&2; exit 1;;\n" +
+		"esac\n"
+	if err := os.WriteFile(bin, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	log := stubLog(t)
+	t.Setenv("TUI_TEST_LOG", log)
+	rep := statusReport{SchemaVersion: 1}
+	rep.Tools = []toolStatus{{Name: "kilocode", Path: "/k", Exists: true,
+		DriftEntries: []driftEntry{{Provider: "llm-01", Op: "drift"}}}}
+	m := newListModel(bin, rep, "en")
+	// メニュー経由で pull を選び、失敗プレビューまで進める。
+	var updated tea.Model
+	m4, _ := press(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'m'}})
+	m5, _ := press(m4, downKey())
+	m6, _ := press(m5, downKey())
+	updated, _ = m6.Update(enterKey())
+	m7 := updated.(*listModel)
+	m8 := typeText(m7, "kilocode")
+	updated, _ = m8.Update(enterKey())
+	m9 := updated.(*listModel)
+	if m9.screen != screenMenuPreview {
+		t.Fatalf("must reach the preview, got screen %d", m9.screen)
+	}
+	if !m9.menuPreviewErr {
+		t.Fatal("failed preview must set the error flag")
+	}
+	if !strings.Contains(m9.View(), "back to menu") {
+		t.Errorf("error preview must guide back:\n%s", m9.View())
+	}
+	before := len(loggedArgs(t, log))
+	updated, _ = m9.Update(enterKey())
+	m10 := updated.(*listModel)
+	if m10.screen != screenMenuPreview {
+		t.Errorf("enter on error preview must stay, got screen %d", m10.screen)
+	}
+	updated, _ = m10.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	m11 := updated.(*listModel)
+	if m11.screen != screenMenuPreview {
+		t.Errorf("y on error preview must stay, got screen %d", m11.screen)
+	}
+	if got := len(loggedArgs(t, log)); got != before {
+		t.Errorf("blocked apply must run nothing: %d calls before and after", before)
+	}
+	m12, _ := press(m11, tea.KeyMsg{Type: tea.KeyEsc})
+	if m12.screen != screenMenu {
+		t.Errorf("esc must return to the menu, got screen %d", m12.screen)
+	}
+}

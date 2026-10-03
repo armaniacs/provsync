@@ -45,14 +45,17 @@ type listModel struct {
 	message  []string
 	previews []previewResult
 	// 以下はコマンドメニュー用の作業状態。
-	menuCursor  int
-	menuActive  *menuCmd
-	menuValues  []string
-	menuPrompt  int
-	menuInput   []rune
-	menuContext []string
-	menuPreview []string
-	menuOutput  []string
+	menuCursor     int
+	menuActive     *menuCmd
+	menuValues     []string
+	menuPrompt     int
+	menuInput      []rune
+	menuContext    []string
+	menuPreview    []string
+	menuPreviewErr bool
+	menuOutput     []string
+	// showHelp は ? ヘルプオーバーレイの表示状態。
+	showHelp bool
 }
 
 func newListModel(bin string, report statusReport, lang string) *listModel {
@@ -91,6 +94,19 @@ func (m *listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	key, ok := msg.(tea.KeyMsg)
 	if !ok {
+		return m, nil
+	}
+	// ? ヘルプは全画面で共通。開いている間は閉じる操作だけを受け付ける。
+	if m.showHelp {
+		switch key.String() {
+		case "esc", "?", "q", "enter", " ", "ctrl+c":
+			m.showHelp = false
+			return m, nil
+		}
+		return m, nil
+	}
+	if key.String() == "?" {
+		m.showHelp = true
 		return m, nil
 	}
 	switch m.screen {
@@ -144,6 +160,12 @@ func (m *listModel) updateList(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.menuCursor = 0
 		m.screen = screenMenu
 		return m, nil
+	case "g":
+		m.cursor = 0
+	case "G":
+		if len(m.sel.Items) > 0 {
+			m.cursor = len(m.sel.Items) - 1
+		}
 	}
 	return m, nil
 }
@@ -245,13 +267,15 @@ func (m *listModel) applySelected() tea.Cmd {
 }
 
 func (m *listModel) View() string {
+	if m.showHelp {
+		return m.helpView()
+	}
 	var b strings.Builder
 	b.WriteString("provsync-tui\n\n")
 	b.WriteString(i18n.T(m.lang, "msg.tui.central", m.report.Central.Path) + "\n\n")
 
 	switch m.screen {
 	case screenList:
-		b.WriteString(i18n.T(m.lang, "msg.tui.listHint") + "\n\n")
 		for i, p := range m.sel.Items {
 			check := " "
 			if m.sel.Selected[p] {
@@ -289,8 +313,42 @@ func (m *listModel) View() string {
 		b.WriteString("\n" + i18n.T(m.lang, "msg.tui.menuBack") + "\n")
 	case screenDone:
 		b.WriteString(strings.Join(m.message, "\n"))
-		b.WriteString("\n\n" + i18n.T(m.lang, "msg.tui.doneHint") + "\n")
+		b.WriteString("\n")
 	}
+	b.WriteString("\n" + m.footerText() + "\n")
+	return b.String()
+}
+
+// footerText は画面ごとのフッター文言を返す。カタログ ID はリテラルで書く
+// (internal/i18n の scanCatalogIDRefs が検出できる形式にする)。
+func (m *listModel) footerText() string {
+	switch m.screen {
+	case screenList:
+		return i18n.T(m.lang, "msg.tui.footerList")
+	case screenMenu:
+		return i18n.T(m.lang, "msg.tui.footerMenu")
+	case screenMenuPrompt:
+		return i18n.T(m.lang, "msg.tui.footerPrompt")
+	case screenMenuPreview:
+		if m.menuPreviewErr {
+			return i18n.T(m.lang, "msg.tui.footerPreviewError")
+		}
+		return i18n.T(m.lang, "msg.tui.footerPreview")
+	case screenMenuResult:
+		return i18n.T(m.lang, "msg.tui.footerResult")
+	case screenConfirm, screenConfirmUndo:
+		return i18n.T(m.lang, "msg.tui.footerConfirm")
+	default:
+		return i18n.T(m.lang, "msg.tui.footerDone")
+	}
+}
+
+// helpView は ? ヘルプオーバーレイを描画する。
+func (m *listModel) helpView() string {
+	var b strings.Builder
+	b.WriteString("provsync-tui\n\n")
+	b.WriteString(i18n.T(m.lang, "msg.tui.helpTitle") + "\n\n")
+	b.WriteString(i18n.T(m.lang, "msg.tui.helpBody") + "\n")
 	return b.String()
 }
 

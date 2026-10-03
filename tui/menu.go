@@ -112,6 +112,10 @@ func (m *listModel) updateMenu(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 	case "enter":
 		m.activateMenuCmd()
+	case "g":
+		m.menuCursor = 0
+	case "G":
+		m.menuCursor = len(menuCommands) - 1
 	}
 	return m, nil
 }
@@ -126,12 +130,13 @@ func (m *listModel) activateMenuCmd() {
 	m.menuInput = nil
 	m.menuContext = nil
 	if len(c.prompts) == 0 {
-		m.menuOutput = m.runMenuCommand(c.previewArgs(nil))
+		m.menuOutput, _ = m.runMenuCommand(c.previewArgs(nil))
 		m.screen = screenMenuResult
 		return
 	}
 	if c.name == "undo" {
-		m.menuContext = m.runMenuCommand([]string{"undo", "--list"})
+		// 履歴の取得失敗は入力画面に空の文脈として出す(致命的ではない)。
+		m.menuContext, _ = m.runMenuCommand([]string{"undo", "--list"})
 	}
 	m.screen = screenMenuPrompt
 }
@@ -173,25 +178,33 @@ func (m *listModel) updateMenuPrompt(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m *listModel) finishMenuPrompt() {
 	c := *m.menuActive
 	if !c.mutating {
-		m.menuOutput = m.runMenuCommand(c.previewArgs(m.menuValues))
+		m.menuOutput, _ = m.runMenuCommand(c.previewArgs(m.menuValues))
 		m.screen = screenMenuResult
 		return
 	}
 	if c.previewFirst {
-		m.menuPreview = m.runMenuCommand(c.previewArgs(m.menuValues))
+		var err error
+		m.menuPreview, err = m.runMenuCommand(c.previewArgs(m.menuValues))
+		// プレビュー失敗時の適用は同じ失敗を繰り返すだけなので抑止する。
+		m.menuPreviewErr = err != nil
 	} else {
 		// undo は --write 概念が無いため、実行コマンド自体を表示する。
 		m.menuPreview = []string{"provsync " + strings.Join(c.applyArgs(m.menuValues), " ")}
+		m.menuPreviewErr = false
 	}
 	m.screen = screenMenuPreview
 }
 
-// updateMenuPreview は適用確認のキー操作を処理する。
+// updateMenuPreview は適用確認のキー操作を処理する。プレビュー失敗時は
+// y/enter を無視し、戻る操作だけを受け付ける。
 func (m *listModel) updateMenuPreview(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch key.String() {
 	case "y", "enter":
+		if m.menuPreviewErr {
+			return m, nil
+		}
 		c := *m.menuActive
-		m.menuOutput = m.runMenuCommand(c.applyArgs(m.menuValues))
+		m.menuOutput, _ = m.runMenuCommand(c.applyArgs(m.menuValues))
 		m.screen = screenMenuResult
 		return m, nil
 	case "n", "esc", "q", "ctrl+c":
@@ -218,9 +231,10 @@ func (m *listModel) updateMenuResult(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// runMenuCommand は子プロセスを同期実行し、stdout と stderr を行列で返す。
-// メニューの各操作は単発のローカル実行のため、Update 内の同期呼び出しで足りる。
-func (m *listModel) runMenuCommand(args []string) []string {
+// runMenuCommand は子プロセスを同期実行し、出力行と成否を返す。
+// 失敗時は stderr を行列に含める。メニューの各操作は単発のローカル実行のため、
+// Update 内の同期呼び出しで足りる。
+func (m *listModel) runMenuCommand(args []string) ([]string, error) {
 	stdout, stderr, err := runProvsync(m.bin, args...)
 	var out []string
 	if stdout != "" {
@@ -229,7 +243,7 @@ func (m *listModel) runMenuCommand(args []string) []string {
 	if err != nil && stderr != "" {
 		out = append(out, splitLines(stderr)...)
 	}
-	return out
+	return out, err
 }
 
 // menuView はコマンドメニューを描画する。説明文は CLI と同じカタログ
@@ -237,7 +251,6 @@ func (m *listModel) runMenuCommand(args []string) []string {
 func (m *listModel) menuView() string {
 	var b strings.Builder
 	b.WriteString(i18n.T(m.lang, "msg.tui.menuTitle") + "\n\n")
-	b.WriteString(i18n.T(m.lang, "msg.tui.menuHint") + "\n\n")
 	for i, c := range menuCommands {
 		cursor := "  "
 		if i == m.menuCursor {
@@ -259,6 +272,5 @@ func (m *listModel) menuPromptView() string {
 	}
 	c := m.menuActive
 	b.WriteString(i18n.T(m.lang, c.prompts[m.menuPrompt].labelKey) + string(m.menuInput) + "\n")
-	b.WriteString(i18n.T(m.lang, "msg.tui.promptEsc") + "\n")
 	return b.String()
 }
