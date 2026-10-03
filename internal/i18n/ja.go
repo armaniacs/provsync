@@ -97,7 +97,7 @@ var jaCatalog = map[string]string{
 
 	// ---- cli: init ----
 	"err.init.alreadyInitialized": "すでに初期化されています: %s\n日常の更新には provsync pull <tool> を使ってください",
-	"err.init.noToolConfig":       "対応ツールの設定ファイルが見つかりません。探した場所:\n%s\nツールを先に設定してから再実行してください",
+	"err.init.noToolConfig":       "対応ツールの設定ファイルが見つかりません。探した場所:\n%s\nいずれか1つを作成してから再実行してください。最小例 (%s):\n{\"provider\": {\"my-llm\": {\"name\": \"My LLM\", \"npm\": \"@ai-sdk/openai-compatible\", \"baseURL\": \"https://api.example.com/v1\", \"apiKeyEnv\": \"MY_LLM_API_KEY\"}}}",
 	"msg.init.detected":           "検出したツール: %s",
 	"msg.init.multiple":           "複数のツール設定が見つかりました:",
 	"msg.init.specifyTool":        "provsync init <tool> でツールを指定してください",

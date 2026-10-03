@@ -12,6 +12,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/armaniacs/provsync/internal/i18n"
 )
 
 const kiloFixture = `{
@@ -327,6 +329,11 @@ func TestInitNoToolsErrors(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), f.kilo) || !strings.Contains(err.Error(), f.opencode) {
 		t.Errorf("init error must list searched paths:\n%v", err)
+	}
+	// 返却エラーは言語中立のため、日本語描画を明示ローカライズして検証する。
+	gotJa := i18n.Localize(i18n.LangJa, err)
+	if !strings.Contains(gotJa, "最小例") || !strings.Contains(gotJa, "my-llm") {
+		t.Errorf("init error must show a minimal example in Japanese:\n%s", gotJa)
 	}
 }
 

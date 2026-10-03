@@ -86,7 +86,8 @@ func cmdInit(o *options, args []string) error {
 				}
 				paths = append(paths, a.Path())
 			}
-			return i18n.New("err.init.noToolConfig", strings.Join(paths, "\n"))
+			// 最小例の置き場所は先頭ツール(kilocode)のパスで示す。
+			return i18n.New("err.init.noToolConfig", strings.Join(paths, "\n"), paths[0])
 		case 1:
 			tool = found[0]
 			o.msgf(o.out, "msg.init.detected", tool)

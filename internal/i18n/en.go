@@ -97,7 +97,7 @@ var enCatalog = map[string]string{
 
 	// ---- cli: init ----
 	"err.init.alreadyInitialized": "already initialized: %s\nfor everyday updates, use provsync pull <tool>",
-	"err.init.noToolConfig":       "no supported tool config was found. Looked in:\n%s\nset up a tool config first, then run again",
+	"err.init.noToolConfig":       "no supported tool config was found. Looked in:\n%s\nCreate one of them first, then run again. Minimal example (%s):\n{\"provider\": {\"my-llm\": {\"name\": \"My LLM\", \"npm\": \"@ai-sdk/openai-compatible\", \"baseURL\": \"https://api.example.com/v1\", \"apiKeyEnv\": \"MY_LLM_API_KEY\"}}}",
 	"msg.init.detected":           "detected tool: %s",
 	"msg.init.multiple":           "multiple tool configs were found:",
 	"msg.init.specifyTool":        "specify a tool with provsync init <tool>",
