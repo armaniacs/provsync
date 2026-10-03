@@ -47,19 +47,19 @@ Scenario: README と docs の注意書きが新仕様と一致する
   Then  「CLI メッセージは日本語固定」の記述がなく、新仕様（ja 既定・PROVSYNC_LANG / LANG で en）が書かれている
 
 ## 受け入れ基準
-- [ ] internal/cli / internal/adapter / internal/backup / tui のユーザー向け出力文字列（ヘルプ・エラー・警告・進行状況・使い方）がすべて `internal/i18n` のカタログ経由になる
-- [ ] カタログ完全性テスト: 全メッセージ ID が ja / en 両方に存在することを自動テストで保証する
-- [ ] 言語判定の優先順位とフォールバック（`ja*` / `en*` / 未対応 / 空値 / 未設定）を単体テストで検証する
-- [ ] 環境変数を設定しない実行の日本語出力が移行前と同等であることを統合テストで検証する
-- [ ] `--json` など機械可読出力の構造が言語に依存しないことをテストで検証する
-- [ ] `internal/i18n` 以外にユーザー向け日本語出力が残らない（`fmt.Errorf` / `fmt.Fprintf` / `fmt.Printf` / `fmt.Println` / `fmt.Sprintf` の呼び出し引数を rg で検証し 0 件）
-- [ ] 秘密の値がメッセージに出ない既存規則は維持される
-- [ ] `--json` の drift ラベル・warnings 値がロケールに連動し、その仕様が README / docs に明記されている
-- [ ] README.md・docs/usage.md・docs/usage.en.md の「CLI メッセージは日本語固定」の注意書きが新仕様に更新されている
-- [ ] tui の i18n が別 PBI（backlog）に切り出されている
-- [ ] AGENTS.md と pbi/00-implementation-guide.md §2 の「ユーザー向けメッセージは日本語」規則を新仕様（カタログに ja / en 両方を追加、ja が正）に更新する
-- [ ] `go.mod` に依存を追加していない（`git diff go.mod` が空）
-- [ ] `make check` がパスする
+- [x] internal/cli / internal/adapter / internal/backup のユーザー向け出力文字列（ヘルプ・エラー・警告・進行状況・使い方）がすべて `internal/i18n` のカタログ経由になる
+- [x] カタログ完全性テスト: 全メッセージ ID が ja / en 両方に存在することを自動テストで保証する
+- [x] 言語判定の優先順位とフォールバック（`ja*` / `en*` / 未対応 / 空値 / 未設定）を単体テストで検証する
+- [x] 環境変数を設定しない実行の日本語出力が移行前と同等であることを統合テストで検証する
+- [x] `--json` など機械可読出力の構造が言語に依存しないことをテストで検証する
+- [x] `internal/i18n` 以外にユーザー向け日本語出力が残らない（`fmt.Errorf` / `fmt.Fprintf` / `fmt.Printf` / `fmt.Println` / `fmt.Sprintf` の呼び出し引数を rg で検証し 0 件）
+- [x] 秘密の値がメッセージに出ない既存規則は維持される
+- [x] `--json` の drift ラベル・warnings 値がロケールに連動し、その仕様が README / docs に明記されている
+- [x] README.md・docs/usage.md・docs/usage.en.md の「CLI メッセージは日本語固定」の注意書きが新仕様に更新されている
+- [x] tui の i18n が別 PBI（backlog）に切り出されている
+- [x] AGENTS.md と pbi/00-implementation-guide.md §2 の「ユーザー向けメッセージは日本語」規則を新仕様（カタログに ja / en 両方を追加、ja が正）に更新する
+- [x] `go.mod` に依存を追加していない（`git diff go.mod` が空）
+- [x] `make check` がパスする
 
 ## テスト戦略
 - E2E（cli.Run レベル）: `setup` / `mustRun` 補助関数で、`t.Setenv("PROVSYNC_LANG", "en")` を付けた全サブコマンド（list / status / pull / push / sync / diff / undo / doctor）の英語出力と、無設定時の日本語出力を検証する
@@ -70,12 +70,12 @@ Scenario: README と docs の注意書きが新仕様と一致する
 6 ポイント（要チームでの見積もり。tui と README 分離を除外、JSON ロケール連動を含む。深掘り後に縮小）
 
 ## Definition of Done
-- [ ] 全BDDシナリオが自動テストとして実装されパスする
-- [ ] `make check` / `make test-race` がパスする
-- [ ] コードレビュー完了（GitHub PR での approve を必須とする）
-- [ ] リファクタリング完了（グリーン後）
-- [ ] ロールバック手段: 単純 revert で可。データ移行がなく、無設定時の既定動作を変えないため後方互換（技術的考慮事項に記載）
-- [ ] ドキュメント更新済み（README.md、README.en.md、AGENTS.md、pbi/00-implementation-guide.md、CHANGELOG）
+- [x] 全BDDシナリオが自動テストとして実装されパスする
+- [x] `make check` / `make test-race` がパスする
+- [ ] コードレビュー完了（GitHub PR での approve を必須とする。ローカルでのレビューエージェントによるレビューと指摘反映は完了、PR 作成・承認は別途）
+- [x] リファクタリング完了（グリーン後）
+- [x] ロールバック手段: 単純 revert で可。データ移行がなく、無設定時の既定動作を変えないため後方互換（技術的考慮事項に記載）
+- [x] ドキュメント更新済み（README.md・docs/usage.md・docs/usage.en.md、AGENTS.md、pbi/00-implementation-guide.md、CHANGELOG。README は単一バイリンガル維持のため README.en.md は作らない）
 
 ## 技術的考慮事項
 - 依存関係: なし。`go.mod` への追加は禁止（標準ライブラリのみの規則を維持）
