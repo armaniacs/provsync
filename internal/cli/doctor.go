@@ -137,30 +137,30 @@ func doctorCheckAPIKeyEnv(cfg *model.Config) []diagnosisCheck {
 
 func doctorCheckTools(lang string, root adapter.Root) []diagnosisCheck {
 	var checks []diagnosisCheck
-	for _, name := range adapter.Names() {
-		a, err := adapter.Get(name, root)
-		if err != nil {
+	for _, st := range adapter.CollectToolStates(root, adapter.Names()) {
+		if st.Err != nil {
+			// Get failures carry no Path; keep the legacy skip and continue.
+			if st.Path == "" {
+				continue
+			}
+			checks = append(checks, diagnosisCheck{nameID: "doctor.name.tool", nameArg: st.Name, status: statusNG, detail: st.Err})
 			continue
 		}
-		if _, err := os.Stat(a.Path()); err != nil {
-			checks = append(checks, diagnosisCheck{nameID: "doctor.name.tool", nameArg: name, status: statusWarn, detail: i18n.New("doctor.detail.toolMissing", a.Path())})
+		if !st.Exists {
+			checks = append(checks, diagnosisCheck{nameID: "doctor.name.tool", nameArg: st.Name, status: statusWarn, detail: i18n.New("doctor.detail.toolMissing", st.Path)})
 			continue
 		}
-		_, warnings, err := a.Pull()
-		if err != nil {
-			checks = append(checks, diagnosisCheck{nameID: "doctor.name.tool", nameArg: name, status: statusNG, detail: err})
-			continue
-		}
+		warnings := st.Warnings
 		if len(warnings) > 0 {
 			// pull の警告は秘密らしいキー名のみを含む(値は含まない)。
 			parts := make([]string, 0, len(warnings))
 			for _, w := range warnings {
 				parts = append(parts, i18n.Localize(lang, w))
 			}
-			checks = append(checks, diagnosisCheck{nameID: "doctor.name.tool", nameArg: name, status: statusWarn, detail: i18n.New("doctor.detail.toolWarnings", strings.Join(parts, "; "))})
+			checks = append(checks, diagnosisCheck{nameID: "doctor.name.tool", nameArg: st.Name, status: statusWarn, detail: i18n.New("doctor.detail.toolWarnings", strings.Join(parts, "; "))})
 			continue
 		}
-		checks = append(checks, diagnosisCheck{nameID: "doctor.name.tool", nameArg: name, status: statusOK})
+		checks = append(checks, diagnosisCheck{nameID: "doctor.name.tool", nameArg: st.Name, status: statusOK})
 	}
 	return checks
 }

@@ -29,23 +29,17 @@ func cmdList(o *options, args []string) error {
 	} else {
 		return err
 	}
-	for _, name := range adapter.Names() {
-		a, err := adapter.Get(name, root)
-		if err != nil {
-			return err
+	for _, st := range adapter.CollectToolStates(root, adapter.Names()) {
+		if st.Err != nil {
+			return st.Err
 		}
-		ti := toolInfo{Name: name, Path: a.Path()}
-		if _, err := os.Stat(a.Path()); err != nil {
-			ti.Exists = false
+		ti := toolInfo{Name: st.Name, Path: st.Path}
+		if !st.Exists {
 			rep.Tools = append(rep.Tools, ti)
 			continue
 		}
 		ti.Exists = true
-		providers, _, err := a.Pull()
-		if err != nil {
-			return err
-		}
-		ti.Providers = len(providers)
+		ti.Providers = len(st.Providers)
 		rep.Tools = append(rep.Tools, ti)
 	}
 	if o.jsonOut {
@@ -179,25 +173,26 @@ func buildStatusReport(root adapter.Root, tools []string) (*statusReport, error)
 		return nil, err
 	}
 
-	for _, name := range tools {
-		a, err := adapter.Get(name, root)
-		if err != nil {
-			return nil, err
+	for _, st := range adapter.CollectToolStates(root, tools) {
+		if st.Err != nil {
+			return nil, st.Err
 		}
-		ts := toolStatus{Name: name, Path: a.Path()}
-		if _, err := os.Stat(a.Path()); err != nil {
+		ts := toolStatus{Name: st.Name, Path: st.Path}
+		if !st.Exists {
 			rep.Tools = append(rep.Tools, ts)
 			continue
 		}
 		ts.Exists = true
-		providers, warnings, err := a.Pull()
-		if err != nil {
-			return nil, err
-		}
-		ts.Providers = len(providers)
-		ts.warnMsgs = warnings
+		ts.Providers = len(st.Providers)
+		ts.warnMsgs = st.Warnings
 		if central != nil {
-			ts.DriftEntries = driftEntries(a.Project(central.Providers), providers)
+			// Project needs the adapter; Get is a pure constructor
+			// that cannot fail for names the collector accepted.
+			a, err := adapter.Get(st.Name, root)
+			if err != nil {
+				return nil, err
+			}
+			ts.DriftEntries = driftEntries(a.Project(central.Providers), st.Providers)
 		}
 		rep.Tools = append(rep.Tools, ts)
 	}
