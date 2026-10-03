@@ -47,7 +47,7 @@ Integration tests for `cli.Run` use `--root <tmpdir>` and real files under `t.Te
 
 ## Conventions
 
-- Docs and code comments are in Japanese. CLI messages live in the `internal/i18n` catalog: ja is the source of truth and en mirrors it. Add every new user-facing string to both catalogs.
+- Docs and code comments are in Japanese. CLI messages live in the `internal/i18n` catalog: ja is the source of truth and en mirrors it. Add every new user-facing string to both catalogs. Catalog IDs are dotted `<type>.<area>.<what>` (err/warn/msg/label + area, camelCase what); `help.<cmd>` / `flag.<name>` / `usage.<part>` for help and flags; `status.op.<op>` for the fixed drift op set.
 - Commit messages use English Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `chore:`).
 - `CHANGELOG.md` follows Keep a Changelog / SemVer; update it for user-visible changes.
 - Design/plan docs live in `docs/superpowers/{specs,plans}/`.
