@@ -62,12 +62,12 @@ Scenario: バックアップ記録のパターンが 1 箇所になる
 2 SP
 
 ## Definition of Done
-- [ ] 全テストが変更なしでパスする
-- [ ] `make check` がパスする
-- [ ] backup.go の append+prune+save が 1 箇所のヘルパーになっている
-- [ ] バージョン出力が 1 箇所のヘルパーに集約されている
-- [ ] 出力が byte-identical である
-- [ ] 省略した重複の理由が記録されている（省略した場合）
+- [x] 全テストが変更なしでパスする
+- [x] `make check` がパスする
+- [x] backup.go の append+prune+save が 1 箇所のヘルパーになっている
+- [x] バージョン出力が 1 箇所のヘルパーに集約されている
+- [x] 出力が byte-identical である
+- [x] 省略した重複の理由が記録されている（省略した場合）
 
 ## 実装ガイド（この順に実施。先に /Users/yaar/Playground/provsync/pbi/00-implementation-guide.md を読む）
 

@@ -59,12 +59,12 @@ Scenario: 新規貢献者が lock パッケージの役割を地図で見つけ�
 1 SP
 
 ## Definition of Done
-- [ ] 実装ガイドのコードの地図が現行構成と一致する
-- [ ] §5 が commandRegistry ベースの手順になっている
-- [ ] AGENTS.md の Layout に lock/secret/version が載っている
-- [ ] 地図の記載がすべて実在する（grep 確認済み）
-- [ ] コードへの差分がない
-- [ ] `make check` がパスする
+- [x] 実装ガイドのコードの地図が現行構成と一致する
+- [x] §5 が commandRegistry ベースの手順になっている
+- [x] AGENTS.md の Layout に lock/secret/version が載っている
+- [x] 地図の記載がすべて実在する（grep 確認済み）
+- [x] コードへの差分がない
+- [x] `make check` がパスする
 
 ## 実装ガイド（この順に実施。先に /Users/yaar/Playground/provsync/pbi/00-implementation-guide.md を読む）
 

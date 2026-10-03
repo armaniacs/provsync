@@ -55,11 +55,11 @@ Scenario: 文字列内のコメント風トークンが保持される
 3 SP
 
 ## Definition of Done
-- [ ] 文字列走査のステートマシンが 1 箇所になっている
-- [ ] 既存テストが変更なしでパスする
-- [ ] pin した出力との diff が空（byte-identical）
-- [ ] `make check` がパスする
-- [ ] `make fuzz` が失敗しない
+- [x] 文字列走査のステートマシンが 1 箇所になっている
+- [x] 既存テストが変更なしでパスする
+- [x] pin した出力との diff が空（byte-identical）
+- [x] `make check` がパスする
+- [x] `make fuzz` が失敗しない
 
 ## 実装ガイド（この順に実施。先に /Users/yaar/Playground/provsync/pbi/00-implementation-guide.md を読む）
 

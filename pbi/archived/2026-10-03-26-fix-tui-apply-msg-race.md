@@ -57,12 +57,12 @@ Scenario: 画面遷移が網羅テストで pin されている
 3 SP
 
 ## Definition of Done
-- [ ] Cmd クロージャがモデルを書き換えない（Msg 経由）
-- [ ] Update が applyDoneMsg を処理する
-- [ ] 遷移網羅テスト（confirm→done→quit、confirm→list）がパスする
-- [ ] `make tui-check` がパスする
-- [ ] `go test -race`（tui モジュール）がパスする
-- [ ] 外部挙動が不変である
+- [x] Cmd クロージャがモデルを書き換えない（Msg 経由）
+- [x] Update が applyDoneMsg を処理する
+- [x] 遷移網羅テスト（confirm→done→quit、confirm→list）がパスする
+- [x] `make tui-check` がパスする
+- [x] `go test -race`（tui モジュール）がパスする
+- [x] 外部挙動が不変である
 
 ## 実装ガイド（この順に実施。先に /Users/yaar/Playground/provsync/pbi/00-implementation-guide.md を読む）
 
