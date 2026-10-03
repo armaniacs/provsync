@@ -39,7 +39,18 @@ func newListModel(bin string, report statusReport, lang string) *listModel {
 
 func (m *listModel) Init() tea.Cmd { return nil }
 
+// applyDoneMsg は適用 Cmd の完了結果。Cmd は別 goroutine で動くため、
+// モデル変更はこの Msg を Update で処理して行う(クロージャからは触らない)。
+type applyDoneMsg struct {
+	messages []string
+}
+
 func (m *listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if done, ok := msg.(applyDoneMsg); ok {
+		m.message = done.messages
+		m.screen = screenDone
+		return m, tea.Quit
+	}
 	key, ok := msg.(tea.KeyMsg)
 	if !ok {
 		return m, nil
@@ -94,21 +105,24 @@ func (m *listModel) updateConfirm(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 // applySelected は承認されたときだけ --write 付きで provsync 子プロセスを実行する。
 // 子プロセスの出力は子プロセス自身が env から解決した言語で出る。
+// モデルの読み取りは Cmd 外で済ませる: Cmd は別 goroutine で動くため、
+// クロージャ内で m に触れるとイベントループと競合する。
 func (m *listModel) applySelected() tea.Cmd {
+	bin := m.bin
+	lang := m.lang
+	argsList := m.sel.applyArgs()
 	return func() tea.Msg {
 		var out []string
-		for _, args := range m.sel.applyArgs() {
+		for _, args := range argsList {
 			joined := strings.Join(args, " ")
-			stdout, stderr, err := runProvsync(m.bin, args...)
+			stdout, stderr, err := runProvsync(bin, args...)
 			if err != nil {
-				out = append(out, i18n.T(m.lang, "msg.tui.failed", joined, stderr))
+				out = append(out, i18n.T(lang, "msg.tui.failed", joined, stderr))
 				continue
 			}
-			out = append(out, i18n.T(m.lang, "msg.tui.apply", joined, stdout))
+			out = append(out, i18n.T(lang, "msg.tui.apply", joined, stdout))
 		}
-		m.message = out
-		m.screen = screenDone
-		return tea.Quit()
+		return applyDoneMsg{messages: out}
 	}
 }
 

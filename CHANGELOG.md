@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- `provsync-tui` が適用 Cmd の完了結果をイベントループ外でモデルに書き込む競合を解消。結果を Msg で Update に返す形にし、画面遷移（confirm→done→quit、confirm→list）をテストで固定した。外部挙動は不変。
+
 ### Changed
 
 - CLI・TUI のメッセージの既定言語を日本語から英語に変更(**表示の既定が変わる破壊的変更**)。`ja` で始まるロケール(`PROVSYNC_LANG` / `LC_ALL` / `LC_MESSAGES` / `LANG` の優先順位)でのみ日本語になり、未対応・空のロケールは英語にフォールバックする。`Message.Error()` の非ローカライズ描画も英語になる。`PROVSYNC_LANG=ja` を設定すれば従来どおり日本語で使える。
