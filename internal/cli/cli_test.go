@@ -801,9 +801,16 @@ func TestConcurrentWritesKeepIndexValid(t *testing.T) {
 	if err := json.Unmarshal([]byte(read(t, idx)), &manifest); err != nil {
 		t.Fatalf("index JSON is corrupted: %v", err)
 	}
-	// setup の pull 1 操作 + 並行 push 2 操作
-	if len(manifest.Operations) != 3 {
-		t.Errorf("operations = %d, want 3", len(manifest.Operations))
+	// setup の pull 1 操作 + 並行 push。ただし Plan はロック取得の前に計算される
+	// (設計どおり。プレビュー・status はロックを取らない)ため、後発の push が
+	// 先発の適用後のファイルを読むと冪等になり、操作を記録しない。
+	// そこで件数は 2〜3 を受け入れ、検証するのは index が壊れないことと
+	// 最終ファイルがマージ済みであること。
+	if len(manifest.Operations) < 2 || len(manifest.Operations) > 3 {
+		t.Errorf("operations = %d, want 2..3", len(manifest.Operations))
+	}
+	if !strings.Contains(read(t, f.opencode), "llm-01") {
+		t.Errorf("opencode config must end up merged with the central state:\n%s", read(t, f.opencode))
 	}
 }
 
