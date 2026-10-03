@@ -109,7 +109,7 @@ Japanese-English localization of CLI/TUI messages, plus a documentation site.
 
 ### Added (tui)
 
-- `provsync-tui` (optional). A TUI for selecting providers and target tools with checkboxes and applying after a confirmation screen. Isolated as an independent Go module under `tui/` so the core `go.mod` gains no external dependencies. The TUI invokes the `provsync` binary as a child process and never computes changes itself. Exits with an error on non-interactive terminals. The isolation decision is recorded in `docs/superpowers/specs/2026-10-03-tui-isolation-decision.md`.
+- `provsync-tui` (optional). A TUI for selecting providers and target tools with checkboxes and applying after a confirmation screen. Isolated as an independent Go module under `tui/` so the core `go.mod` gains no external dependencies. The TUI invokes the `provsync` binary as a child process and never computes changes itself. Exits with an error on non-interactive terminals. The isolation decision is recorded in `docs/superpowers/specs/2026-10-03-tui-isolation-decision.md`. At this point it is a reference implementation, not yet at a production-usable level. Provided as a beta; specifications are subject to change.
 
 ### Added (CI)
 
