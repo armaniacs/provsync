@@ -5,6 +5,8 @@
 
 ## [Unreleased]
 
+`provsync-tui` はベータ版として提供する。画面構成・キー操作・CLI との連携契約などの仕様は今後変更する可能性がある。
+
 ### Added
 
 - `make install` で CLI(`provsync`)と TUI(`provsync-tui`)の両方をインストールできるようにした。

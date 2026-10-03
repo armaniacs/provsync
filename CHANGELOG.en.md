@@ -5,6 +5,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/), version
 
 ## [Unreleased]
 
+`provsync-tui` is provided as a beta. Its screen layout, key bindings, CLI integration contract, and other specifications are subject to change.
+
 ### Added
 
 - `make install` now installs both the CLI (`provsync`) and the TUI (`provsync-tui`).
