@@ -20,3 +20,4 @@ jobs:
       - run: make test-race
       - run: make lint
       - run: make vuln
+      - run: make tui-check

@@ -119,14 +119,14 @@ var jaCatalog = map[string]string{
 	"msg.centralMissing":     "中央設定: %s (未作成)",
 	"msg.toolMissing":        "%-9s %s (未作成)",
 	"msg.tool":               "%-9s %s%s (%d providers)",
-	"msg.noDrift":         "  差分なし",
+	"msg.noDrift":            "  差分なし",
 	"status.op.notInTool":    "ツールに無い",
 	"status.op.notInCentral": "中央に無い",
 	"status.op.drift":        "差分あり",
 
 	// ---- cli: diff / undo ----
 	"warn.showSecrets":   "--show-secrets により秘密の値をそのまま表示しています",
-	"msg.noChange":        "  変更なし",
+	"msg.noChange":       "  変更なし",
 	"msg.pruned":         "削除: %d 件",
 	"msg.noHistory":      "履歴はありません",
 	"msg.list.noBackup":  " [バックアップなし]",
@@ -172,6 +172,20 @@ var jaCatalog = map[string]string{
 	"check.ok":               "[OK] %s (%dms)",
 	"check.authFailed":       "[認証失敗] %s",
 	"check.badStatus":        "[応答異常] %s: HTTP %d",
+
+	// ---- tui ----
+	"err.tui.interactive":   "対話が必要です(標準入力が端末ではありません)",
+	"err.tui.fetch":         "provsync status --json を実行できません (%s)",
+	"err.tui.invalidOutput": "provsync status --json の出力が不正です",
+	"err.tui.schema":        "対応していない schemaVersion です: %d",
+	"msg.tui.central":       "中央設定: %s",
+	"msg.tui.noDrift":       "適用候補となる差分がありません(同期済み)",
+	"msg.tui.quit":          "q で終了",
+	"msg.tui.listHint":      "スペースで選択、Enter で確認、q で終了",
+	"msg.tui.confirmHeader": "次のコマンドを実行します(--write 付き):",
+	"msg.tui.confirmPrompt": "実行しますか? y / n",
+	"msg.tui.apply":         "適用: provsync %s\n%s",
+	"msg.tui.failed":        "失敗: provsync %s: %s",
 
 	// ---- cli: 詳細ヘルプ ----
 	"help.list": `list - 対応ツールと設定パスを表示

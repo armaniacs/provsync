@@ -245,7 +245,7 @@ func scanCatalogIDRefs(t *testing.T) map[string]string {
 		}
 		if d.IsDir() {
 			switch d.Name() {
-			case ".git", ".kilo", "testdata", "i18n", "site", "tui":
+			case ".git", ".kilo", "testdata", "i18n", "site":
 				return filepath.SkipDir
 			}
 			return nil

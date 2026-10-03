@@ -3,6 +3,7 @@ package main
 import (
 	"strings"
 
+	"github.com/armaniacs/provsync/internal/i18n"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -18,6 +19,7 @@ const (
 // 変更内容の計算は provsync 子プロセスに任せる。
 type listModel struct {
 	bin     string
+	lang    string
 	report  statusReport
 	sel     *selection
 	cursor  int
@@ -25,9 +27,10 @@ type listModel struct {
 	message []string
 }
 
-func newListModel(bin string, report statusReport) *listModel {
+func newListModel(bin string, report statusReport, lang string) *listModel {
 	return &listModel{
 		bin:    bin,
+		lang:   lang,
 		report: report,
 		sel:    newSelection(report),
 		screen: screenList,
@@ -90,16 +93,18 @@ func (m *listModel) updateConfirm(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 // applySelected は承認されたときだけ --write 付きで provsync 子プロセスを実行する。
+// 子プロセスの出力は子プロセス自身が env から解決した言語で出る。
 func (m *listModel) applySelected() tea.Cmd {
 	return func() tea.Msg {
 		var out []string
 		for _, args := range m.sel.applyArgs() {
+			joined := strings.Join(args, " ")
 			stdout, stderr, err := runProvsync(m.bin, args...)
 			if err != nil {
-				out = append(out, "失敗: provsync "+strings.Join(args, " ")+": "+stderr)
+				out = append(out, i18n.T(m.lang, "msg.tui.failed", joined, stderr))
 				continue
 			}
-			out = append(out, "適用: provsync "+strings.Join(args, " ")+"\n"+stdout)
+			out = append(out, i18n.T(m.lang, "msg.tui.apply", joined, stdout))
 		}
 		m.message = out
 		m.screen = screenDone
@@ -110,16 +115,16 @@ func (m *listModel) applySelected() tea.Cmd {
 func (m *listModel) View() string {
 	var b strings.Builder
 	b.WriteString("provsync-tui\n\n")
-	b.WriteString("中央設定: " + m.report.Central.Path + "\n\n")
+	b.WriteString(i18n.T(m.lang, "msg.tui.central", m.report.Central.Path) + "\n\n")
 
 	switch m.screen {
 	case screenList:
 		if len(m.sel.Items) == 0 {
-			b.WriteString("適用候補となる差分がありません(同期済み)\n\n")
-			b.WriteString("q で終了\n")
+			b.WriteString(i18n.T(m.lang, "msg.tui.noDrift") + "\n\n")
+			b.WriteString(i18n.T(m.lang, "msg.tui.quit") + "\n")
 			return b.String()
 		}
-		b.WriteString("スペースで選択、Enter で確認、q で終了\n\n")
+		b.WriteString(i18n.T(m.lang, "msg.tui.listHint") + "\n\n")
 		for i, p := range m.sel.Items {
 			check := " "
 			if m.sel.Selected[p] {
@@ -132,14 +137,14 @@ func (m *listModel) View() string {
 			b.WriteString(cursor + "[" + check + "] " + p.Tool + " / " + p.Provider + "\n")
 		}
 	case screenConfirm:
-		b.WriteString("次のコマンドを実行します(--write 付き):\n\n")
+		b.WriteString(i18n.T(m.lang, "msg.tui.confirmHeader") + "\n\n")
 		for _, args := range m.sel.applyArgs() {
 			b.WriteString("  provsync " + strings.Join(args, " ") + "\n")
 		}
-		b.WriteString("\n実行しますか? y / n\n")
+		b.WriteString("\n" + i18n.T(m.lang, "msg.tui.confirmPrompt") + "\n")
 	case screenDone:
 		b.WriteString(strings.Join(m.message, "\n"))
-		b.WriteString("\n\nq で終了\n")
+		b.WriteString("\n\n" + i18n.T(m.lang, "msg.tui.quit") + "\n")
 	}
 	return b.String()
 }

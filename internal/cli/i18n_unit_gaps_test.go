@@ -187,11 +187,11 @@ func TestOptionsMessageHelpers(t *testing.T) {
 		wantUsage string
 	}{
 		{
-			lang: "ja", wantMsg: "変更はありません\n", wantWarn: "警告: 差分なし\n",
+			lang: "ja", wantMsg: "変更はありません\n", wantWarn: "警告: 中央設定を読めません\n",
 			wantWarnM: "警告: 中央設定を読めません: disk full\n", wantUsage: "使い方: provsync pull <tool>",
 		},
 		{
-			lang: "en", wantMsg: "no changes\n", wantWarn: "warning: no drift\n",
+			lang: "en", wantMsg: "no changes\n", wantWarn: "warning: cannot read the central config\n",
 			wantWarnM: "warning: cannot read the central config: disk full\n", wantUsage: "usage: provsync pull <tool>",
 		},
 	}
@@ -203,7 +203,7 @@ func TestOptionsMessageHelpers(t *testing.T) {
 			if out.String() != tt.wantMsg {
 				t.Errorf("msgf = %q, want %q", out.String(), tt.wantMsg)
 			}
-			o.warnf("msg.noDrift")
+			o.warnf("err.central.read")
 			if errOut.String() != tt.wantWarn {
 				t.Errorf("warnf = %q, want %q", errOut.String(), tt.wantWarn)
 			}

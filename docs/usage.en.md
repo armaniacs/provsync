@@ -178,7 +178,7 @@ go build -o provsync-tui .
 
 - The TUI calls the `provsync` binary as a child process (`provsync status --json` to build the view, `provsync push <tool> --provider <p> --write` to apply). It never computes changes itself.
 - Nothing is written until you approve on the confirmation screen.
-- With a non-terminal stdin it errors out with "対話が必要です" (interaction required).
+- With a non-terminal stdin it errors out with an "interaction required" message. The message language follows `PROVSYNC_LANG` / `LANG`.
 - `PROVSYNC_BIN` overrides the provsync binary path (default: `provsync` from PATH).
 
 ## Secret Handling

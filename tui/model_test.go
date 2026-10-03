@@ -107,7 +107,7 @@ func TestApplyArgsBuildsPushCommands(t *testing.T) {
 
 func TestCancelWritesNothing(t *testing.T) {
 	// 確認画面で n を押すとリストに戻り、子プロセスは実行されない。
-	m := newListModel("provsync-unused", testReport())
+	m := newListModel("provsync-unused", testReport(), "ja")
 	m.sel.Toggle(0)
 	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m2 := updated.(*listModel)
@@ -137,7 +137,7 @@ func TestNonInteractiveStdinIsRejected(t *testing.T) {
 }
 
 func TestViewShowsCommandsWithWrite(t *testing.T) {
-	m := newListModel("provsync-unused", testReport())
+	m := newListModel("provsync-unused", testReport(), "ja")
 	m.sel.Toggle(0)
 	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m2 := updated.(*listModel)

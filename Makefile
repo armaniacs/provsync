@@ -8,7 +8,7 @@ LDFLAGS := -X github.com/armaniacs/provsync/internal/version.Version=$(VERSION)
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build test test-v test-race fuzz fmt fmt-check vet lint vuln check install docs docs-serve clean
+.PHONY: help build test test-v test-race fuzz fmt fmt-check vet lint vuln check install tui-build tui-check docs docs-serve clean
 
 ## help: このヘルプを表示
 help:
@@ -57,6 +57,14 @@ fuzz:
 
 ## check: fmt-check + vet + test をまとめて実行(CI 向け)
 check: fmt-check vet test
+
+## tui-build: TUI バイナリを tui/ にビルド
+tui-build:
+	cd tui && $(GO) build -o provsync-tui .
+
+## tui-check: TUI モジュールのビルドとテスト
+tui-check:
+	cd tui && $(GO) build ./... && $(GO) test ./...
 
 ## install: go install でインストール
 install:

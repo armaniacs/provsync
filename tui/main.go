@@ -1,20 +1,25 @@
 // Package main は provsync の TUI ダッシュボード。
-// コアの go.mod に依存を持ち込まないため、独立したモジュールに隔離されている。
-// 状態取得と適用は provsync バイナリを子プロセスとして呼ぶ方式で、
-// 変更内容を自前で計算しない。
+// コアの go.mod に bubbletea などの依存を持ち込まないため、独立したモジュールに
+// 隔離されている。状態取得と適用は provsync バイナリを子プロセスとして呼ぶ方式で、
+// 変更内容を自前で計算しない。メッセージカタログは親モジュールの internal/i18n を
+// replace 指令で共用する。
 package main
 
 import (
 	"fmt"
 	"os"
 
+	"github.com/armaniacs/provsync/internal/i18n"
 	tea "github.com/charmbracelet/bubbletea"
 	"golang.org/x/term"
 )
 
 func main() {
+	// 言語判定はプロセス入口で 1 回。子プロセスの provsync も同じ env から
+	// 同じ言語を解決するため、表示が混在しない。
+	lang := i18n.ResolveFromEnv()
 	if !isInteractive(os.Stdin) {
-		fmt.Fprintln(os.Stderr, "対話が必要です(標準入力が端末ではありません)")
+		fmt.Fprintln(os.Stderr, i18n.T(lang, "err.tui.interactive"))
 		os.Exit(1)
 	}
 	bin := os.Getenv("PROVSYNC_BIN")
@@ -23,12 +28,13 @@ func main() {
 	}
 	report, err := fetchStatus(bin)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "provsync-tui:", err)
+		// fetchStatus のエラーは言語中立の Message。ここで初めて言語が決まる。
+		fmt.Fprintln(os.Stderr, "provsync-tui:", i18n.Localize(lang, err))
 		os.Exit(1)
 	}
-	m := newListModel(bin, report)
+	m := newListModel(bin, report, lang)
 	if _, err := tea.NewProgram(m).Run(); err != nil {
-		fmt.Fprintln(os.Stderr, "provsync-tui:", err)
+		fmt.Fprintln(os.Stderr, "provsync-tui:", i18n.Localize(lang, err))
 		os.Exit(1)
 	}
 }

@@ -2,13 +2,14 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"os/exec"
 	"strings"
+
+	"github.com/armaniacs/provsync/internal/i18n"
 )
 
 // statusReport は `provsync status --json` の出力(schemaVersion: 1)。
-// コアの internal を import できないため、最小限の構造をここで定義する。
+// コアの model 構造を import しないため、最小限の構造をここで定義する。
 type statusReport struct {
 	SchemaVersion int          `json:"schemaVersion"`
 	Central       centralInfo  `json:"central"`
@@ -53,8 +54,9 @@ type selection struct {
 }
 
 // newSelection は toolStatus から、存在するツールの (tool, provider) 組み合わせを作る。
-// driftEntries があればそれを優先し、無い場合(旧 CLI の応答)は drift 文字列の
-// 逆解析にフォールバックする。
+// driftEntries があればそれを優先する。無い場合(旧 CLI の応答)は drift 文字列の
+// 逆解析にフォールバックする。drift 行はロケールで文言が変わるが、逆解析は
+// ": " の前の provider 名だけを取り出すため言語に依存しない。
 func newSelection(report statusReport) *selection {
 	s := &selection{Selected: map[pair]bool{}}
 	for _, ts := range report.Tools {
@@ -128,17 +130,18 @@ func (s *selection) applyArgs() [][]string {
 }
 
 // fetchStatus は provsync 子プロセスから status --json を取得してパースする。
+// エラーは言語中立の Message で返し、描画(main の Localize)が言語を決める。
 func fetchStatus(bin string) (statusReport, error) {
 	out, err := exec.Command(bin, "status", "--json").Output()
 	if err != nil {
-		return statusReport{}, fmt.Errorf("provsync status --json を実行できません (%s): %w", bin, err)
+		return statusReport{}, i18n.Wrap(err, "err.tui.fetch", bin)
 	}
 	var rep statusReport
 	if err := json.Unmarshal(out, &rep); err != nil {
-		return statusReport{}, fmt.Errorf("provsync status --json の出力が不正です: %w", err)
+		return statusReport{}, i18n.Wrap(err, "err.tui.invalidOutput")
 	}
 	if rep.SchemaVersion != 1 {
-		return statusReport{}, fmt.Errorf("対応していない schemaVersion です: %d", rep.SchemaVersion)
+		return statusReport{}, i18n.New("err.tui.schema", rep.SchemaVersion)
 	}
 	return rep, nil
 }

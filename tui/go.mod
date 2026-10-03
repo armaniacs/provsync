@@ -3,6 +3,7 @@ module github.com/armaniacs/provsync/tui
 go 1.26.0
 
 require (
+	github.com/armaniacs/provsync v0.0.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	golang.org/x/term v0.46.0
 )
@@ -27,3 +28,7 @@ require (
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/text v0.3.8 // indirect
 )
+
+// tui はリポジトリ内でのみビルドされる opt-in モジュールのため、
+// 親モジュールのメッセージカタログ(internal/i18n)を相対パスで共用する。
+replace github.com/armaniacs/provsync => ../

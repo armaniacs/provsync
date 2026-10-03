@@ -119,7 +119,7 @@ var enCatalog = map[string]string{
 	"msg.centralMissing":     "central config: %s (not created)",
 	"msg.toolMissing":        "%-9s %s (not created)",
 	"msg.tool":               "%-9s %s%s (%d providers)",
-	"msg.noDrift":        "  no drift",
+	"msg.noDrift":            "  no drift",
 	"status.op.notInTool":    "not in tool",
 	"status.op.notInCentral": "not in central",
 	"status.op.drift":        "drift",
@@ -172,6 +172,20 @@ var enCatalog = map[string]string{
 	"check.ok":               "[OK] %s (%dms)",
 	"check.authFailed":       "[auth failed] %s",
 	"check.badStatus":        "[bad response] %s: HTTP %d",
+
+	// ---- tui ----
+	"err.tui.interactive":   "interaction required (stdin is not a terminal)",
+	"err.tui.fetch":         "cannot run provsync status --json (%s)",
+	"err.tui.invalidOutput": "invalid output from provsync status --json",
+	"err.tui.schema":        "unsupported schemaVersion: %d",
+	"msg.tui.central":       "central config: %s",
+	"msg.tui.noDrift":       "no applicable drift (already synced)",
+	"msg.tui.quit":          "press q to quit",
+	"msg.tui.listHint":      "space to select, enter to confirm, q to quit",
+	"msg.tui.confirmHeader": "the following commands will run (with --write):",
+	"msg.tui.confirmPrompt": "run them? y / n",
+	"msg.tui.apply":         "applied: provsync %s\n%s",
+	"msg.tui.failed":        "failed: provsync %s: %s",
 
 	// ---- cli: 詳細ヘルプ ----
 	"help.list": `list - show supported tools and config paths
