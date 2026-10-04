@@ -14,3 +14,9 @@
 # local tool config, not for the repository
 /.claude/
 /CLAUDE.md
+
+.kilo/
+.claude/
+.superpowers/
+.vscode/
+.idea/
