@@ -119,3 +119,67 @@ func TestParseConfirm(t *testing.T) {
 		}
 	}
 }
+
+func TestCleanupRejectsArgs(t *testing.T) {
+	f := setup(t)
+	t.Setenv("PROVSYNC_LANG", "en")
+	_, err := run(t, f.root, "cleanup", "extra")
+	if err == nil {
+		t.Error("cleanup with args must fail")
+	}
+	if !strings.Contains(err.Error(), "usage: provsync cleanup") {
+		t.Errorf("must show usage:\n%v", err)
+	}
+}
+
+func TestCleanupPreviewListsTargets(t *testing.T) {
+	f := setup(t)
+	mustRun(t, f.root, "pull", "kilocode", "--write")
+	out, err := run(t, f.root, "cleanup")
+	if err != nil {
+		t.Fatalf("preview must succeed: %v", err)
+	}
+	if !strings.Contains(out, f.central) {
+		t.Errorf("preview must list the central config:\n%s", out)
+	}
+	if _, err := os.Stat(f.central); err != nil {
+		t.Errorf("preview must not delete anything: %v", err)
+	}
+}
+
+func TestCleanupNothingToRemove(t *testing.T) {
+	f := setup(t)
+	t.Setenv("PROVSYNC_LANG", "en")
+	if err := os.Remove(f.kilo); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(f.opencode); err != nil {
+		t.Fatal(err)
+	}
+	out, err := run(t, f.root, "cleanup", "--yes")
+	if err != nil {
+		t.Fatalf("--yes with no targets must succeed: %v", err)
+	}
+	if !strings.Contains(out, "nothing to remove") {
+		t.Errorf("must report nothing to remove:\n%s", out)
+	}
+}
+
+func TestCleanupYesRemovesTargets(t *testing.T) {
+	f := setup(t)
+	mustRun(t, f.root, "pull", "kilocode", "--write")
+	out, err := run(t, f.root, "cleanup", "--yes")
+	if err != nil {
+		t.Fatalf("--yes must succeed: %v", err)
+	}
+	if _, err := os.Stat(f.central); !os.IsNotExist(err) {
+		t.Errorf("central config must be gone: %v", err)
+	}
+	stateDir := filepath.Join(f.root, ".local", "state", "provsync")
+	if _, err := os.Stat(stateDir); !os.IsNotExist(err) {
+		t.Errorf("state dir must be gone: %v", err)
+	}
+	if !strings.Contains(out, f.central) {
+		t.Errorf("must report removed targets:\n%s", out)
+	}
+}

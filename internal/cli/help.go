@@ -37,6 +37,7 @@ func commandRegistry() []command {
 		{name: "sync", usage: "sync --from <a> --to <b>", summaryKey: "usage.summary.sync", helpKey: "help.sync", handler: cmdSync, inUsage: true},
 		{name: "diff", usage: "diff <from> <to>", summaryKey: "usage.summary.diff", helpKey: "help.diff", handler: cmdDiff, inUsage: true},
 		{name: "undo", usage: "undo [id]", summaryKey: "usage.summary.undo", helpKey: "help.undo", handler: cmdUndo, inUsage: true},
+		{name: "cleanup", usage: "cleanup [--write] [--yes]", summaryKey: "usage.summary.cleanup", helpKey: "help.cleanup", handler: cmdCleanup, inUsage: true},
 		{name: "doctor", usage: "doctor", summaryKey: "usage.summary.doctor", helpKey: "help.doctor", handler: cmdDoctor, inUsage: true},
 		{name: "check", usage: "check", summaryKey: "usage.summary.check", helpKey: "help.check", handler: cmdCheck, inUsage: true},
 		{name: "completion", usage: "completion <shell>", summaryKey: "usage.summary.completion", helpKey: "help.completion", handler: cmdCompletion},

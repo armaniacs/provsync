@@ -8,10 +8,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"time"
 
 	"github.com/armaniacs/provsync/internal/adapter"
 	"github.com/armaniacs/provsync/internal/i18n"
+	"github.com/armaniacs/provsync/internal/lock"
 )
 
 // cleanupTargets は削除対象の実在パスを返す(セントラル設定・状態ディレクトリ)。
@@ -108,4 +111,68 @@ func askConfirm(o *options) (bool, error) {
 		return false, err
 	}
 	return parseConfirm(line), nil
+}
+
+// cmdCleanup は provsync 管理ファイルの完全削除を行う。
+// プレビューが既定で、--write は対話確認のうえ実行、--yes は確認なしで実行する。
+func cmdCleanup(o *options, args []string) error {
+	if len(args) > 0 {
+		return o.usageErr("err.usage.cleanup")
+	}
+	root, err := o.root()
+	if err != nil {
+		return err
+	}
+	targets := cleanupTargets(root)
+	if len(targets) == 0 {
+		o.msgf(o.out, "msg.cleanup.none")
+		return nil
+	}
+	o.msgf(o.out, "msg.cleanup.preview")
+	var total int64
+	for _, p := range targets {
+		sz := dirSize(p)
+		total += sz
+		o.msgf(o.out, "msg.cleanup.target", p, formatSize(sz))
+	}
+	o.msgf(o.out, "msg.cleanup.total", formatSize(total))
+	if !o.write && !o.yes {
+		return nil
+	}
+	if !o.yes {
+		ok, err := askConfirm(o)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			o.msgf(o.out, "msg.cleanup.cancelled")
+			return nil
+		}
+	}
+	release, err := lock.Acquire(root.StateDir(), 10*time.Second)
+	if err != nil {
+		return err
+	}
+	defer release()
+	useTrash := runtime.GOOS == "darwin"
+	var firstErr error
+	for _, p := range targets {
+		if useTrash {
+			if _, err := trashOne(p, true); err != nil {
+				o.warnf("warn.cleanup.trashFallback", p)
+			} else {
+				o.msgf(o.out, "msg.cleanup.trashed", p)
+				continue
+			}
+		}
+		if err := os.RemoveAll(p); err != nil {
+			o.warnf("warn.cleanup.failed", p)
+			if firstErr == nil {
+				firstErr = err
+			}
+			continue
+		}
+		o.msgf(o.out, "msg.cleanup.deleted", p)
+	}
+	return firstErr
 }
