@@ -7,6 +7,8 @@
 
 `provsync-tui` はベータ版として提供する。画面構成・キー操作・CLI との連携契約などの仕様は今後変更する可能性がある。
 
+## [0.3.2] - 2026-10-04
+
 ### Added
 
 - `make install` で CLI(`provsync`)と TUI(`provsync-tui`)の両方をインストールできるようにした。
@@ -18,15 +20,12 @@
 - TUI メニューのツール指定を入力式から選択式にした。status に出る一覧(パス・provider 数つき)から選ぶため入力ミスが起きない。空が有効な場合(sync の取り込み元)は先頭行で選べる。
 - TUI メニュー経由の `status` / `list` でセントラル設定の未作成が分かったとき、結果画面の `i` でそのまま作成フローに入れるようにした。
 - `provsync cleanup` コマンドを追加。provsync 管理ファイル(セントラル設定・状態)を削除する。macOS ではゴミ箱へ移動し、それ以外では直接削除する。`--write` + 対話確認または `--yes` で実行する。
+- ツール設定ファイルの候補に対応した。kilocode は `kilo.jsonc` → `kilo.json` → `config.json`、opencode は `opencode.jsonc` → `opencode.json` → `config.json` の順に探す（オフィシャルの読み順に準拠）。複数あるときは先に見つかった1ファイルだけを管理する。opencode の両拡張子はどちらも JSONC として読む。
 
 ### Changed
 
 - CLI の日本語表示を「セントラル設定」の表記に統一した（single source of truth の概念は「セントラルカノニカル設定」）。終了コード・JSON 出力は不変。
 - ツール設定が1つも無いときの `init` エラーに、最小構成例を含めるようにした。
-
-### Added
-
-- ツール設定ファイルの候補に対応した。kilocode は `kilo.jsonc` → `kilo.json` → `config.json`、opencode は `opencode.jsonc` → `opencode.json` → `config.json` の順に探す（オフィシャルの読み順に準拠）。複数あるときは先に見つかった1ファイルだけを管理する。opencode の両拡張子はどちらも JSONC として読む。
 
 ### Removed
 
