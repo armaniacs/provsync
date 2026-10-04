@@ -60,15 +60,22 @@ macOS / Linux only. Windows is unsupported.
 Go 1.25.14 or later.
 
 ```bash
+# Latest
 go install github.com/armaniacs/provsync@latest
+
+# Pinned version
+go install github.com/armaniacs/provsync@v0.3.3
 ```
+
+See [pkg.go.dev](https://pkg.go.dev/github.com/armaniacs/provsync) for the package details.
 
 Without the Go toolchain, download a prebuilt binary from Releases.
 
 ```bash
 # Example for macOS (Apple Silicon)
-curl -sLO https://github.com/armaniacs/provsync/releases/latest/download/provsync_<ver>_darwin_arm64.tar.gz
-tar xzf provsync_*_darwin_arm64.tar.gz
+VER=0.3.3
+curl -sLO https://github.com/armaniacs/provsync/releases/download/v${VER}/provsync_${VER}_darwin_arm64.tar.gz
+tar xzf provsync_${VER}_darwin_arm64.tar.gz
 sudo mv provsync /usr/local/bin/
 ```
 
