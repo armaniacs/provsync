@@ -62,10 +62,10 @@ Scenario: 抽出前後で出力が一切変わらない
 - [x] 警告の出力先（stderr）・文言・順序が不変である
 - [x] `pull` / `push` / `sync` / `init` のプレビュー出力が抽出前と byte-identical である
 
-## 実装ガイド（この順に実施。先に [00-implementation-guide.md](00-implementation-guide.md) を読む）
+## 実装ガイド（この順に実施。先に [00-implementation-guide.md](../00-implementation-guide.md) を読む）
 
 ### 先に読むファイル
-- [00-implementation-guide.md](00-implementation-guide.md)
+- [00-implementation-guide.md](../00-implementation-guide.md)
 - `internal/cli/cli.go` の `cmdPull` / `cmdInit` / `cmdPush` / `buildSyncPlan` / `applyOrPreview` / `cmdUndo` / `buildCentralChange` / `buildToolChange`
 - 台帳 `2026-10-03-00-backlog-holistic.md` の候補 C2（依存先は PBI 20）
 

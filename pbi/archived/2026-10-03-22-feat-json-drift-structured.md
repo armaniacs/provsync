@@ -61,7 +61,7 @@ Scenario: driftEntries が無い応答では従来の逆解析にフォールバ
 - [x] `make check` がパスする
 - [x] tui モジュールの `go build ./...` / `go test ./...` が tui/ 内でパスする
 
-## 実装ガイド（この順に実施。先に [00-implementation-guide.md](00-implementation-guide.md) を読む）
+## 実装ガイド（この順に実施。先に [00-implementation-guide.md](../00-implementation-guide.md) を読む）
 
 ### 先に読むファイル
 `internal/cli/cli.go` の `driftLines` / `buildStatusReport`、`tui/model.go` の `statusReport` / `providerFromDriftLine`

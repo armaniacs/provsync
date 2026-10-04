@@ -50,7 +50,7 @@ Scenario: シェル補完を生成する
 - [x] `make check` がパスする
 - [x] README / CHANGELOG 更新済み
 
-## 実装ガイド（この順に実施。先に [00-implementation-guide.md](00-implementation-guide.md) を読む）
+## 実装ガイド（この順に実施。先に [00-implementation-guide.md](../00-implementation-guide.md) を読む）
 
 ### 先に読むファイル
 `main.go`、`internal/cli/cli.go` の `Run` / `usage` / `reorder` と `fmt.Fprintf(o.out, "警告: ...")` の箇所、`cli_test.go` の `run` 補助関数。05（init）が済んでいること（サブコマンドが出揃ってから）。

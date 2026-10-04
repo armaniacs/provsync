@@ -65,7 +65,7 @@ Scenario: 非対話端末では TUI を起動しない
 - [x] `make check` がパスする
 - [x] README / CHANGELOG 更新済み
 
-## 実装ガイド（この順に実施。先に [00-implementation-guide.md](00-implementation-guide.md) を読む）
+## 実装ガイド（この順に実施。先に [00-implementation-guide.md](../00-implementation-guide.md) を読む）
 
 ### 最初に確認（実装ゲート）
 この PBI は未決事項がある。次を満たすまで TUI の実装に着手しない。満たされていなければ、下の「Step A: `check` コマンド」だけ実装して止まり、ユーザーに TUI の依存方針を確認する。

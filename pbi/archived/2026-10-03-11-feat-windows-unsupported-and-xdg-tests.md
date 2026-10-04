@@ -43,7 +43,7 @@ Scenario: Windows は未対応と分かる
 - [x] `make check` がパスする
 - [x] README / CHANGELOG 更新済み
 
-## 実装ガイド（この順に実施。先に [00-implementation-guide.md](00-implementation-guide.md) を読む）
+## 実装ガイド（この順に実施。先に [00-implementation-guide.md](../00-implementation-guide.md) を読む）
 
 ### 先に読むファイル
 `main.go`、`internal/adapter/adapter.go` の `NewRoot` / `ResolveRoot`、`internal/adapter/adapter_test.go`。

@@ -82,7 +82,7 @@ Scenario: 未知コマンドの扱いが変わらない
 - [x] 未知コマンド・使い方エラーの終了コードが不変（0/1/2）
 - [x] README に変更不要（コマンド表は手動管理のまま）で済むことを確認した
 
-## 実装ガイド（この順に実施。先に [00-implementation-guide.md](00-implementation-guide.md) を読む）
+## 実装ガイド（この順に実施。先に [00-implementation-guide.md](../00-implementation-guide.md) を読む）
 
 ### 先に読むファイル
 `internal/cli/cli.go` の `RunWith` の switch、`helpTexts`、`commands`、`cmdCompletion`、`printUsage` の現位置（PBI 20 実施後は helpTexts が help.go に移動されているため、記載の行番号に頼らず必ず現位置を確認する）。`cli_test.go` の補助関数（`setup` / `mustRun` / `run`）。

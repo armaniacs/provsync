@@ -48,7 +48,7 @@ Scenario: リンク切れは書き込まずにエラー
 - [x] `make check` がパスする
 - [x] README に dotfiles 管理との併用を追記、CHANGELOG 更新済み
 
-## 実装ガイド（この順に実施。先に [00-implementation-guide.md](00-implementation-guide.md) を読む）
+## 実装ガイド（この順に実施。先に [00-implementation-guide.md](../00-implementation-guide.md) を読む）
 
 ### 先に読むファイル
 `internal/fsutil/fsutil.go`（`WriteFileAtomic`）、`internal/backup/backup.go` の `capture` / `restoreFile`、`cli_test.go` の `setup`。

@@ -76,7 +76,7 @@ Scenario: 新規貢献者が描画層を修正する
 - [x] 新規ファイルが責務ごとに 1 つになっている
 - [x] README のパッケージ構成説明を更新した
 
-## 実装ガイド（この順に実施。先に [00-implementation-guide.md](00-implementation-guide.md) を読む）
+## 実装ガイド（この順に実施。先に [00-implementation-guide.md](../00-implementation-guide.md) を読む）
 
 ### 先に読むファイル
 `internal/cli/cli.go` 全体、`internal/cli/cli_test.go`、README のパッケージ構成説明。

@@ -43,7 +43,7 @@ Scenario: apiKeyEnv の環境変数が未設定
 - [x] `make check` がパスする
 - [x] README / CHANGELOG 更新済み
 
-## 実装ガイド（この順に実施。先に [00-implementation-guide.md](00-implementation-guide.md) を読む）
+## 実装ガイド（この順に実施。先に [00-implementation-guide.md](../00-implementation-guide.md) を読む）
 
 ### 先に読むファイル
 `cmdStatus`、`cmdList`、`adapter.Get` / `Pull`、`store.Load`、08 の `warnLoosePerm`。02・05・08 が済んでいること。

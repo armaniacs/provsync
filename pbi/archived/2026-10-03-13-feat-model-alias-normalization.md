@@ -58,7 +58,7 @@ Scenario: pull は ID を書き換えない
 - [x] `make check` がパスする
 - [x] README / CHANGELOG 更新済み
 
-## 実装ガイド（この順に実施。先に [00-implementation-guide.md](00-implementation-guide.md) を読む）
+## 実装ガイド（この順に実施。先に [00-implementation-guide.md](../00-implementation-guide.md) を読む）
 
 ### 先に読むファイル
 `internal/model/model.go`、`internal/syncer/syncer.go`、`internal/store/store.go`、`cli.go` の `cmdPush` と `buildSyncPlan`、`plan.go`。

@@ -49,7 +49,7 @@ Scenario: ツール別の上書き
 - [x] `make check` がパスする
 - [x] README / CHANGELOG 更新済み
 
-## 実装ガイド（この順に実施。先に [00-implementation-guide.md](00-implementation-guide.md) を読む）
+## 実装ガイド（この順に実施。先に [00-implementation-guide.md](../00-implementation-guide.md) を読む）
 
 ### 最初に確認（実装ゲート）
 13（モデルエイリアス）が完了していること。要件（優先順の表現方法）が曖昧なので、着手前にユーザーへ次を確認する: 「経路の優先順は中央設定の `routes` に、エイリアス名ごとに provider キーの配列で書く形でよいか」。承認がなければ実装しない。

@@ -8,10 +8,10 @@
 
 | 順位 | 候補 | PBI | Reach | Impact | Conf | Effort | RICE |
 |---|---|---|---|---|---|---|---|
-| 1 | C4: symlink 解決の共通化 | [2026-10-03-30](2026-10-03-30-refactor-symlink-resolve.md) | 2 | 1 | 0.8 | 1 | 1.6 |
-| 2 | C3: backup 記録経路の小規模硬化 | [2026-10-03-31](2026-10-03-31-fix-backup-record-hardening.md) | 3 | 1 | 1.0 | 2 | 1.5 |
-| 3 | C1: ツール状態収集の共通化 | [2026-10-03-32](2026-10-03-32-refactor-tool-state-collection.md) | 5 | 1 | 0.8 | 3 | 1.33 |
-| 4 | C2: TUI→CLI 実連携テスト | [2026-10-03-33](2026-10-03-33-test-tui-e2e-contract.md) | 3 | 1 | 0.8 | 3 | 0.8 |
+| 1 | C4: symlink 解決の共通化 | [2026-10-03-30](archived/2026-10-03-30-refactor-symlink-resolve.md) | 2 | 1 | 0.8 | 1 | 1.6 |
+| 2 | C3: backup 記録経路の小規模硬化 | [2026-10-03-31](archived/2026-10-03-31-fix-backup-record-hardening.md) | 3 | 1 | 1.0 | 2 | 1.5 |
+| 3 | C1: ツール状態収集の共通化 | [2026-10-03-32](archived/2026-10-03-32-refactor-tool-state-collection.md) | 5 | 1 | 0.8 | 3 | 1.33 |
+| 4 | C2: TUI→CLI 実連携テスト | [2026-10-03-33](archived/2026-10-03-33-test-tui-e2e-contract.md) | 3 | 1 | 0.8 | 3 | 0.8 |
 
 順序は RICE 降順そのまま。依存による逸脱なし（全候補が互いに独立、担当ファイルの重複ゼロ）。
 

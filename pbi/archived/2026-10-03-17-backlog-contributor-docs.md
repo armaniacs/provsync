@@ -33,7 +33,7 @@ Scenario: アダプタ追加の手順に従って新ツールを足せる
 - [x] `make check` がパスする
 - [x] ドキュメントは最新仕様のスナップショットのみ（経緯を書かない）
 
-## 実装ガイド（この順に実施。先に [00-implementation-guide.md](00-implementation-guide.md) を読む）
+## 実装ガイド（この順に実施。先に [00-implementation-guide.md](../00-implementation-guide.md) を読む）
 
 ### 先に読むファイル
 `internal/adapter/adapter.go` の `Adapter` インターフェイスと `carryOverSecrets`、`kilocode.go`、`opencode.go`、`adapter_test.go`、`AGENTS.md`。

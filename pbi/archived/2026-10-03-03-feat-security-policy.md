@@ -43,7 +43,7 @@ Scenario: 秘密に関する対象範囲が明確
 - [x] GitHub の非公開報告が有効化されている（外部設定・ユーザー作業）
 - [x] README から SECURITY.md へリンクしている
 
-## 実装ガイド（この順に実施。先に [00-implementation-guide.md](00-implementation-guide.md) を読む）
+## 実装ガイド（この順に実施。先に [00-implementation-guide.md](../00-implementation-guide.md) を読む）
 
 ### 先に読むファイル
 `README.md` の「秘密情報の扱い」節と「安全設計」節、`AGENTS.md` の Gotchas の秘密に関する項。`go.mod` の module 名（リポジトリは `github.com/armaniacs/provsync`）。

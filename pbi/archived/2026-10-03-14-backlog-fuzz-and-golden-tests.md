@@ -42,7 +42,7 @@ Scenario: 出力形式が意図せず変わらない
 - [x] 全BDDシナリオが自動テストとして実装されパスする
 - [x] `make check` がパスする
 
-## 実装ガイド（この順に実施。先に [00-implementation-guide.md](00-implementation-guide.md) を読む）
+## 実装ガイド（この順に実施。先に [00-implementation-guide.md](../00-implementation-guide.md) を読む）
 
 ### 先に読むファイル
 `internal/jsonc/jsonc.go` と `jsonc_test.go`、`internal/adapter/adapter_test.go`。

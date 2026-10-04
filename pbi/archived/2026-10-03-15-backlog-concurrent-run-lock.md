@@ -43,7 +43,7 @@ Scenario: 異常終了で残ったロックは自動回復する
 - [x] `make check` と `go test -race` がパスする
 - [x] README / CHANGELOG 更新済み
 
-## 実装ガイド（この順に実施。先に [00-implementation-guide.md](00-implementation-guide.md) を読む）
+## 実装ガイド（この順に実施。先に [00-implementation-guide.md](../00-implementation-guide.md) を読む）
 
 ### 先に読むファイル
 `cli.go` の `applyOrPreview` と `cmdUndo`、`internal/backup/backup.go` の `Record` / `Restore`（索引の読み→更新→保存）。

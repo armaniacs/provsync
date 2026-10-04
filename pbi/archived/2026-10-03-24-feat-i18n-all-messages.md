@@ -83,7 +83,7 @@ Scenario: README と docs の注意書きが新仕様と一致する
 - 非機能要件: ロケール解決は起動時に 1 回のみ。英語メッセージは日本語より長くなるため表の桁ずれを統合テストで確認
 - ロールバック: revert で可。カタログ追加は後方互換で、データ移行・既定動作の変更なし
 
-## 実装ガイド（この順に実施。先に [00-implementation-guide.md](00-implementation-guide.md) を読む）
+## 実装ガイド（この順に実施。先に [00-implementation-guide.md](../00-implementation-guide.md) を読む）
 
 ### 先に読むファイル
 `internal/cli/cli.go`（`Run` / `options` / `usage` / `reorder`）、`internal/cli/help.go`（ヘルプ本文）、`internal/cli/errors.go`（`UsageError`）、`internal/cli/status.go`、`internal/cli/sync.go`、`internal/adapter/adapter.go`、`internal/backup/backup.go`、`tui/`、README.md、docs/cli.md と docs/cli.en.md、mkdocs.yml（`i18n` プラグイン設定）。

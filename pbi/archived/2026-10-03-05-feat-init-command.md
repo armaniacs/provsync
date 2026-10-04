@@ -66,7 +66,7 @@ Scenario: 秘密情報の警告
 - [x] `make check` がパスする
 - [x] README に「はじめに」節を追加、CHANGELOG 更新済み
 
-## 実装ガイド（この順に実施。先に [00-implementation-guide.md](00-implementation-guide.md) を読む）
+## 実装ガイド（この順に実施。先に [00-implementation-guide.md](../00-implementation-guide.md) を読む）
 
 ### 先に読むファイル
 `internal/cli/cli.go` の `cmdPull`（そのままの手本）、`buildCentralChange`、`applyOrPreview`、`loadCentralOrNew`。`cli_test.go` の `TestPullWriteCreatesCentral`。02 と 04 が済んでいること。

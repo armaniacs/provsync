@@ -8,10 +8,10 @@
 
 | 順位 | 候補 | PBI | Reach | Impact | Conf | Effort | RICE |
 |---|---|---|---|---|---|---|---|
-| 1 | C3: 実装ガイド・AGENTS.md ドリフト修正 | [2026-10-03-28](2026-10-03-28-docs-structure-map-drift.md) | 7 | 1 | 1.0 | 1 | 7.0 |
-| 2 | C1: TUI 非同期適用の Msg 化 + 遷移網羅テスト | [2026-10-03-26](2026-10-03-26-fix-tui-apply-msg-race.md) | 5 | 2 | 1.0 | 3 | 3.33 |
-| 3 | C4: 小規模重複の解消バッチ | [2026-10-03-29](2026-10-03-29-refactor-small-dedup.md) | 3 | 1 | 1.0 | 2 | 1.5 |
-| 4 | C2: jsonc 単一走査への統合 | [2026-10-03-27](2026-10-03-27-refactor-jsonc-single-pass.md) | 4 | 1 | 0.8 | 3 | 1.07 |
+| 1 | C3: 実装ガイド・AGENTS.md ドリフト修正 | [2026-10-03-28](archived/2026-10-03-28-docs-structure-map-drift.md) | 7 | 1 | 1.0 | 1 | 7.0 |
+| 2 | C1: TUI 非同期適用の Msg 化 + 遷移網羅テスト | [2026-10-03-26](archived/2026-10-03-26-fix-tui-apply-msg-race.md) | 5 | 2 | 1.0 | 3 | 3.33 |
+| 3 | C4: 小規模重複の解消バッチ | [2026-10-03-29](archived/2026-10-03-29-refactor-small-dedup.md) | 3 | 1 | 1.0 | 2 | 1.5 |
+| 4 | C2: jsonc 単一走査への統合 | [2026-10-03-27](archived/2026-10-03-27-refactor-jsonc-single-pass.md) | 4 | 1 | 0.8 | 3 | 1.07 |
 
 順序は RICE 降順そのまま。依存による逸脱なし（全候補が互いに独立、担当ファイルの重複ゼロ）。
 

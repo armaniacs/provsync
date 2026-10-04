@@ -45,7 +45,7 @@ Scenario: データ競合は検出される
 - [x] `make check` がパスする
 - [x] AGENTS.md / README のバッジ・手順更新済み
 
-## 実装ガイド（この順に実施。先に [00-implementation-guide.md](00-implementation-guide.md) を読む）
+## 実装ガイド（この順に実施。先に [00-implementation-guide.md](../00-implementation-guide.md) を読む）
 
 ### 先に読むファイル
 `Makefile`、`AGENTS.md`（「No CI workflows」の記述）、`go.mod`（`go 1.25.14`）。

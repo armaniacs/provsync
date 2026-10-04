@@ -8,10 +8,10 @@
 
 | 順位 | 候補 | PBI | Reach | Impact | Conf | Effort | RICE |
 |---|---|---|---|---|---|---|---|
-| 1 | C1: cli.go の責務分割 | [2026-10-03-20](2026-10-03-20-refactor-cli-file-split.md) | 7 | 1 | 1.0 | 3 | 2.33 |
-| 2 | C2: pull/push パイプライン共通化 | [2026-10-03-21](2026-10-03-21-refactor-sync-pipeline-dedup.md) | 5 | 1 | 1.0 | 3 | 1.67 |
-| 3 | C4: JSON drift 構造化 | [2026-10-03-22](2026-10-03-22-feat-json-drift-structured.md) | 3 | 2 | 0.8 | 3 | 1.6 |
-| 4 | C3: コマンドレジストリ統一 | [2026-10-03-23](2026-10-03-23-refactor-command-registry.md) | 3 | 1 | 0.8 | 3 | 0.8 |
+| 1 | C1: cli.go の責務分割 | [2026-10-03-20](archived/2026-10-03-20-refactor-cli-file-split.md) | 7 | 1 | 1.0 | 3 | 2.33 |
+| 2 | C2: pull/push パイプライン共通化 | [2026-10-03-21](archived/2026-10-03-21-refactor-sync-pipeline-dedup.md) | 5 | 1 | 1.0 | 3 | 1.67 |
+| 3 | C4: JSON drift 構造化 | [2026-10-03-22](archived/2026-10-03-22-feat-json-drift-structured.md) | 3 | 2 | 0.8 | 3 | 1.6 |
+| 4 | C3: コマンドレジストリ統一 | [2026-10-03-23](archived/2026-10-03-23-refactor-command-registry.md) | 3 | 1 | 0.8 | 3 | 0.8 |
 
 順序は RICE 降順そのまま。依存による逸脱なし（C1 が C2/C3 の土台、C4 と C3 は cli_test.go が重なるため直列）。
 

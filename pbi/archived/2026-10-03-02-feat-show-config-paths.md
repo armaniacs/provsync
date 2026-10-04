@@ -43,7 +43,7 @@ Scenario: --root 指定時は差し替え後のパスを表示する
 - [x] `make check` がパスする
 - [x] README / CHANGELOG 更新済み
 
-## 実装ガイド（この順に実施。先に [00-implementation-guide.md](00-implementation-guide.md) を読む）
+## 実装ガイド（この順に実施。先に [00-implementation-guide.md](../00-implementation-guide.md) を読む）
 
 ### 先に読むファイル
 `internal/cli/cli.go` の `Run`（`opts.help || len(pos) == 0` の分岐）と `usage`、`cmdList`（パスの出し方の手本）、`internal/adapter/adapter.go` の `Root` / `Names` / `Get`。01 が済んでいること。
