@@ -4,6 +4,7 @@ package cli
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -96,21 +97,35 @@ func parseConfirm(s string) bool {
 	return s == "y" || s == "yes"
 }
 
-// askConfirm は対話確認を行う。非端末 stdin では err.cleanup.interactive を返す。
-func askConfirm(o *options) (bool, error) {
-	fi, err := os.Stdin.Stat()
-	if err != nil {
+// confirmFrom は確認入力を 1 行読んで判定する。空入力(EOF)は中止 (false, nil)。
+func confirmFrom(r io.Reader) (bool, error) {
+	line, err := bufio.NewReader(r).ReadString('\n')
+	if err != nil && err != io.EOF {
 		return false, err
 	}
-	if fi.Mode()&os.ModeCharDevice == 0 {
-		return false, i18n.New("err.cleanup.interactive")
-	}
-	fmt.Fprintf(o.out, "%s ", o.T("msg.cleanup.confirm"))
-	line, err := bufio.NewReader(os.Stdin).ReadString('\n')
-	if err != nil {
-		return false, err
+	if line == "" {
+		return false, nil
 	}
 	return parseConfirm(line), nil
+}
+
+// isTerminalStdin は stdin が端末かどうかを返す。単体テストは環境依存のため置かない。
+func isTerminalStdin() bool {
+	fi, err := os.Stdin.Stat()
+	if err != nil {
+		return false
+	}
+	return fi.Mode()&os.ModeCharDevice != 0
+}
+
+// askConfirm は対話確認を行う。非端末 stdin では err.cleanup.interactive を返す。
+// プロンプトは stdout を汚さないよう errOut へ出す。
+func askConfirm(o *options) (bool, error) {
+	if !isTerminalStdin() {
+		return false, i18n.New("err.cleanup.interactive")
+	}
+	fmt.Fprintf(o.errOut, "%s ", o.T("msg.cleanup.confirm"))
+	return confirmFrom(os.Stdin)
 }
 
 // cmdCleanup は provsync 管理ファイルの完全削除を行う。
@@ -154,12 +169,19 @@ func cmdCleanup(o *options, args []string) error {
 		return err
 	}
 	defer release()
+	// lock.Acquire が状態ディレクトリを作るため、ここで数え直す。
+	// セントラルのみの環境でも空の状態ディレクトリを残さない。
+	targets = cleanupTargets(root)
 	useTrash := runtime.GOOS == "darwin"
+	trash := o.trash
+	if trash == nil {
+		trash = func(p string) (bool, error) { return trashOne(p, runtime.GOOS == "darwin") }
+	}
 	var firstErr error
 	for _, p := range targets {
-		if useTrash {
-			if _, err := trashOne(p, true); err != nil {
-				o.warnf("warn.cleanup.trashFallback", p)
+		if useTrash || o.trash != nil {
+			if _, err := trash(p); err != nil {
+				o.warnf("warn.cleanup.trashFallback", p, err)
 			} else {
 				o.msgf(o.out, "msg.cleanup.trashed", p)
 				continue

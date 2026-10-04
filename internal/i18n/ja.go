@@ -150,7 +150,7 @@ var jaCatalog = map[string]string{
 	"msg.cleanup.none":           "削除対象がありません",
 	"msg.cleanup.trashed":        "ゴミ箱へ移動: %s",
 	"msg.cleanup.deleted":        "削除: %s",
-	"warn.cleanup.trashFallback": "ゴミ箱への移動に失敗したため直接削除します: %s",
+	"warn.cleanup.trashFallback": "ゴミ箱への移動に失敗したため直接削除します: %s (%v)",
 	"warn.cleanup.failed":        "削除に失敗: %s",
 
 	// ---- cli: 描画 ----
@@ -365,7 +365,13 @@ var jaCatalog = map[string]string{
 
 フラグなしでは削除対象の一覧だけを表示する。--write は対話確認のうえで
 実行する。--yes は確認なしで実行する(TUI・スクリプト用)。macOS では
-ゴミ箱へ移動し、それ以外では直接削除する。`,
+ゴミ箱へ移動し、それ以外では直接削除する。
+
+例:
+  provsync cleanup
+  provsync cleanup --write
+  provsync cleanup --yes
+`,
 	"help.doctor": `doctor - 環境を診断する
 
 用途: 設定の存在・構文・apiKeyEnv の環境変数・権限を一覧で診断する。

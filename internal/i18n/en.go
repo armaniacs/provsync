@@ -150,7 +150,7 @@ var enCatalog = map[string]string{
 	"msg.cleanup.none":           "nothing to remove",
 	"msg.cleanup.trashed":        "moved to Trash: %s",
 	"msg.cleanup.deleted":        "deleted: %s",
-	"warn.cleanup.trashFallback": "could not move to Trash, deleting directly: %s",
+	"warn.cleanup.trashFallback": "could not move to Trash, deleting directly: %s (%v)",
 	"warn.cleanup.failed":        "failed to remove: %s",
 
 	// ---- cli: 描画 ----
@@ -366,7 +366,13 @@ and binaries are never touched.
 Without flags, prints what would be removed. --write executes after an
 interactive confirmation. --yes executes without confirmation (for scripts
 and the TUI). On macOS, files are moved to the Trash; elsewhere they are
-deleted directly.`,
+deleted directly.
+
+Examples:
+  provsync cleanup
+  provsync cleanup --write
+  provsync cleanup --yes
+`,
 	"help.doctor": `doctor - diagnose the environment
 
 Purpose: diagnose config existence, syntax, apiKeyEnv env vars, and permissions in a list.

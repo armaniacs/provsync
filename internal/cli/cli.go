@@ -39,6 +39,8 @@ type options struct {
 	exitCode    bool
 	strict      bool
 	yes         bool
+	// trash は cleanup のゴミ箱移動フック。nil なら既定動作(runtime.GOOS で判定)。
+	trash func(path string) (trashed bool, err error)
 }
 
 // T は実行時の言語でカタログ文言を返す。

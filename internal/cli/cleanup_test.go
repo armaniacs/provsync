@@ -1,10 +1,15 @@
 package cli
 
 import (
+	"bytes"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/armaniacs/provsync/internal/lock"
 )
 
 func TestTrashOneDirectDelete(t *testing.T) {
@@ -85,6 +90,23 @@ func TestTrashOneDarwinEscapesBackslash(t *testing.T) {
 	if !strings.Contains(string(raw), `a\\b`) {
 		t.Errorf("osascript must receive the backslash doubly escaped, log:\n%s", raw)
 	}
+	q := filepath.Join(dir, `a"b`, "c.txt")
+	if err := os.MkdirAll(filepath.Dir(q), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(q, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := trashOne(q, true); err != nil {
+		t.Fatalf("trashOne trash: %v", err)
+	}
+	raw, err = os.ReadFile(log)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), "a\\\"b") {
+		t.Errorf("osascript must receive the double quote escaped, log:\n%s", raw)
+	}
 }
 
 func TestTrashOneDarwinFailure(t *testing.T) {
@@ -119,6 +141,43 @@ func TestParseConfirm(t *testing.T) {
 		}
 	}
 }
+
+func TestConfirmFrom(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		in   string
+		want bool
+	}{
+		{"y", "y\n", true},
+		{"Y", "Y\n", true},
+		{"yes", "yes\n", true},
+		{"spaced yes", " yes \n", true},
+		{"n", "n\n", false},
+		{"no", "no\n", false},
+		{"empty line", "\n", false},
+		{"eof", "", false},
+	} {
+		got, err := confirmFrom(strings.NewReader(c.in))
+		if err != nil {
+			t.Errorf("%s: unexpected error %v", c.name, err)
+		}
+		if got != c.want {
+			t.Errorf("%s: confirmFrom(%q) = %v, want %v", c.name, c.in, got, c.want)
+		}
+	}
+	sentinel := errors.New("read failed")
+	got, err := confirmFrom(errReader{err: sentinel})
+	if got {
+		t.Error("reader error must return false")
+	}
+	if !errors.Is(err, sentinel) {
+		t.Errorf("reader error must propagate, got %v", err)
+	}
+}
+
+type errReader struct{ err error }
+
+func (e errReader) Read([]byte) (int, error) { return 0, e.err }
 
 func TestCleanupRejectsArgs(t *testing.T) {
 	f := setup(t)
@@ -183,5 +242,78 @@ func TestCleanupYesRemovesTargets(t *testing.T) {
 	}
 	if !strings.Contains(out, f.central) {
 		t.Errorf("must report removed targets:\n%s", out)
+	}
+}
+
+func TestCleanupRemovesCreatedStateDir(t *testing.T) {
+	f := setup(t)
+	// 直接セントラルだけを書く。pull を経ないので状態ディレクトリはまだ無い。
+	write(t, f.central, "{}")
+	stateDir := filepath.Join(f.root, ".local", "state", "provsync")
+	if _, err := os.Stat(stateDir); !os.IsNotExist(err) {
+		t.Fatalf("state dir must not exist before cleanup: %v", err)
+	}
+	if _, err := run(t, f.root, "cleanup", "--yes"); err != nil {
+		t.Fatalf("cleanup --yes must succeed: %v", err)
+	}
+	if _, err := os.Stat(f.central); !os.IsNotExist(err) {
+		t.Errorf("central config must be gone: %v", err)
+	}
+	if _, err := os.Stat(stateDir); !os.IsNotExist(err) {
+		t.Errorf("created state dir must be gone: %v", err)
+	}
+}
+
+func TestCleanupFallbackOnTrashFailure(t *testing.T) {
+	f := setup(t)
+	write(t, f.central, "{}")
+	var outBuf, errBuf bytes.Buffer
+	o := &options{
+		out:      &outBuf,
+		errOut:   &errBuf,
+		lang:     "en",
+		rootFlag: f.root,
+		write:    true,
+		yes:      true,
+		trash: func(string) (bool, error) {
+			return false, errors.New("no Finder")
+		},
+	}
+	if err := cmdCleanup(o, nil); err != nil {
+		t.Fatalf("cleanup must succeed after fallback: %v", err)
+	}
+	if _, err := os.Stat(f.central); !os.IsNotExist(err) {
+		t.Errorf("central config must be gone: %v", err)
+	}
+	stateDir := filepath.Join(f.root, ".local", "state", "provsync")
+	if _, err := os.Stat(stateDir); !os.IsNotExist(err) {
+		t.Errorf("state dir must be gone: %v", err)
+	}
+	if !strings.Contains(errBuf.String(), "could not move to Trash") {
+		t.Errorf("stderr must contain the fallback warning:\n%s", errBuf.String())
+	}
+	if !strings.Contains(outBuf.String(), "deleted: ") {
+		t.Errorf("stdout must contain deleted lines:\n%s", outBuf.String())
+	}
+}
+
+func TestCleanupLockBusy(t *testing.T) {
+	f := setup(t)
+	mustRun(t, f.root, "pull", "kilocode", "--write")
+	stateDir := filepath.Join(f.root, ".local", "state", "provsync")
+	release, err := lock.Acquire(stateDir, time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer release()
+	// cleanup はロックタイムアウト(約 10 秒)を待ち切ってから busy を返す。
+	if _, err := run(t, f.root, "cleanup", "--yes"); err == nil {
+		t.Fatal("cleanup must fail while the lock is held")
+	}
+	if _, err := os.Stat(f.central); err != nil {
+		t.Errorf("central config must remain: %v", err)
+	}
+	if _, err := os.Stat(stateDir); err != nil {
+		t.Errorf("state dir must remain: %v", err)
 	}
 }

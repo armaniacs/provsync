@@ -143,8 +143,8 @@ func (m *listModel) activateMenuCmd() {
 	}
 	if len(c.prompts) == 0 {
 		if c.mutating {
-			// prompt-less mutating command (cleanup): preview output doubles
-			// as the warning; y/enter on the preview screen runs the apply step.
+			// プロンプト無しの書き込みコマンド(cleanup)は、プレビュー出力を
+			// 警告として兼ねる。プレビュー画面での y/enter が適用処理を実行する。
 			out, err := m.runMenuCommand(c.previewArgs(nil))
 			m.menuPreview = out
 			m.menuPreviewErr = err != nil
