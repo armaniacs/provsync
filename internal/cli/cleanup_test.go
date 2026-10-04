@@ -58,6 +58,35 @@ func TestTrashOneDarwinSuccess(t *testing.T) {
 	}
 }
 
+func TestTrashOneDarwinEscapesBackslash(t *testing.T) {
+	dir := t.TempDir()
+	bindir := t.TempDir()
+	log := filepath.Join(dir, "osascript.log")
+	script := "#!/bin/sh\nprintf '%s\\n' \"$@\" >> \"" + log + "\"\nexit 0\n"
+	bin := filepath.Join(bindir, "osascript")
+	if err := os.WriteFile(bin, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bindir+":"+os.Getenv("PATH"))
+	p := filepath.Join(dir, `a\b`, "c.txt")
+	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(p, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := trashOne(p, true); err != nil {
+		t.Fatalf("trashOne trash: %v", err)
+	}
+	raw, err := os.ReadFile(log)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), `a\\b`) {
+		t.Errorf("osascript must receive the backslash doubly escaped, log:\n%s", raw)
+	}
+}
+
 func TestTrashOneDarwinFailure(t *testing.T) {
 	dir := t.TempDir()
 	bindir := t.TempDir()
@@ -76,7 +105,7 @@ func TestTrashOneDarwinFailure(t *testing.T) {
 }
 
 func TestFormatSize(t *testing.T) {
-	for in, want := range map[int64]string{0: "0 B", 512: "512 B", 1023: "1023 B", 1024: "1.0 KB", 1536: "1.5 KB", 1048576: "1.0 MB"} {
+	for in, want := range map[int64]string{0: "0 B", -5: "0 B", -2097152: "0 B", 512: "512 B", 1023: "1023 B", 1024: "1.0 KB", 1536: "1.5 KB", 1048576: "1.0 MB"} {
 		if got := formatSize(in); got != want {
 			t.Errorf("formatSize(%d) = %q, want %q", in, got, want)
 		}

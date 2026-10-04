@@ -43,8 +43,10 @@ func trashOne(path string, useTrash bool) (bool, error) {
 	if !useTrash {
 		return false, os.RemoveAll(path)
 	}
-	// Finder resolves the path itself; escape embedded double quotes.
-	escaped := strings.ReplaceAll(path, `"`, `\"`)
+	// Finder resolves the path itself; escape backslashes before double quotes
+	// so AppleScript does not misinterpret either.
+	escaped := strings.ReplaceAll(path, `\`, `\\`)
+	escaped = strings.ReplaceAll(escaped, `"`, `\"`)
 	cmd := exec.Command("osascript", "-e",
 		`tell application "Finder" to delete POSIX file "`+escaped+`"`)
 	if err := cmd.Run(); err != nil {
@@ -72,6 +74,9 @@ func dirSize(path string) int64 {
 }
 
 func formatSize(n int64) string {
+	if n < 0 {
+		n = 0
+	}
 	switch {
 	case n < 1024:
 		return fmt.Sprintf("%d B", n)
