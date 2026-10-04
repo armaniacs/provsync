@@ -150,18 +150,20 @@ func TestCleanupPreviewListsTargets(t *testing.T) {
 func TestCleanupNothingToRemove(t *testing.T) {
 	f := setup(t)
 	t.Setenv("PROVSYNC_LANG", "en")
-	if err := os.Remove(f.kilo); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Remove(f.opencode); err != nil {
-		t.Fatal(err)
-	}
+	// setup creates tool configs only; the central config and state dir do
+	// not exist until a --write run, so there is nothing to remove. Cleanup
+	// must never touch the tool configs.
 	out, err := run(t, f.root, "cleanup", "--yes")
 	if err != nil {
 		t.Fatalf("--yes with no targets must succeed: %v", err)
 	}
 	if !strings.Contains(out, "nothing to remove") {
 		t.Errorf("must report nothing to remove:\n%s", out)
+	}
+	for _, p := range []string{f.kilo, f.opencode} {
+		if _, err := os.Stat(p); err != nil {
+			t.Errorf("tool config must remain untouched: %s: %v", p, err)
+		}
 	}
 }
 
