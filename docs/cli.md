@@ -12,6 +12,7 @@
 | `sync --from <a> --to <b>` | a を取り込み b へ反映する(`--from` 省略時はセントラル設定をそのまま使う) |
 | `diff <from> <to>` | from を to に適用した場合の差分(意味差分 + 統合 diff)を表示 |
 | `undo [id]` | 直前または指定操作を復元する(`--list` で履歴、`--prune --keep <n>` で掃除) |
+| `cleanup` | provsync 管理ファイル(セントラル設定・状態)を削除する(macOS はゴミ箱へ) |
 | `doctor` | 環境を診断する(存在・構文・`apiKeyEnv`・権限。通信しない) |
 | `check` | 各 provider の API 到達可否を確認する(通信するのはこのコマンドだけ) |
 | `completion <shell>` | bash / zsh / fish 用の補完スクリプトを出力 |
@@ -32,6 +33,7 @@
 | `--json` | `false` | `list` / `status` / `diff` を JSON で出力する |
 | `--exit-code` | `false` | `status` で差分があるとき終了コード 3 で終了する |
 | `--strict` | `false` | エイリアス未定義のモデル名があるときエラーにする(push) |
+| `--yes` | `false` | 確認なしで実行する(TUI・スクリプト用) |
 | `--version` | `false` | バージョンを表示 |
 | `--help` / `-h` | `false` | ヘルプを表示 |
 

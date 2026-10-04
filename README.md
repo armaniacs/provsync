@@ -175,6 +175,7 @@ $ provsync undo
 | `sync --from <a> --to <b>` | a を取り込み b へ反映する(`--from` 省略時はセントラル設定をそのまま使う) |
 | `diff <from> <to>` | from を to に適用した場合の差分(意味差分 + 統合 diff)を表示 |
 | `undo [id]` | 直前または指定操作を復元する(`--list` で履歴、`--prune --keep <n>` で掃除) |
+| `cleanup` | provsync 管理ファイル(セントラル設定・状態)を削除する(macOS はゴミ箱へ) |
 | `doctor` | 環境を診断する(存在・構文・`apiKeyEnv`・権限。通信しない) |
 | `check` | 各 provider の API 到達可否を確認する(通信するのはこのコマンドだけ) |
 | `completion <shell>` | bash / zsh / fish 用の補完スクリプトを出力 |
@@ -193,6 +194,7 @@ $ provsync undo
 | `--json` | `false` | `list` / `status` / `diff` を JSON で出力する |
 | `--exit-code` | `false` | `status` で差分があるとき終了コード 3 で終了する |
 | `--strict` | `false` | エイリアス未定義のモデル名があるときエラーにする(push) |
+| `--yes` | `false` | 確認なしで実行する(TUI・スクリプト用) |
 | `--version` | `false` | バージョンを表示 |
 | `--help` / `-h` | `false` | ヘルプを表示 |
 
@@ -568,6 +570,7 @@ redo: provsync undo 20261002T100001-51b7
 | `sync --from <a> --to <b>` | Pull from a and push to b (`--from` optional: uses the central config as-is) |
 | `diff <from> <to>` | Show what applying from to to would change (semantic + unified diff) |
 | `undo [id]` | Restore the last (or given) operation (`--list` for history, `--prune --keep <n>` to clean up) |
+| `cleanup` | Remove provsync-managed files (central config and state; Trash on macOS) |
 | `doctor` | Diagnose the environment (existence, syntax, `apiKeyEnv`, permissions; no network) |
 | `check` | Check API reachability per provider (the only command that talks to the network) |
 | `completion <shell>` | Print a completion script for bash / zsh / fish |
@@ -586,6 +589,7 @@ redo: provsync undo 20261002T100001-51b7
 | `--json` | `false` | Output `list` / `status` / `diff` as JSON |
 | `--exit-code` | `false` | Exit with code 3 when `status` detects drift |
 | `--strict` | `false` | Fail when model names have no alias mapping (push) |
+| `--yes` | `false` | Assume yes to confirmations (scripts and TUI) |
 | `--version` | `false` | Show the version |
 | `--help` / `-h` | `false` | Show help |
 

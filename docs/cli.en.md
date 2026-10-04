@@ -12,6 +12,7 @@
 | `sync --from <a> --to <b>` | Pull from a and push to b (`--from` optional: uses the central config as-is) |
 | `diff <from> <to>` | Show what applying from to to would change (semantic + unified diff) |
 | `undo [id]` | Restore the last (or given) operation (`--list` for history, `--prune --keep <n>` to clean up) |
+| `cleanup` | Remove provsync-managed files (central config and state; Trash on macOS) |
 | `doctor` | Diagnose the environment (existence, syntax, `apiKeyEnv`, permissions; no network) |
 | `check` | Check API reachability per provider (the only command that talks to the network) |
 | `completion <shell>` | Print a completion script for bash / zsh / fish |
@@ -32,6 +33,7 @@
 | `--json` | `false` | Output `list` / `status` / `diff` as JSON |
 | `--exit-code` | `false` | Exit with code 3 when `status` detects drift |
 | `--strict` | `false` | Fail when model names have no alias mapping (push) |
+| `--yes` | `false` | Assume yes to confirmations (scripts and TUI) |
 | `--version` | `false` | Show the version |
 | `--help` / `-h` | `false` | Show help |
 
