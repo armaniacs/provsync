@@ -49,6 +49,7 @@ var menuCommands = []menuCmd{
 	{name: "init", prompts: []menuPromptDef{{labelKey: "msg.tui.promptTool", optional: true, pick: true}}, mutating: true, previewFirst: true, summaryKey: "usage.summary.init"},
 	{name: "version", summaryKey: "usage.summary.version"},
 	{name: "completion", prompts: []menuPromptDef{{labelKey: "msg.tui.promptShell", optional: false}}, summaryKey: "usage.summary.completion"},
+	{name: "cleanup", mutating: true, previewFirst: true, summaryKey: "usage.summary.cleanup"},
 }
 
 // previewArgs はプレビュー用の引数列を作る。--write は付けない(読み取り専用)。
@@ -92,6 +93,8 @@ func (c menuCmd) applyArgs(v []string) []string {
 			return []string{"undo"}
 		}
 		return []string{"undo", v[0]}
+	case "cleanup":
+		return []string{"cleanup", "--yes"}
 	default:
 		return append(c.previewArgs(v), "--write")
 	}
@@ -139,6 +142,15 @@ func (m *listModel) activateMenuCmd() {
 		return
 	}
 	if len(c.prompts) == 0 {
+		if c.mutating {
+			// prompt-less mutating command (cleanup): preview output doubles
+			// as the warning; y/enter on the preview screen runs the apply step.
+			out, err := m.runMenuCommand(c.previewArgs(nil))
+			m.menuPreview = out
+			m.menuPreviewErr = err != nil
+			m.screen = screenMenuPreview
+			return
+		}
 		m.menuOutput, _ = m.runMenuCommand(c.previewArgs(nil))
 		m.menuLastCmd = c.name
 		m.screen = screenMenuResult

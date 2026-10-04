@@ -24,6 +24,8 @@ case " $* " in
 *"status --json"*) printf '{"schemaVersion":1,"central":{"path":"/c","exists":true,"providers":0},"tools":[]}';;
 *"undo --list"*) printf 'op9  2026-01-01 00:00:00  push x\n    /f\n';;
 *"undo"*) printf 'restored: op9\n';;
+*"cleanup --yes"*) printf 'deleted: /c\n';;
+" cleanup ") printf 'the following will be removed:\n  /c (1.0 KB)\n';;
 *"pull "*|*"push "*|*"sync "*|*"init "*) printf 'preview line\n';;
 " status ") printf 'central config: /c (0 providers)\n';;
 *) printf 'ok output\n';;
@@ -587,5 +589,35 @@ func TestMenuResultNoHintForOtherCommands(t *testing.T) {
 	}
 	if strings.Contains(m4.View(), "press i to create it now") {
 		t.Errorf("non-status result must not guide creation:\n%s", m4.View())
+	}
+}
+
+func TestMenuShowsCleanup(t *testing.T) {
+	m, _ := menuTestModel(t)
+	m2, _ := press(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'m'}})
+	if !strings.Contains(m2.View(), "cleanup") {
+		t.Errorf("menu must list cleanup:\n%s", m2.View())
+	}
+}
+
+func TestMenuCleanupPreviewAndApply(t *testing.T) {
+	m, log := menuTestModel(t)
+	// cleanup is the last menu item: jump with G.
+	m2, _ := press(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'m'}})
+	updated, _ := m2.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'G'}})
+	m3 := updated.(*listModel)
+	updated, _ = m3.Update(enterKey())
+	m4 := updated.(*listModel)
+	if m4.screen != screenMenuPreview {
+		t.Fatalf("cleanup must show the preview, got screen %d", m4.screen)
+	}
+	updated, _ = m4.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	m5 := updated.(*listModel)
+	if m5.screen != screenMenuResult {
+		t.Fatalf("y must run and show the result, got screen %d", m5.screen)
+	}
+	calls := loggedArgs(t, log)
+	if len(calls) != 2 || calls[0] != "cleanup" || calls[1] != "cleanup --yes" {
+		t.Errorf("cleanup must preview then run with --yes: %v", calls)
 	}
 }
