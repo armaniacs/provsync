@@ -38,6 +38,7 @@ type options struct {
 	jsonOut     bool
 	exitCode    bool
 	strict      bool
+	yes         bool
 }
 
 // T は実行時の言語でカタログ文言を返す。
@@ -127,6 +128,7 @@ func registerFlags(fs *flag.FlagSet, o *options) {
 	fs.BoolVar(&o.jsonOut, "json", o.jsonOut, o.T("flag.json"))
 	fs.BoolVar(&o.exitCode, "exit-code", o.exitCode, o.T("flag.exitCode"))
 	fs.BoolVar(&o.strict, "strict", o.strict, o.T("flag.strict"))
+	fs.BoolVar(&o.yes, "yes", o.yes, o.T("flag.yes"))
 	fs.BoolVar(&o.version, "version", o.version, o.T("flag.version"))
 	fs.BoolVar(&o.showSecrets, "show-secrets", o.showSecrets, o.T("flag.showSecrets"))
 	fs.BoolVar(&o.help, "help", o.help, o.T("flag.help"))

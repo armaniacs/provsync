@@ -58,6 +58,7 @@ var jaCatalog = map[string]string{
 	"flag.json":        "JSON で出力する(list / status / diff)",
 	"flag.exitCode":    "差分があるとき終了コード 3 で終了する(status)",
 	"flag.strict":      "エイリアス未定義のモデル名があるときエラーにする(push)",
+	"flag.yes":         "確認を省略して実行する(TUI・スクリプト用)",
 	"flag.version":     "バージョンを表示",
 	"flag.showSecrets": "diff の出力で秘密の値をそのまま表示する(非推奨)",
 	"flag.help":        "ヘルプを表示",
@@ -81,6 +82,7 @@ var jaCatalog = map[string]string{
 	"usage.summary.sync":       "a を取り込み b へ反映する(--from 省略可)",
 	"usage.summary.diff":       "from を to に適用した場合の差分を表示",
 	"usage.summary.undo":       "直前または指定操作を復元する(--list で履歴)",
+	"usage.summary.cleanup":    "provsync 管理ファイルを削除する(セントラル設定と状態)",
 	"usage.summary.doctor":     "環境を診断する(通信しない)",
 	"usage.summary.check":      "各 provider の API 到達可否を確認する(明示実行のみ)",
 	"usage.summary.completion": "シェル補完スクリプトを出力",
@@ -92,6 +94,7 @@ var jaCatalog = map[string]string{
 	"err.usage.push":              "使い方: provsync push <tool>",
 	"err.usage.sync":              "使い方: provsync sync --from <a> --to <b>(--from は省略可)",
 	"err.usage.diff":              "使い方: provsync diff <from> <to>",
+	"err.usage.cleanup":           "使い方: provsync cleanup [--write] [--yes]",
 	"err.usage.completion":        "使い方: provsync completion <bash|zsh|fish>",
 	"err.completion.unknownShell": "未知のシェル %q です(有効: bash / zsh / fish)",
 
@@ -136,6 +139,19 @@ var jaCatalog = map[string]string{
 	"msg.redo":           "やり直し: provsync undo %s",
 	"msg.undo.restored":  "  復元: %s",
 	"msg.undo.removed":   "  削除: %s",
+
+	// ---- cli: cleanup ----
+	"err.cleanup.interactive":    "対話が必要です(標準入力が端末ではありません)",
+	"msg.cleanup.preview":        "次を削除します:",
+	"msg.cleanup.target":         "%s (%s)",
+	"msg.cleanup.total":          "合計: %s",
+	"msg.cleanup.confirm":        "本当に削除しますか? y / n",
+	"msg.cleanup.cancelled":      "中止しました",
+	"msg.cleanup.none":           "削除対象がありません",
+	"msg.cleanup.trashed":        "ゴミ箱へ移動: %s",
+	"msg.cleanup.deleted":        "削除: %s",
+	"warn.cleanup.trashFallback": "ゴミ箱への移動に失敗したため直接削除します: %s",
+	"warn.cleanup.failed":        "削除に失敗: %s",
 
 	// ---- cli: 描画 ----
 	"label.warning":   "警告",
@@ -338,6 +354,18 @@ var jaCatalog = map[string]string{
   provsync undo --list
   provsync undo 20261002T093045-8c2d
 `,
+	"help.cleanup": `cleanup - provsync 管理ファイルを削除する
+
+使い方:
+  provsync cleanup [--write] [--yes]
+
+セントラル設定(~/.config/provsync/config.json)と状態ディレクトリ
+(~/.local/state/provsync: 履歴・バックアップ・ロック)を削除する。
+ツール設定とバイナリには触らない。
+
+フラグなしでは削除対象の一覧だけを表示する。--write は対話確認のうえで
+実行する。--yes は確認なしで実行する(TUI・スクリプト用)。macOS では
+ゴミ箱へ移動し、それ以外では直接削除する。`,
 	"help.doctor": `doctor - 環境を診断する
 
 用途: 設定の存在・構文・apiKeyEnv の環境変数・権限を一覧で診断する。

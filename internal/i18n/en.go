@@ -58,6 +58,7 @@ var enCatalog = map[string]string{
 	"flag.json":        "output as JSON (list / status / diff)",
 	"flag.exitCode":    "exit with code 3 when drift exists (status)",
 	"flag.strict":      "fail when model names have no alias mapping (push)",
+	"flag.yes":         "assume yes to confirmations (scripts and TUI)",
 	"flag.version":     "show version",
 	"flag.showSecrets": "show secret values in diff output (deprecated)",
 	"flag.help":        "show help",
@@ -81,6 +82,7 @@ var enCatalog = map[string]string{
 	"usage.summary.sync":       "import from a and apply to b (--from optional)",
 	"usage.summary.diff":       "show the diff of applying from to to",
 	"usage.summary.undo":       "restore the last or a given operation (--list for history)",
+	"usage.summary.cleanup":    "remove provsync-managed files (central config and state)",
 	"usage.summary.doctor":     "diagnose the environment (no network)",
 	"usage.summary.check":      "check API reachability of each provider (explicit runs only)",
 	"usage.summary.completion": "print a shell completion script",
@@ -92,6 +94,7 @@ var enCatalog = map[string]string{
 	"err.usage.push":              "usage: provsync push <tool>",
 	"err.usage.sync":              "usage: provsync sync --from <a> --to <b> (--from optional)",
 	"err.usage.diff":              "usage: provsync diff <from> <to>",
+	"err.usage.cleanup":           "usage: provsync cleanup [--write] [--yes]",
 	"err.usage.completion":        "usage: provsync completion <bash|zsh|fish>",
 	"err.completion.unknownShell": "unknown shell %q (valid: bash / zsh / fish)",
 
@@ -136,6 +139,19 @@ var enCatalog = map[string]string{
 	"msg.redo":           "redo: provsync undo %s",
 	"msg.undo.restored":  "  restored: %s",
 	"msg.undo.removed":   "  removed: %s",
+
+	// ---- cli: cleanup ----
+	"err.cleanup.interactive":    "interaction required (stdin is not a terminal)",
+	"msg.cleanup.preview":        "the following will be removed:",
+	"msg.cleanup.target":         "%s (%s)",
+	"msg.cleanup.total":          "total: %s",
+	"msg.cleanup.confirm":        "really delete? y / n",
+	"msg.cleanup.cancelled":      "cancelled",
+	"msg.cleanup.none":           "nothing to remove",
+	"msg.cleanup.trashed":        "moved to Trash: %s",
+	"msg.cleanup.deleted":        "deleted: %s",
+	"warn.cleanup.trashFallback": "could not move to Trash, deleting directly: %s",
+	"warn.cleanup.failed":        "failed to remove: %s",
 
 	// ---- cli: 描画 ----
 	"label.warning":   "warning",
@@ -338,6 +354,19 @@ Examples:
   provsync undo --list
   provsync undo 20261002T093045-8c2d
 `,
+	"help.cleanup": `cleanup - remove provsync-managed files
+
+Usage:
+  provsync cleanup [--write] [--yes]
+
+Removes the central config (~/.config/provsync/config.json) and the state
+directory (~/.local/state/provsync: history, backups, lock). Tool configs
+and binaries are never touched.
+
+Without flags, prints what would be removed. --write executes after an
+interactive confirmation. --yes executes without confirmation (for scripts
+and the TUI). On macOS, files are moved to the Trash; elsewhere they are
+deleted directly.`,
 	"help.doctor": `doctor - diagnose the environment
 
 Purpose: diagnose config existence, syntax, apiKeyEnv env vars, and permissions in a list.
